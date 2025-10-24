@@ -181,7 +181,7 @@ export function TopBar({
                   />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-white">Mockio</span>
+              <span className="text-lg font-bold text-white">Mokkio</span>
             </div>
 
             {/* Center Section */}
