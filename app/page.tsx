@@ -8,6 +8,7 @@ import { RightSidebar } from "@/components/right-sidebar";
 import { TopBar } from "@/components/top-bar";
 import { ExportProvider } from "@/lib/export-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { LandingPopup } from "@/components/landing-page/LandingPopup";
 
 interface AppState {
   uploadedImages: (string | null)[];
@@ -132,6 +133,9 @@ export default function MockupEditorPage() {
   );
   const [siteUrl, setSiteUrl] = useState<string>("https://mokk.io");
 
+  // ---- Landing Popup
+  const [isLandingOpen, setIsLandingOpen] = useState(true);
+
   // ---- History
   const [history, setHistory] = useState<AppState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -169,8 +173,44 @@ export default function MockupEditorPage() {
   };
 
   // ---- History helpers
-  const saveToHistory = useCallback(() => {
-    const currentState: AppState = {
+  const saveToHistory = useCallback(
+    (updates: Partial<AppState> = {}) => {
+      const currentState: AppState = {
+        uploadedImages,
+        selectedDevice,
+        selectedTemplate,
+        backgroundType,
+        backgroundColor,
+        selectedPreset,
+        deviceStyle,
+        styleEdge,
+        borderType,
+        borderRadius,
+        shadowType,
+        shadowOpacity,
+        shadowPosition,
+        shadowMode,
+        shadowOffsetX,
+        shadowOffsetY,
+        shadowBlur,
+        shadowSpread,
+        shadowColor,
+        sceneType,
+        zoom,
+        panX,
+        panY,
+        layoutMode,
+        siteUrl,
+        ...updates,
+      };
+      setHistory((prev) => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(currentState);
+        return newHistory.slice(-50);
+      });
+      setHistoryIndex((prev) => prev + 1);
+    },
+    [
       uploadedImages,
       selectedDevice,
       selectedTemplate,
@@ -196,41 +236,9 @@ export default function MockupEditorPage() {
       panY,
       layoutMode,
       siteUrl,
-    };
-    setHistory((prev) => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(currentState);
-      return newHistory.slice(-50);
-    });
-    setHistoryIndex((prev) => prev + 1);
-  }, [
-    uploadedImages,
-    selectedDevice,
-    selectedTemplate,
-    backgroundType,
-    backgroundColor,
-    selectedPreset,
-    deviceStyle,
-    styleEdge,
-    borderType,
-    borderRadius,
-    shadowType,
-    shadowOpacity,
-    shadowPosition,
-    shadowMode,
-    shadowOffsetX,
-    shadowOffsetY,
-    shadowBlur,
-    shadowSpread,
-    shadowColor,
-    sceneType,
-    zoom,
-    panX,
-    panY,
-    layoutMode,
-    siteUrl,
-    historyIndex,
-  ]);
+      historyIndex,
+    ]
+  );
 
   const undo = useCallback(() => {
     if (historyIndex > 0 && history[historyIndex - 1]) {
@@ -333,6 +341,18 @@ export default function MockupEditorPage() {
     setHistoryIndex(0);
   }, []);
 
+  // ---- Landing Popup: disable body scroll when open
+  useEffect(() => {
+    if (isLandingOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isLandingOpen]);
+
   // Setters con history
   const setUploadedImagesWithHistory = useCallback(
     (
@@ -340,24 +360,28 @@ export default function MockupEditorPage() {
         | (string | null)[]
         | ((prev: (string | null)[]) => (string | null)[])
     ) => {
-      saveToHistory();
-      setUploadedImages(value);
+      const newValue =
+        typeof value === "function" ? value(uploadedImages) : value;
+      setUploadedImages(newValue);
+      saveToHistory({ uploadedImages: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, uploadedImages]
   );
   const setSelectedDeviceWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setSelectedDevice(v);
+      const newValue = typeof v === "function" ? v(selectedDevice) : v;
+      setSelectedDevice(newValue);
+      saveToHistory({ selectedDevice: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, selectedDevice]
   );
   const setSelectedTemplateWithHistory = useCallback(
     (v: string | null | ((p: string | null) => string | null)) => {
-      saveToHistory();
-      setSelectedTemplate(v);
+      const newValue = typeof v === "function" ? v(selectedTemplate) : v;
+      setSelectedTemplate(newValue);
+      saveToHistory({ selectedTemplate: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, selectedTemplate]
   );
   const setBackgroundTypeWithHistory = useCallback(
     (
@@ -365,24 +389,27 @@ export default function MockupEditorPage() {
         | AppState["backgroundType"]
         | ((p: AppState["backgroundType"]) => AppState["backgroundType"])
     ) => {
-      saveToHistory();
-      setBackgroundType(v);
+      const newValue = typeof v === "function" ? v(backgroundType) : v;
+      setBackgroundType(newValue);
+      saveToHistory({ backgroundType: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, backgroundType]
   );
   const setBackgroundColorWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setBackgroundColor(v);
+      const newValue = typeof v === "function" ? v(backgroundColor) : v;
+      setBackgroundColor(newValue);
+      saveToHistory({ backgroundColor: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, backgroundColor]
   );
   const setSelectedPresetWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setSelectedPreset(v);
+      const newValue = typeof v === "function" ? v(selectedPreset) : v;
+      setSelectedPreset(newValue);
+      saveToHistory({ selectedPreset: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, selectedPreset]
   );
   const setDeviceStyleWithHistory = useCallback(
     (
@@ -390,29 +417,31 @@ export default function MockupEditorPage() {
         | AppState["deviceStyle"]
         | ((p: AppState["deviceStyle"]) => AppState["deviceStyle"])
     ) => {
-      saveToHistory();
-      setDeviceStyle(v);
+      const newValue = typeof v === "function" ? v(deviceStyle) : v;
+      setDeviceStyle(newValue);
+      saveToHistory({ deviceStyle: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, deviceStyle]
   );
   const setStyleEdgeWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setStyleEdge(typeof v === "function" ? v(styleEdge) : v);
+      const newValue = typeof v === "function" ? v(styleEdge) : v;
+      setStyleEdge(newValue);
+      saveToHistory({ styleEdge: newValue });
     },
     [saveToHistory, styleEdge]
   );
 
   const setBorderTypeWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setBorderType(v);
+      const newValue = typeof v === "function" ? v(borderType) : v;
+      setBorderType(newValue);
+      saveToHistory({ borderType: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, borderType]
   );
   const setBorderRadiusWithHistory = useCallback(
     (value: number | ((prev: number) => number)) => {
-      saveToHistory();
       const newRadius =
         typeof value === "function" ? value(borderRadius) : value;
       setBorderRadius(newRadius);
@@ -421,25 +450,28 @@ export default function MockupEditorPage() {
         20: "curved",
         40: "round",
       };
-      if (!radiusToType[newRadius] || radiusToType[newRadius] !== borderType)
-        setBorderType("");
+      const newType = radiusToType[newRadius] || "";
+      setBorderType(newType);
+      saveToHistory({ borderRadius: newRadius, borderType: newType });
     },
-    [saveToHistory, borderRadius, borderType]
+    [saveToHistory, borderRadius]
   );
 
   const setShadowTypeWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setShadowType(v);
+      const newValue = typeof v === "function" ? v(shadowType) : v;
+      setShadowType(newValue);
+      saveToHistory({ shadowType: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowType]
   );
   const setShadowOpacityWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setShadowOpacity(v);
+      const newValue = typeof v === "function" ? v(shadowOpacity) : v;
+      setShadowOpacity(newValue);
+      saveToHistory({ shadowOpacity: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowOpacity]
   );
   const setShadowModeWithHistory = useCallback(
     (
@@ -448,45 +480,51 @@ export default function MockupEditorPage() {
         | "custom"
         | ((p: "presets" | "custom") => "presets" | "custom")
     ) => {
-      saveToHistory();
-      setShadowMode(v as "presets" | "custom");
+      const newValue = typeof v === "function" ? v(shadowMode) : v;
+      setShadowMode(newValue);
+      saveToHistory({ shadowMode: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowMode]
   );
   const setShadowOffsetXWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setShadowOffsetX(v);
+      const newValue = typeof v === "function" ? v(shadowOffsetX) : v;
+      setShadowOffsetX(newValue);
+      saveToHistory({ shadowOffsetX: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowOffsetX]
   );
   const setShadowOffsetYWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setShadowOffsetY(v);
+      const newValue = typeof v === "function" ? v(shadowOffsetY) : v;
+      setShadowOffsetY(newValue);
+      saveToHistory({ shadowOffsetY: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowOffsetY]
   );
   const setShadowBlurWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setShadowBlur(v);
+      const newValue = typeof v === "function" ? v(shadowBlur) : v;
+      setShadowBlur(newValue);
+      saveToHistory({ shadowBlur: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowBlur]
   );
   const setShadowSpreadWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setShadowSpread(v);
+      const newValue = typeof v === "function" ? v(shadowSpread) : v;
+      setShadowSpread(newValue);
+      saveToHistory({ shadowSpread: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowSpread]
   );
   const setShadowColorWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setShadowColor(v);
+      const newValue = typeof v === "function" ? v(shadowColor) : v;
+      setShadowColor(newValue);
+      saveToHistory({ shadowColor: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, shadowColor]
   );
 
   const setSceneTypeWithHistory = useCallback(
@@ -495,31 +533,35 @@ export default function MockupEditorPage() {
         | AppState["sceneType"]
         | ((p: AppState["sceneType"]) => AppState["sceneType"])
     ) => {
-      saveToHistory();
-      setSceneType(v);
+      const newValue = typeof v === "function" ? v(sceneType) : v;
+      setSceneType(newValue);
+      saveToHistory({ sceneType: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, sceneType]
   );
   const setZoomWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setZoom(v);
+      const newValue = typeof v === "function" ? v(zoom) : v;
+      setZoom(newValue);
+      saveToHistory({ zoom: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, zoom]
   );
   const setPanXWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setPanX(v);
+      const newValue = typeof v === "function" ? v(panX) : v;
+      setPanX(newValue);
+      saveToHistory({ panX: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, panX]
   );
   const setPanYWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
-      saveToHistory();
-      setPanY(v);
+      const newValue = typeof v === "function" ? v(panY) : v;
+      setPanY(newValue);
+      saveToHistory({ panY: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, panY]
   );
   const setLayoutModeWithHistory = useCallback(
     (
@@ -531,17 +573,19 @@ export default function MockupEditorPage() {
             p: "single" | "double" | "triple"
           ) => "single" | "double" | "triple")
     ) => {
-      saveToHistory();
-      setLayoutMode(v as "single" | "double" | "triple");
+      const newValue = typeof v === "function" ? v(layoutMode) : v;
+      setLayoutMode(newValue);
+      saveToHistory({ layoutMode: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, layoutMode]
   );
   const setSiteUrlWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
-      saveToHistory();
-      setSiteUrl(v);
+      const newValue = typeof v === "function" ? v(siteUrl) : v;
+      setSiteUrl(newValue);
+      saveToHistory({ siteUrl: newValue });
     },
-    [saveToHistory]
+    [saveToHistory, siteUrl]
   );
 
   const resetToDefaults = () => {
@@ -618,6 +662,7 @@ export default function MockupEditorPage() {
 
   return (
     <ExportProvider>
+      {isLandingOpen && <LandingPopup onClose={() => setIsLandingOpen(false)} />}
       <div className="flex h-screen w-full overflow-hidden bg-[#0d0d0d]">
         {isMobile ? (
           <>

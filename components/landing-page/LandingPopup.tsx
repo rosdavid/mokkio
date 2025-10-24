@@ -1,0 +1,167 @@
+"use client";
+
+import { HeroSection } from "./HeroSection";
+import { FeaturesSection } from "./FeaturesSection";
+import { HowItWorksSection } from "./HowItWorksSection";
+import { FAQSection } from "./FAQSection";
+import { MockupsLayoutsSection } from "./MockupsLayoutsSection";
+import { StylesEffectsSection } from "./StylesEffectsSection";
+import { ExportSection } from "./ExportSection";
+import { useEffect } from "react";
+import { Heart } from "lucide-react";
+
+interface LandingPopupProps {
+  onClose: () => void;
+}
+
+export function LandingPopup({ onClose }: LandingPopupProps) {
+  // Inyectar el CSS global para la animación del gradiente
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animate-gradientMove {
+        background-size: 200% 200%;
+        animation: gradientMove 3s ease-in-out infinite;
+      }
+      @keyframes heartbeatColor {
+        0%, 100% { color: #f43f5e; }
+        40% { color: #b91c1c; }
+        60% { color: #b91c1c; }
+        80% { color: #f43f5e; }
+      }
+      .animate-heartbeat {
+        animation: heartbeatColor 1.6s infinite;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 10px;
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.18);
+        border-radius: 8px;
+        border: 2px solid rgba(0,0,0,0.12);
+        box-shadow: 0 0 8px 2px rgba(0,0,0,0.12);
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      /* Firefox */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.18) transparent;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  // IDs para cada sección
+  const sectionIds = [
+    "hero-section",
+    "features-section",
+    "howitworks-section",
+    "mockups-section",
+    "styles-section",
+    "export-section",
+    "faq-section",
+  ];
+  const sectionLabels = [
+    "Hero",
+    "Features",
+    "How It Works",
+    "Mockups",
+    "Styles",
+    "Export",
+    "FAQ",
+  ];
+
+  // Scroll suave a la sección
+  function scrollToSection(id: string) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300">
+      <div className="bg-[#0a0a0a] w-full max-w-[1600px] h-full max-h-[90vh] rounded-lg overflow-hidden relative mx-4 shadow-2xl">
+        {/* Header flotante, glassmorphism, centrado y redondeado */}
+        <div
+          className="fixed z-30 left-1/2 top-16 -translate-x-1/2 flex items-center justify-center px-6 py-2 gap-2 rounded-2xl bg-white/10 backdrop-blur-lg shadow-xl border border-white/20 animate-in fade-in duration-500"
+          style={{ boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)" }}
+        >
+          {sectionLabels.map((label, idx) => (
+            <button
+              key={label}
+              onClick={() => scrollToSection(sectionIds[idx])}
+              className="relative font-medium px-3 py-1 rounded-xl overflow-hidden transition-all duration-300 focus:outline-none group cursor-pointer"
+              style={{ zIndex: 1 }}
+            >
+              <span className="absolute inset-0 rounded-xl pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:scale-105 group-hover:blur-md group-hover:bg-white/20 group-hover:shadow-pink-500/30"></span>
+              <span className="relative z-10 transition-all text-white duration-300 group-hover:text-pink-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]">
+                {label}
+              </span>
+              <span className="absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:shadow-[0_0_16px_4px_rgba(236,72,153,0.4)]"></span>
+            </button>
+          ))}
+        </div>
+        <div className="h-full overflow-y-auto pb-20 custom-scrollbar">
+          <div id="hero-section">
+            <HeroSection />
+          </div>
+          <div id="features-section">
+            <FeaturesSection />
+          </div>
+          <div id="howitworks-section">
+            <HowItWorksSection />
+          </div>
+          <div id="mockups-section">
+            <MockupsLayoutsSection />
+          </div>
+          <div id="styles-section">
+            <StylesEffectsSection />
+          </div>
+          <div id="export-section">
+            <ExportSection />
+          </div>
+          <div id="faq-section">
+            <FAQSection />
+          </div>
+        </div>
+        {/* Botón sticky siempre visible en el bottom center del popup */}
+        <div className="absolute bottom-0 left-0 right-0 py-4 text-center z-10">
+          <span className="absolute left-0 right-0 bottom-0 w-full h-32 pointer-events-none bg-linear-to-t from-black/70 to-transparent blur-md rounded-b-xl"></span>
+          <button
+            onClick={onClose}
+            className="relative overflow-hidden text-white px-4 py-3 rounded-full font-semibold text-lg shadow-lg transition-colors animate-in fade-in duration-700 group transform hover:scale-105 will-change-transform cursor-pointer"
+          >
+            <span className="absolute inset-0 z-0 bg-linear-to-r from-purple-500 via-pink-500 to-blue-500 animate-gradientMove transition-all duration-300 rounded-full group-hover:opacity-100 group-hover:blur-sm"></span>
+            <span className="relative z-10">Start Editing Now</span>
+          </button>
+          <div className="mt-4 text-sm flex flex-row items-center justify-center gap-4">
+            <span className="text-white flex items-center gap-1">
+              Made with
+              <Heart className="inline w-4 h-4 animate-heartbeat text-pink-500" />
+              by David Ros
+            </span>
+            <a
+              className="text-blue-500 hover:underline"
+              href="https://davidros.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visit my website
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

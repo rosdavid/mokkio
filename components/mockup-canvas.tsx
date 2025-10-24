@@ -116,7 +116,7 @@ const dominantFromBackground = (
   if (type === "gradient" && gradientPresets[preset]) {
     const stops = parseHexesFromGradient(gradientPresets[preset]);
     if (stops.length === 1) return stops[0];
-    // media ponderada 0.6/0.4 para dar “look” agradable
+    // media ponderada 0.6/0.4
     return mixHex(stops[0], stops[stops.length - 1], 0.4);
   }
   // fondos “temáticos”: fallback al color primario
