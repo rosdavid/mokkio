@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,12 @@ export default function RootLayout({
         <Toaster />
         <Analytics />
         <SpeedInsights />
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2850341183298193"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+          async
+        />
       </body>
     </html>
   );
