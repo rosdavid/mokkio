@@ -9,6 +9,7 @@ import {
   getEffectiveZoom as getEffectiveZoomUtil,
 } from "@/lib/mockup-utils";
 import { MockupCanvas } from "@/components/mockup-canvas";
+import { AdSenseBlock } from "@/components/AdSenseBlock";
 
 interface RightSidebarProps {
   uploadedImages: (string | null)[];
@@ -628,6 +629,9 @@ export function RightSidebar(props: RightSidebarProps) {
           </Button>
         </div>
       </div>
+
+      {/* GOOGLE ADSENSE BLOCK */}
+      <AdSenseBlock />
 
       {/* LAYOUT PRESETS */}
       <div className="p-4">

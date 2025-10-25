@@ -19,7 +19,6 @@ export function useCookieConsent() {
     marketing: false,
   });
   const [hasConsented, setHasConsented] = useState(false);
-
   useEffect(() => {
     // Check if user has already made a choice
     const consentGiven = localStorage.getItem(COOKIE_CONSENT_KEY);
