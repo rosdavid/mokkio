@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mokkio
 
-## Getting Started
+A modern, interactive web application for creating high-quality device mockups. Design and export mockups for various devices including iPhones, iPads, MacBooks, screenshots and browsers with an intuitive canvas interface.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Device Mockups**: Create mockups for popular devices including iPhone 15 Pro, iPad Pro, MacBook Pro, screenshots and browser frames.
+- **Interactive Canvas**: Use a powerful canvas for designing and positioning elements within device frames.
+- **Styling**: It has several styling tools such as: border style, radius, shadow from presets or build your own shadow, solid backgrounds or gradient backgrounds, layout presets with several predefined positions with an atractive design, zoom and position in the viewport of the canvas.
+- **Export Functionality**: Export your mockups as high-resolution images with diferent resolution sizes, PNG, JPEG and WEBP.
+- **Modern UI**: Built with Tailwind CSS and Radix UI components for a sleek, professional appearance.
+- **Theme Support**: Dark/light theme switching with next-themes.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Try it yourself
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Visit [https://mokkio.vercel.app](https://mokkio.vercel.app) to try the application live.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+1. **Select a Device**: Choose from available device frames (iPhone, iPad, MacBook, Browser).
+2. **Design Your Mockup**: Use the interactive canvas to add and position elements within the device frame.
+3. **Customize**: Adjust shadows, backgrounds, and other visual elements using the control panels.
+4. **Export**: Click the export button to download your mockup.
 
-To learn more about Next.js, take a look at the following resources:
+## Technologies Used
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **UI Components**: Radix UI (shadcn/ui)
+- **Image Export**: html-to-image
+- **Icons**: Lucide React
+- **Forms**: React Hook Form with Zod validation
+- **Charts**: Recharts
+- **Carousels**: Embla Carousel
+- **Themes**: next-themes
+- **Analytics**: Vercel Analytics and Speed Insights
+- **Build Tool**: Turbopack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+This project is private and proprietary.
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org)
+- UI components from [shadcn/ui](https://ui.shadcn.com)
+- Icons from [Lucide](https://lucide.dev)
