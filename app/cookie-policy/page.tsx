@@ -33,47 +33,122 @@ export default function CookiePolicyPage() {
                 <h3 className="text-xl font-medium mb-2 text-purple-400">
                   Necessary Cookies
                 </h3>
-                <p className="mb-2">
+                <p className="mb-3">
                   These cookies are essential for the website to function
                   properly.
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Session management</li>
-                  <li>Security features</li>
-                  <li>Basic functionality</li>
-                </ul>
-                <p className="text-sm text-white/60 mt-2">Duration: Session</p>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-purple-500 pl-3">
+                    <strong className="text-white">
+                      mokkio_cookie_consent
+                    </strong>
+                    <p className="text-sm text-white/60">
+                      Stores user&apos;s cookie consent preferences
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: Indefinite | Category: Necessary
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-purple-500 pl-3">
+                    <strong className="text-white">
+                      mokkio_cookie_preferences
+                    </strong>
+                    <p className="text-sm text-white/60">
+                      Stores detailed cookie preferences (analytics, marketing)
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: Indefinite | Category: Necessary
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white/5 p-6 rounded-lg">
                 <h3 className="text-xl font-medium mb-2 text-blue-400">
                   Analytics Cookies
                 </h3>
-                <p className="mb-2">
+                <p className="mb-3">
                   These cookies help us understand how visitors interact with
                   our website.
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Vercel Analytics - Anonymous usage statistics</li>
-                  <li>Vercel Speed Insights - Performance monitoring</li>
-                </ul>
-                <p className="text-sm text-white/60 mt-2">Duration: 1 year</p>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-blue-500 pl-3">
+                    <strong className="text-white">_vercel_analytics</strong>
+                    <p className="text-sm text-white/60">
+                      Anonymous website usage statistics and user behavior
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 1 year | Provider: Vercel Inc.
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-blue-500 pl-3">
+                    <strong className="text-white">
+                      _vercel_speed_insights
+                    </strong>
+                    <p className="text-sm text-white/60">
+                      Performance monitoring and Core Web Vitals measurement
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 1 year | Provider: Vercel Inc.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white/5 p-6 rounded-lg">
                 <h3 className="text-xl font-medium mb-2 text-orange-400">
                   Marketing Cookies
                 </h3>
-                <p className="mb-2">
+                <p className="mb-3">
                   These cookies are used to deliver personalized advertisements.
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Google AdSense - Personalized advertising</li>
-                  <li>Campaign tracking and measurement</li>
-                </ul>
-                <p className="text-sm text-white/60 mt-2">
-                  Duration: 1-2 years
-                </p>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <strong className="text-white">__gads</strong>
+                    <p className="text-sm text-white/60">
+                      Google Ads advertising and retargeting
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 1 year | Provider: Google LLC
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <strong className="text-white">__gac</strong>
+                    <p className="text-sm text-white/60">
+                      Google Ads campaign attribution and conversion tracking
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 90 days | Provider: Google LLC
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <strong className="text-white">NID</strong>
+                    <p className="text-sm text-white/60">
+                      Google user preferences and personalization
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 6 months | Provider: Google LLC
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <strong className="text-white">ANID</strong>
+                    <p className="text-sm text-white/60">
+                      Google advertising identifier
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 1 year | Provider: Google LLC
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <strong className="text-white">__gpi</strong>
+                    <p className="text-sm text-white/60">
+                      Google Partner Integration for cross-site tracking
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: 1 year | Provider: Google LLC
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>

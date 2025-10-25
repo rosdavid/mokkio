@@ -70,7 +70,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 onClick={() => setShowDetails(true)}
                 variant="ghost"
                 size="sm"
-                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer border border-neutral-800 bg-neutral-900"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Customize
@@ -79,7 +79,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 onClick={handleReject}
                 variant="ghost"
                 size="sm"
-                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer border border-neutral-800 bg-neutral-900"
               >
                 Reject All
               </Button>
@@ -103,7 +103,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 onClick={() => setShowDetails(false)}
                 variant="ghost"
                 size="icon"
-                className="text-white/60 hover:text-white hover:bg-white/10 h-8 w-8"
+                className="text-white/60 hover:text-white hover:bg-white/10 h-8 w-8 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -121,6 +121,10 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                     Required for the website to function properly. These cannot
                     be disabled.
                   </p>
+                  <div className="text-xs text-white/40 mt-2">
+                    <strong>Cookies:</strong> mokkio_cookie_consent,
+                    mokkio_cookie_preferences
+                  </div>
                 </div>
                 <div className="text-white/40 text-sm">Always Active</div>
               </div>
@@ -145,6 +149,12 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                     Help us understand how visitors interact with our website by
                     collecting anonymous information.
                   </p>
+                  <div className="text-xs text-white/40 mt-2">
+                    <strong>Cookies:</strong> _vercel_analytics,
+                    _vercel_speed_insights
+                    <br />
+                    <strong>Provider:</strong> Vercel Inc.
+                  </div>
                 </div>
               </div>
 
@@ -168,6 +178,11 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                     Used to deliver personalized advertisements and measure
                     campaign effectiveness.
                   </p>
+                  <div className="text-xs text-white/40 mt-2">
+                    <strong>Cookies:</strong> __gads, __gac, NID, ANID, __gpi
+                    <br />
+                    <strong>Provider:</strong> Google LLC (AdSense)
+                  </div>
                 </div>
               </div>
             </div>
@@ -177,7 +192,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 onClick={handleReject}
                 variant="ghost"
                 size="sm"
-                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer border border-neutral-800 bg-neutral-900"
               >
                 Reject All
               </Button>
