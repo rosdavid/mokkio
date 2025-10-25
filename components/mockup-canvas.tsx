@@ -238,8 +238,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
   const effectiveBorderRadius = (() => {
     if (selectedDevice.includes("iphone")) return 40;
     if (borderType === "sharp") return 4;
-    if (borderType === "round")
-      return Math.floor(Math.min(renderSize.width, renderSize.height) / 2);
+    if (borderType === "round") return 40;
     return borderRadius;
   })();
 

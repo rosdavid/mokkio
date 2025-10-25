@@ -4,7 +4,7 @@ import { Rocket, Download, Zap } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative px-8 text-center max-h-screen overflow-hidden">
+    <section className="relative px-8 py-20 text-center max-h-screen overflow-hidden">
       {/* Video de fondo y overlay degradado */}
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <video
