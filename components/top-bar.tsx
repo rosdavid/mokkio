@@ -12,6 +12,7 @@ import {
 import { Undo2, Redo2, Maximize2 } from "lucide-react";
 import { ExportButton } from "@/components/export-button";
 import { useState } from "react";
+import Image from "next/image";
 
 interface TopBarProps {
   onStartOver?: () => void;
@@ -54,8 +55,22 @@ export function TopBar({
     <>
       <div className="flex px-4 py-3">
         <div className="flex items-center justify-between w-full">
-          {/* Left Section - Empty for centering */}
-          <div className="w-20"></div>
+          {/* Left Section - Ko-fi Support */}
+          <div className="flex items-center justify-center">
+            <a
+              href="https://ko-fi.com/R5R31NC8IM"
+              target="_blank"
+              className="hover:opacity-80 transition-opacity"
+            >
+              <Image
+                width={180}
+                height={0}
+                style={{ border: "0px", height: "36px" }}
+                src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_beige.png?_gl=1*jzb8ds*_gcl_au*ODc1MTI4ODI0LjE3NjEzNjc4OTA.*_ga*MjEwMjUwMjk4MS4xNzYxMzY3ODkw*_ga_M13FZ7VQ2C*czE3NjEzNjc4ODkkbzEkZzEkdDE3NjEzNjk0MzUkajUzJGwwJGgw"
+                alt="Buy Me a Coffee at ko-fi.com"
+              />
+            </a>
+          </div>
 
           {/* Center Section */}
           <div className="flex items-center gap-2">

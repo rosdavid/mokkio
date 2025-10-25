@@ -9,6 +9,7 @@ import { StylesEffectsSection } from "./StylesEffectsSection";
 import { ExportSection } from "./ExportSection";
 import { useEffect } from "react";
 import { Heart } from "lucide-react";
+import Image from "next/image";
 
 interface LandingPopupProps {
   onClose: () => void;
@@ -159,13 +160,28 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
         {/* Botón sticky siempre visible en el bottom center del popup */}
         <div className="absolute bottom-0 left-0 right-0 py-4 text-center z-10">
           <span className="absolute left-0 right-0 bottom-0 w-full h-32 pointer-events-none bg-linear-to-t from-black/70 to-transparent blur-md rounded-b-xl"></span>
-          <button
-            onClick={onClose}
-            className="relative overflow-hidden text-white px-4 py-3 rounded-full font-semibold text-lg shadow-lg transition-colors animate-in fade-in duration-700 group transform hover:scale-105 will-change-transform cursor-pointer"
-          >
-            <span className="absolute inset-0 z-0 bg-linear-to-r from-purple-500 via-pink-500 to-blue-500 animate-gradientMove transition-all duration-300 rounded-full group-hover:opacity-100 group-hover:blur-sm"></span>
-            <span className="relative z-10">Start Editing Now</span>
-          </button>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={onClose}
+              className="relative overflow-hidden text-white px-4 py-3 rounded-full font-semibold text-lg shadow-lg transition-colors animate-in fade-in duration-700 group transform hover:scale-105 will-change-transform cursor-pointer"
+            >
+              <span className="absolute inset-0 z-0 bg-linear-to-r from-purple-500 via-pink-500 to-blue-500 animate-gradientMove transition-all duration-300 rounded-full group-hover:opacity-100 group-hover:blur-sm"></span>
+              <span className="relative z-10">Start Editing Now</span>
+            </button>
+            <a
+              href="https://ko-fi.com/R5R31NC8IM"
+              target="_blank"
+              className="hover:opacity-100 opacity-80"
+            >
+              <Image
+                width={180}
+                height={0}
+                style={{ border: "0px", height: "36px" }}
+                src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_beige.png?_gl=1*jzb8ds*_gcl_au*ODc1MTI4ODI0LjE3NjEzNjc4OTA.*_ga*MjEwMjUwMjk4MS4xNzYxMzY3ODkw*_ga_M13FZ7VQ2C*czE3NjEzNjc4ODkkbzEkZzEkdDE3NjEzNjk0MzUkajUzJGwwJGgw"
+                alt="Buy Me a Coffee at ko-fi.com"
+              />
+            </a>
+          </div>
           <div className="mt-4 text-sm flex flex-row items-center justify-center gap-4">
             <span className="text-white flex items-center gap-1">
               Made with

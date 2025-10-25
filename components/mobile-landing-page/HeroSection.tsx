@@ -8,6 +8,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { useEffect } from "react";
+import Image from "next/image";
 
 export function HeroSection() {
   useEffect(() => {
@@ -137,7 +138,20 @@ export function HeroSection() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 animate-in fade-in duration-1000 delay-1100">
+        <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 animate-in fade-in duration-1000 delay-1100 flex flex-col items-center gap-4">
+          <a
+            href="https://ko-fi.com/R5R31NC8IM"
+            target="_blank"
+            className="hover:opacity-100 opacity-80"
+          >
+            <Image
+              width={180}
+              height={0}
+              style={{ border: "0px", height: "36px" }}
+              src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_beige.png?_gl=1*jzb8ds*_gcl_au*ODc1MTI4ODI0LjE3NjEzNjc4OTA.*_ga*MjEwMjUwMjk4MS4xNzYxMzY3ODkw*_ga_M13FZ7VQ2C*czE3NjEzNjc4ODkkbzEkZzEkdDE3NjEzNjk0MzUkajUzJGwwJGgw"
+              alt="Buy Me a Coffee at ko-fi.com"
+            />
+          </a>
           <div className="text-sm flex flex-row items-center justify-center gap-4">
             <span className="text-white flex items-center gap-1">
               Made with
