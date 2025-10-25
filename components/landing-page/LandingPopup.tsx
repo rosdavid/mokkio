@@ -108,7 +108,7 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
       <div className="bg-[#0a0a0a] w-full max-w-[1600px] h-full max-h-[90vh] rounded-lg overflow-hidden relative mx-4 shadow-2xl">
         {/* Header flotante, glassmorphism, centrado y redondeado */}
         <div
-          className="fixed z-30 left-1/2 top-16 -translate-x-1/2 flex items-center justify-center px-6 py-2 gap-4 rounded-2xl bg-white/10 backdrop-blur-lg shadow-xl border border-white/20 animate-in fade-in duration-500"
+          className="fixed z-30 left-1/2 top-16 -translate-x-1/2 flex items-center justify-center px-6 py-2 gap-4 rounded-2xl bg-white/10 backdrop-blur-lg shadow-xl border border-white/20 animate-in fade-in duration-500 w-max"
           style={{ boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)" }}
         >
           {/* Logo SVG */}
