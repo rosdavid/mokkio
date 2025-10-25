@@ -58,26 +58,33 @@ interface LeftSidebarProps {
   /** grosor exacto del borde en px */
   styleEdge: number;
   setStyleEdge: (px: number) => void;
+  setStyleEdgeImmediate: (px: number) => void;
 
   borderType: string;
   setBorderType: (type: string) => void;
   borderRadius: number;
   setBorderRadius: (radius: number) => void;
+  setBorderRadiusImmediate: (radius: number) => void;
 
   shadowType: string;
   setShadowType: (type: string) => void;
   shadowOpacity: number;
   setShadowOpacity: (opacity: number) => void;
+  setShadowOpacityImmediate: (opacity: number) => void;
   shadowMode?: "presets" | "custom";
   setShadowMode?: (mode: "presets" | "custom") => void;
   shadowOffsetX?: number;
   setShadowOffsetX?: (n: number) => void;
+  setShadowOffsetXImmediate?: (n: number) => void;
   shadowOffsetY?: number;
   setShadowOffsetY?: (n: number) => void;
+  setShadowOffsetYImmediate?: (n: number) => void;
   shadowBlur?: number;
   setShadowBlur?: (n: number) => void;
+  setShadowBlurImmediate?: (n: number) => void;
   shadowSpread?: number;
   setShadowSpread?: (n: number) => void;
+  setShadowSpreadImmediate?: (n: number) => void;
   shadowColor?: string;
   setShadowColor?: (c: string) => void;
 
@@ -418,7 +425,8 @@ export function LeftSidebar(props: LeftSidebarProps) {
                 </div>
                 <Slider
                   value={[props.styleEdge]}
-                  onValueChange={([v]) => props.setStyleEdge(v)}
+                  onValueChange={([v]) => props.setStyleEdgeImmediate(v)}
+                  onValueCommit={([v]) => props.setStyleEdge(v)}
                   min={0}
                   max={64}
                   step={1}
@@ -481,7 +489,8 @@ export function LeftSidebar(props: LeftSidebarProps) {
                     </div>
                     <Slider
                       value={[props.borderRadius]}
-                      onValueChange={([v]) => props.setBorderRadius(v)}
+                      onValueChange={([v]) => props.setBorderRadiusImmediate(v)}
+                      onValueCommit={([v]) => props.setBorderRadius(v)}
                       min={0}
                       max={40}
                       step={1}
@@ -568,7 +577,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowOpacity]}
-                        onValueChange={([v]) => props.setShadowOpacity(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowOpacityImmediate(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowOpacity(v)}
                         min={0}
                         max={100}
                         step={1}
@@ -590,7 +602,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowOffsetX ?? 0]}
-                        onValueChange={([v]) => props.setShadowOffsetX?.(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowOffsetXImmediate?.(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowOffsetX?.(v)}
                         min={-80}
                         max={80}
                         step={1}
@@ -609,7 +624,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowOffsetY ?? 0]}
-                        onValueChange={([v]) => props.setShadowOffsetY?.(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowOffsetYImmediate?.(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowOffsetY?.(v)}
                         min={-80}
                         max={80}
                         step={1}
@@ -626,7 +644,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowBlur ?? 0]}
-                        onValueChange={([v]) => props.setShadowBlur?.(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowBlurImmediate?.(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowBlur?.(v)}
                         min={0}
                         max={160}
                         step={1}
@@ -643,7 +664,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowSpread ?? 0]}
-                        onValueChange={([v]) => props.setShadowSpread?.(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowSpreadImmediate?.(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowSpread?.(v)}
                         min={-40}
                         max={80}
                         step={1}
@@ -660,7 +684,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </div>
                       <Slider
                         value={[props.shadowOpacity]}
-                        onValueChange={([v]) => props.setShadowOpacity(v)}
+                        onValueChange={([v]) =>
+                          props.setShadowOpacityImmediate(v)
+                        }
+                        onValueCommit={([v]) => props.setShadowOpacity(v)}
                         min={0}
                         max={100}
                         step={1}

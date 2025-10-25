@@ -207,9 +207,10 @@ export default function MockupEditorPage() {
       setHistory((prev) => {
         const newHistory = prev.slice(0, historyIndex + 1);
         newHistory.push(currentState);
-        return newHistory.slice(-50);
+        const sliced = newHistory.slice(-50);
+        setHistoryIndex(sliced.length - 1);
+        return sliced;
       });
-      setHistoryIndex((prev) => prev + 1);
     },
     [
       uploadedImages,
@@ -457,6 +458,29 @@ export default function MockupEditorPage() {
     },
     [saveToHistory, borderRadius]
   );
+
+  // Immediate setters for real-time updates without history
+  const setBorderRadiusImmediate = useCallback((value: number) => {
+    setBorderRadius(value);
+  }, []);
+  const setStyleEdgeImmediate = useCallback((value: number) => {
+    setStyleEdge(value);
+  }, []);
+  const setShadowOpacityImmediate = useCallback((value: number) => {
+    setShadowOpacity(value);
+  }, []);
+  const setShadowOffsetXImmediate = useCallback((value: number) => {
+    setShadowOffsetX(value);
+  }, []);
+  const setShadowOffsetYImmediate = useCallback((value: number) => {
+    setShadowOffsetY(value);
+  }, []);
+  const setShadowBlurImmediate = useCallback((value: number) => {
+    setShadowBlur(value);
+  }, []);
+  const setShadowSpreadImmediate = useCallback((value: number) => {
+    setShadowSpread(value);
+  }, []);
 
   const setShadowTypeWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
@@ -753,24 +777,31 @@ export default function MockupEditorPage() {
                     setDeviceStyle={setDeviceStyleWithHistory}
                     styleEdge={styleEdge}
                     setStyleEdge={setStyleEdgeWithHistory}
+                    setStyleEdgeImmediate={setStyleEdgeImmediate}
                     borderType={borderType}
                     setBorderType={setBorderTypeWithHistory}
                     borderRadius={borderRadius}
                     setBorderRadius={setBorderRadiusWithHistory}
+                    setBorderRadiusImmediate={setBorderRadiusImmediate}
                     shadowType={shadowType}
                     setShadowType={setShadowTypeWithHistory}
                     shadowOpacity={shadowOpacity}
                     setShadowOpacity={setShadowOpacityWithHistory}
+                    setShadowOpacityImmediate={setShadowOpacityImmediate}
                     shadowMode={shadowMode}
                     setShadowMode={setShadowModeWithHistory}
                     shadowOffsetX={shadowOffsetX}
                     setShadowOffsetX={setShadowOffsetXWithHistory}
+                    setShadowOffsetXImmediate={setShadowOffsetXImmediate}
                     shadowOffsetY={shadowOffsetY}
                     setShadowOffsetY={setShadowOffsetYWithHistory}
+                    setShadowOffsetYImmediate={setShadowOffsetYImmediate}
                     shadowBlur={shadowBlur}
                     setShadowBlur={setShadowBlurWithHistory}
+                    setShadowBlurImmediate={setShadowBlurImmediate}
                     shadowSpread={shadowSpread}
                     setShadowSpread={setShadowSpreadWithHistory}
+                    setShadowSpreadImmediate={setShadowSpreadImmediate}
                     shadowColor={shadowColor}
                     setShadowColor={setShadowColorWithHistory}
                     sceneType={sceneType}
@@ -844,24 +875,31 @@ export default function MockupEditorPage() {
               setDeviceStyle={setDeviceStyleWithHistory}
               styleEdge={styleEdge}
               setStyleEdge={setStyleEdgeWithHistory}
+              setStyleEdgeImmediate={setStyleEdgeImmediate}
               borderType={borderType}
               setBorderType={setBorderTypeWithHistory}
               borderRadius={borderRadius}
               setBorderRadius={setBorderRadiusWithHistory}
+              setBorderRadiusImmediate={setBorderRadiusImmediate}
               shadowType={shadowType}
               setShadowType={setShadowTypeWithHistory}
               shadowOpacity={shadowOpacity}
               setShadowOpacity={setShadowOpacityWithHistory}
+              setShadowOpacityImmediate={setShadowOpacityImmediate}
               shadowMode={shadowMode}
               setShadowMode={setShadowModeWithHistory}
               shadowOffsetX={shadowOffsetX}
               setShadowOffsetX={setShadowOffsetXWithHistory}
+              setShadowOffsetXImmediate={setShadowOffsetXImmediate}
               shadowOffsetY={shadowOffsetY}
               setShadowOffsetY={setShadowOffsetYWithHistory}
+              setShadowOffsetYImmediate={setShadowOffsetYImmediate}
               shadowBlur={shadowBlur}
               setShadowBlur={setShadowBlurWithHistory}
+              setShadowBlurImmediate={setShadowBlurImmediate}
               shadowSpread={shadowSpread}
               setShadowSpread={setShadowSpreadWithHistory}
+              setShadowSpreadImmediate={setShadowSpreadImmediate}
               shadowColor={shadowColor}
               setShadowColor={setShadowColorWithHistory}
               sceneType={sceneType}
