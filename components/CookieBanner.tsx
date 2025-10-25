@@ -65,7 +65,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 site, you agree to our use of cookies.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <div className="flex flex-row gap-2 shrink-0">
               <Button
                 onClick={() => setShowDetails(true)}
                 variant="ghost"
