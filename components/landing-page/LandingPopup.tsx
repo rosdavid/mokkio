@@ -94,9 +94,30 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
       <div className="bg-[#0a0a0a] w-full max-w-[1600px] h-full max-h-[90vh] rounded-lg overflow-hidden relative mx-4 shadow-2xl">
         {/* Header flotante, glassmorphism, centrado y redondeado */}
         <div
-          className="fixed z-30 left-1/2 top-16 -translate-x-1/2 flex items-center justify-center px-6 py-2 gap-2 rounded-2xl bg-white/10 backdrop-blur-lg shadow-xl border border-white/20 animate-in fade-in duration-500"
+          className="fixed z-30 left-1/2 top-16 -translate-x-1/2 flex items-center justify-center px-6 py-2 gap-4 rounded-2xl bg-white/10 backdrop-blur-lg shadow-xl border border-white/20 animate-in fade-in duration-500"
           style={{ boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)" }}
         >
+          {/* Logo SVG */}
+          <div className="shrink-0 flex items-center gap-2">
+            <svg
+              version="1.0"
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 200 200"
+              className="drop-shadow-lg"
+            >
+              <path
+                d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
+                fill="#fff"
+              />
+            </svg>
+            <span className="text-sm font-bold text-white">Mokkio</span>
+          </div>
+
+          {/* Separador */}
+          <div className="w-px h-6 bg-white/30"></div>
+
           {sectionLabels.map((label, idx) => (
             <button
               key={label}

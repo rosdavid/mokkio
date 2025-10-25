@@ -1,3 +1,4 @@
+// page.tsx
 "use client";
 
 import type React from "react";
@@ -649,25 +650,25 @@ export default function MockupEditorPage() {
 
   // ====== NUEVO: drag con commit al historial ======
   const setPanImmediate = useCallback((x: number, y: number) => {
-    // mover en tiempo real SIN guardar historial
     setPanX(x);
     setPanY(y);
   }, []);
 
   const commitPanHistory = useCallback(() => {
-    // al soltar el drag guardamos una entrada con el estado actual (post-drag)
     saveToHistory();
   }, [saveToHistory]);
   // ================================================
 
   return (
     <ExportProvider>
-      {isLandingOpen && <LandingPopup onClose={() => setIsLandingOpen(false)} />}
+      {isLandingOpen && (
+        <LandingPopup onClose={() => setIsLandingOpen(false)} />
+      )}
       <div className="flex h-screen w-full overflow-hidden bg-[#0d0d0d]">
         {isMobile ? (
           <>
             <div className="flex h-screen w-full flex-col">
-              <div className="flex items-center justify-between border-b border-white/10 bg-[##0d0d0d] p-4">
+              <div className="flex items-center justify-between border-b border-white/10 bg-[#0d0d0d] p-4">
                 <TopBar
                   onStartOver={resetToDefaults}
                   onUndo={undo}
@@ -682,37 +683,40 @@ export default function MockupEditorPage() {
                 />
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                <MockupCanvas
-                  uploadedImages={uploadedImages}
-                  selectedDevice={selectedDevice}
-                  selectedTemplate={selectedTemplate}
-                  siteUrl={siteUrl}
-                  borderType={borderType}
-                  selectedPreset={selectedPreset}
-                  backgroundType={backgroundType}
-                  backgroundColor={backgroundColor}
-                  padding={60}
-                  shadowOpacity={shadowOpacity}
-                  borderRadius={borderRadius}
-                  rotation={0}
-                  scale={100}
-                  deviceStyle={deviceStyle}
-                  styleEdge={styleEdge}
-                  shadowType={shadowType}
-                  shadowMode={shadowMode}
-                  shadowOffsetX={shadowOffsetX}
-                  shadowOffsetY={shadowOffsetY}
-                  shadowBlur={shadowBlur}
-                  shadowSpread={shadowSpread}
-                  shadowColor={shadowColor}
-                  sceneType={sceneType}
-                  zoom={zoom}
-                  panX={panX}
-                  panY={panY}
-                  layoutMode={layoutMode}
-                  onImageUpload={handleImageUpload}
-                />
+              {/* ⬇️ Wrapper centrado + overflow-auto (móvil) */}
+              <div className="flex-1 overflow-auto">
+                <div className="h-full w-full flex items-center justify-center">
+                  <MockupCanvas
+                    uploadedImages={uploadedImages}
+                    selectedDevice={selectedDevice}
+                    selectedTemplate={selectedTemplate}
+                    siteUrl={siteUrl}
+                    borderType={borderType}
+                    selectedPreset={selectedPreset}
+                    backgroundType={backgroundType}
+                    backgroundColor={backgroundColor}
+                    padding={60}
+                    shadowOpacity={shadowOpacity}
+                    borderRadius={borderRadius}
+                    rotation={0}
+                    scale={100}
+                    deviceStyle={deviceStyle}
+                    styleEdge={styleEdge}
+                    shadowType={shadowType}
+                    shadowMode={shadowMode}
+                    shadowOffsetX={shadowOffsetX}
+                    shadowOffsetY={shadowOffsetY}
+                    shadowBlur={shadowBlur}
+                    shadowSpread={shadowSpread}
+                    shadowColor={shadowColor}
+                    sceneType={sceneType}
+                    zoom={zoom}
+                    panX={panX}
+                    panY={panY}
+                    layoutMode={layoutMode}
+                    onImageUpload={handleImageUpload}
+                  />
+                </div>
               </div>
 
               {(showLeftSidebar || showRightSidebar) && (
@@ -881,37 +885,40 @@ export default function MockupEditorPage() {
                 isMobile={isMobile}
               />
 
-              <div className="flex-1 overflow-hidden">
-                <MockupCanvas
-                  uploadedImages={uploadedImages}
-                  selectedDevice={selectedDevice}
-                  selectedTemplate={selectedTemplate}
-                  siteUrl={siteUrl}
-                  borderType={borderType}
-                  selectedPreset={selectedPreset}
-                  backgroundType={backgroundType}
-                  backgroundColor={backgroundColor}
-                  padding={60}
-                  shadowOpacity={shadowOpacity}
-                  borderRadius={borderRadius}
-                  rotation={0}
-                  scale={100}
-                  deviceStyle={deviceStyle}
-                  styleEdge={styleEdge}
-                  shadowType={shadowType}
-                  shadowMode={shadowMode}
-                  shadowOffsetX={shadowOffsetX}
-                  shadowOffsetY={shadowOffsetY}
-                  shadowBlur={shadowBlur}
-                  shadowSpread={shadowSpread}
-                  shadowColor={shadowColor}
-                  sceneType={sceneType}
-                  zoom={zoom}
-                  panX={panX}
-                  panY={panY}
-                  layoutMode={layoutMode}
-                  onImageUpload={handleImageUpload}
-                />
+              {/* ⬇️ Wrapper centrado + overflow-auto (desktop) */}
+              <div className="flex-1 overflow-auto">
+                <div className="h-full w-full flex items-center justify-center">
+                  <MockupCanvas
+                    uploadedImages={uploadedImages}
+                    selectedDevice={selectedDevice}
+                    selectedTemplate={selectedTemplate}
+                    siteUrl={siteUrl}
+                    borderType={borderType}
+                    selectedPreset={selectedPreset}
+                    backgroundType={backgroundType}
+                    backgroundColor={backgroundColor}
+                    padding={60}
+                    shadowOpacity={shadowOpacity}
+                    borderRadius={borderRadius}
+                    rotation={0}
+                    scale={100}
+                    deviceStyle={deviceStyle}
+                    styleEdge={styleEdge}
+                    shadowType={shadowType}
+                    shadowMode={shadowMode}
+                    shadowOffsetX={shadowOffsetX}
+                    shadowOffsetY={shadowOffsetY}
+                    shadowBlur={shadowBlur}
+                    shadowSpread={shadowSpread}
+                    shadowColor={shadowColor}
+                    sceneType={sceneType}
+                    zoom={zoom}
+                    panX={panX}
+                    panY={panY}
+                    layoutMode={layoutMode}
+                    onImageUpload={handleImageUpload}
+                  />
+                </div>
               </div>
             </div>
 

@@ -1,7 +1,8 @@
+// mockup-canvas.tsx
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, CSSProperties } from "react";
 import { SimpleDeviceFrame } from "@/components/device-frames/simple-device-frame";
 import { BrowserFrame } from "@/components/device-frames/browser-frame";
 import {
@@ -34,12 +35,8 @@ interface MockupCanvasProps {
   borderType: string;
   rotation: number;
   scale: number;
-
-  /** estilo visual del borde */
   deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
-  /** grosor del borde en px (1:1) */
   styleEdge: number;
-
   shadowType: string;
   shadowMode?: "presets" | "custom";
   shadowOffsetX?: number;
@@ -47,11 +44,10 @@ interface MockupCanvasProps {
   shadowBlur?: number;
   shadowSpread?: number;
   shadowColor?: string;
-
   sceneType: "none" | "shadow" | "shapes";
-  zoom: number; // %
-  panX: number; // px canvas (centro)
-  panY: number; // px canvas (centro)
+  zoom: number;
+  panX: number;
+  panY: number;
   layoutMode: "single" | "double" | "triple";
   siteUrl?: string;
   onImageUpload?: (file: File, index?: number) => void;
@@ -116,10 +112,8 @@ const dominantFromBackground = (
   if (type === "gradient" && gradientPresets[preset]) {
     const stops = parseHexesFromGradient(gradientPresets[preset]);
     if (stops.length === 1) return stops[0];
-    // media ponderada 0.6/0.4
     return mixHex(stops[0], stops[stops.length - 1], 0.4);
   }
-  // fondos “temáticos”: fallback al color primario
   return colorHex || "#888888";
 };
 
@@ -160,6 +154,13 @@ export function MockupCanvas(props: MockupCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageSize, setImageSize] = useState({ width: 1920, height: 1080 });
 
+  // ---- responsive scaling (centrado real) ----
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scaleFactor, setScaleFactor] = useState(1);
+
+  // margen lateral “de respiración”
+  const SAFE_MARGIN = 16;
+
   useEffect(() => setIsDragging(dragCounter > 0), [dragCounter]);
 
   const currentImage = uploadedImages[0];
@@ -173,6 +174,19 @@ export function MockupCanvas(props: MockupCanvasProps) {
       img.src = currentImage;
     }
   }, [currentImage]);
+
+  // Observa el ancho disponible del contenedor central
+  useEffect(() => {
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width ?? CANVAS_WIDTH;
+      const sRaw = (w - SAFE_MARGIN * 2) / CANVAS_WIDTH;
+      // ⬇️ sin tope inferior: permite seguir encogiendo, pero nunca 0.
+      const s = Math.max(0.01, Math.min(1, sRaw));
+      setScaleFactor(s);
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -206,13 +220,14 @@ export function MockupCanvas(props: MockupCanvasProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const getBackgroundStyle = () => {
+  const getBackgroundStyle = (): CSSProperties => {
     if (backgroundType === "gradient" && gradientPresets[selectedPreset]) {
       return { background: gradientPresets[selectedPreset] };
     }
     return { backgroundColor };
   };
 
+  // === (UNICA) serie de cálculos de dimensiones ===
   const dims = getDeviceDimensions(selectedDevice);
   const baseSize =
     (dims.type === "screenshot" || dims.type === "browser") && uploadedImages[0]
@@ -228,16 +243,10 @@ export function MockupCanvas(props: MockupCanvasProps) {
     return borderRadius;
   })();
 
-  // El estilo del “contenido” ya NO aplica color/vidrio; sólo wrapper limpio
-  const getDeviceContentClass = () => {
-    switch (dims.type) {
-      default:
-        return ""; // lo mantenemos neutro
-    }
-  };
+  const getDeviceContentClass = () => "";
 
   /* ---------- sombras del mockup ---------- */
-  const getShadowStyle = () => {
+  const getShadowStyle = (): CSSProperties => {
     if (shadowMode === "custom") {
       const opacity = Math.max(0, Math.min(1, shadowOpacity / 100));
       const color =
@@ -300,7 +309,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
     }
   };
 
-  /* ---------- anillo/borde: se pinta por fuera (-inset: edge) ---------- */
+  /* ---------- anillo/borde ---------- */
   const dominant = dominantFromBackground(
     backgroundType,
     backgroundColor,
@@ -312,7 +321,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
     const edge = Math.max(0, Math.round(styleEdge || 0));
     if (edge <= 0 || deviceStyle === "default") return null;
 
-    // Para estilos distintos, usar left/top/right/bottom negativos
     const ringCommon: React.CSSProperties = {
       position: "absolute",
       left: -edge,
@@ -323,7 +331,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
       pointerEvents: "none",
     };
 
-    // Anillo hueco usando mascara (no tapa el centro), excepto en outline
     const makeHollow = (
       extra?: React.CSSProperties,
       noMask = false
@@ -337,11 +344,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
             mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
             maskComposite: "exclude",
           };
-      return {
-        padding: edge,
-        ...maskProps,
-        ...extra,
-      };
+      return { padding: edge, ...maskProps, ...extra };
     };
 
     if (deviceStyle === "glass-light") {
@@ -384,7 +387,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
     }
 
     if (deviceStyle === "liquid") {
-      // Color dominante y acentos
       const base = dominant;
       const accentHi = mixHex(base, "#ffffff", 0.7);
       const accentLo = mixHex(base, "#000000", 0.6);
@@ -393,14 +395,12 @@ export function MockupCanvas(props: MockupCanvasProps) {
         <div
           style={{
             ...ringCommon,
-            // distorsión de fondo tipo iOS
             backdropFilter: "blur(18px) saturate(160%)",
             WebkitBackdropFilter: "blur(18px) saturate(160%)",
-            // halo suave exterior
-            boxShadow: `0 12px 40px ${toRgba(base, 0.25)}, 0 0 0 ${
-              Math.max(1, Math.round(edge * 0.15)) // leve expansión
-            }px ${toRgba("#ffffff", 0.06)}`,
-            // anillo hueco con brillo y caídas de color
+            boxShadow: `0 12px 40px ${toRgba(base, 0.25)}, 0 0 0 ${Math.max(
+              1,
+              Math.round(edge * 0.15)
+            )}px ${toRgba("#ffffff", 0.06)}`,
             ...makeHollow({
               background: `
                 radial-gradient(100% 140% at 20% 0%, ${toRgba(
@@ -416,7 +416,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
                 0.16
               )} 100%)
               `,
-              // leve línea interna
               boxShadow:
                 "inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.12)",
             }),
@@ -450,7 +449,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
           <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-purple-500/3 to-blue-500/5 rounded-lg" />
           <div className="flex flex-col text-center items-center relative z-10">
             <div className="relative">
-              {/* SVG */}
               <svg
                 width="160"
                 height="160"
@@ -523,7 +521,6 @@ export function MockupCanvas(props: MockupCanvasProps) {
                 }`}
               />
 
-              {/* botón + */}
               <div className="absolute bottom-6 right-6 z-20">
                 <div className="relative">
                   <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-white/20 flex items-center justify-center transition-all duration-200 hover:bg-white hover:scale-105">
@@ -658,10 +655,8 @@ export function MockupCanvas(props: MockupCanvasProps) {
           willChange: "transform",
         }}
       >
-        {/* anillo / borde fuera del contenido */}
+        {/* anillo */}
         {renderStyleRing()}
-
-        {/* contenido real */}
         <div className="relative">{renderInnerByDevice(idx)}</div>
       </div>
     );
@@ -764,50 +759,64 @@ export function MockupCanvas(props: MockupCanvasProps) {
     );
   };
 
+  // ----------- RETURN (centrado + escala sin tope inferior) -----------
   return (
-    <div
-      id="mockup-canvas"
-      className="flex items-center justify-center relative mx-auto rounded-2xl overflow-hidden"
-      style={{
-        ...getBackgroundStyle(),
-        width: `${CANVAS_WIDTH}px`,
-        height: `${CANVAS_HEIGHT}px`,
-      }}
-    >
-      {sceneType === "shapes" && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
-        </div>
-      )}
-
-      {/* PAN wrapper */}
+    <div ref={containerRef} className="w-full flex items-center justify-center">
       <div
+        className="relative"
         style={{
-          width: "100%",
-          height: "100%",
-          transform: `translate(${-panX}px, ${-panY}px)`,
-          transformOrigin: "center",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          willChange: "transform",
+          width: CANVAS_WIDTH * scaleFactor,
+          height: CANVAS_HEIGHT * scaleFactor,
         }}
       >
-        {/* ZOOM wrapper */}
         <div
+          id="mockup-canvas"
+          className="rounded-2xl overflow-hidden"
           style={{
-            width: "100%",
-            height: "100%",
-            transform: `scale(${zAbs})`,
-            transformOrigin: "center",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            ...getBackgroundStyle(),
+            width: `${CANVAS_WIDTH}px`,
+            height: `${CANVAS_HEIGHT}px`,
+            transform: `scale(${scaleFactor})`,
+            transformOrigin: "top left",
             willChange: "transform",
           }}
         >
-          {renderMockups()}
+          {sceneType === "shapes" && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+              <div className="absolute bottom-20 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
+            </div>
+          )}
+
+          {/* PAN wrapper */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              transform: `translate(${-panX}px, ${-panY}px)`,
+              transformOrigin: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              willChange: "transform",
+            }}
+          >
+            {/* ZOOM wrapper */}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                transform: `scale(${zAbs})`,
+                transformOrigin: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                willChange: "transform",
+              }}
+            >
+              {renderMockups()}
+            </div>
+          </div>
         </div>
       </div>
     </div>
