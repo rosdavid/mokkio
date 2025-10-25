@@ -7,7 +7,7 @@ import { FAQSection } from "./FAQSection";
 import { MockupsLayoutsSection } from "./MockupsLayoutsSection";
 import { StylesEffectsSection } from "./StylesEffectsSection";
 import { ExportSection } from "./ExportSection";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import Image from "next/image";
 
@@ -16,6 +16,15 @@ interface LandingPopupProps {
 }
 
 export function LandingPopup({ onClose }: LandingPopupProps) {
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Esperar a que termine la animación antes de cerrar
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
   // Inyectar el CSS global para la animación del gradiente
   useEffect(() => {
     const style = document.createElement("style");
@@ -91,7 +100,11 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300">
+    <div
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300 ${
+        isClosing ? "animate-out fade-out duration-300" : ""
+      }`}
+    >
       <div className="bg-[#0a0a0a] w-full max-w-[1600px] h-full max-h-[90vh] rounded-lg overflow-hidden relative mx-4 shadow-2xl">
         {/* Header flotante, glassmorphism, centrado y redondeado */}
         <div
@@ -162,7 +175,7 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
           <span className="absolute left-0 right-0 bottom-0 w-full h-32 pointer-events-none bg-linear-to-t from-black/70 to-transparent blur-md rounded-b-xl"></span>
           <div className="flex items-center justify-center gap-4">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="relative overflow-hidden text-white px-4 py-3 rounded-full font-semibold text-lg shadow-lg transition-colors animate-in fade-in duration-700 group transform hover:scale-105 will-change-transform cursor-pointer"
             >
               <span className="absolute inset-0 z-0 bg-linear-to-r from-purple-500 via-pink-500 to-blue-500 animate-gradientMove transition-all duration-300 rounded-full group-hover:opacity-100 group-hover:blur-sm"></span>
