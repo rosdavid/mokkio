@@ -50,6 +50,19 @@ export function HeroSection() {
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.18) transparent;
           }
+          /* Fix for mobile viewport height issues */
+          html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+          }
+          /* Ensure no scroll on mobile */
+          @supports (height: 100dvh) {
+            html, body {
+              height: 100dvh;
+            }
+          }
         `;
     document.head.appendChild(style);
     return () => {
@@ -57,7 +70,7 @@ export function HeroSection() {
     };
   }, []);
   return (
-    <section className="relative px-4 text-center overflow-hidden min-h-screen flex items-center">
+    <section className="relative px-4 text-center overflow-hidden min-h-dvh flex items-center">
       {/* Video de fondo y overlay degradado */}
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <video
@@ -66,7 +79,7 @@ export function HeroSection() {
           muted
           playsInline
           className="absolute top-0 left-0 w-full h-full object-cover"
-          style={{ pointerEvents: "none" }}
+          style={{ pointerEvents: "none", height: "100dvh" }}
         >
           <source src="/demo-video.mp4" type="video/mp4" />
         </video>

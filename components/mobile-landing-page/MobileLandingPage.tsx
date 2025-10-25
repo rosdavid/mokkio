@@ -10,7 +10,7 @@ import { FAQSection } from "./FAQSection";*/
 
 export function MobileLandingPage() {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-dvh bg-black">
       <HeroSection />
       {/* 
       <FeaturesSection />
