@@ -127,6 +127,117 @@ const gradientPresets = [
     name: "Teal Lime",
     gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
   },
+  {
+    id: "cosmic-flow",
+    name: "Cosmic Flow",
+    gradient:
+      "linear-gradient(45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)",
+  },
+  {
+    id: "sunset-dream",
+    name: "Sunset Dream",
+    gradient:
+      "linear-gradient(120deg, #ff6b35 0%, #f7931e 20%, #ffb627 40%, #ff9505 60%, #f7931e 80%, #ff6b35 100%)",
+  },
+  {
+    id: "ocean-breeze",
+    name: "Ocean Breeze",
+    gradient:
+      "linear-gradient(60deg, #1e3a8a 0%, #3b82f6 25%, #06b6d4 50%, #10b981 75%, #34d399 100%)",
+  },
+  {
+    id: "neon-glow",
+    name: "Neon Glow",
+    gradient:
+      "linear-gradient(90deg, #ff0080 0%, #7928ca 20%, #4c1d95 40%, #06b6d4 60%, #10b981 80%, #f59e0b 100%)",
+  },
+  {
+    id: "galaxy-wave",
+    name: "Galaxy Wave",
+    gradient:
+      "linear-gradient(30deg, #7c3aed 0%, #a855f7 15%, #c084fc 30%, #e879f9 45%, #ec4899 60%, #f97316 75%, #f59e0b 90%, #fbbf24 100%)",
+  },
+  {
+    id: "arctic-light",
+    name: "Arctic Light",
+    gradient:
+      "linear-gradient(150deg, #06b6d4 0%, #3b82f6 20%, #8b5cf6 40%, #ec4899 60%, #f97316 80%, #f59e0b 100%)",
+  },
+];
+
+const radialGradientPresets = [
+  {
+    id: "cosmic-dream",
+    name: "Cosmic Dream",
+    gradient:
+      "radial-gradient(circle at 20% 50%, #ff0080 0%, #7928ca 25%, #4c1d95 50%, #1e1b4b 75%, #0f0f23 100%)",
+  },
+  {
+    id: "sunset-blaze",
+    name: "Sunset Blaze",
+    gradient:
+      "radial-gradient(circle at 40% 60%, #ff6b35 0%, #f7931e 20%, #ffb627 40%, #ff9505 60%, #ff6b35 80%, #d97706 100%)",
+  },
+  {
+    id: "ocean-mystery",
+    name: "Ocean Mystery",
+    gradient:
+      "radial-gradient(circle at 70% 30%, #1e3a8a 0%, #3b82f6 20%, #06b6d4 40%, #10b981 60%, #059669 80%, #047857 100%)",
+  },
+  {
+    id: "neon-city",
+    name: "Neon City",
+    gradient:
+      "radial-gradient(circle at 50% 50%, #ff0080 0%, #7928ca 25%, #4c1d95 50%, #06b6d4 75%, #10b981 100%)",
+  },
+  {
+    id: "galaxy-spiral",
+    name: "Galaxy Spiral",
+    gradient:
+      "radial-gradient(circle at 30% 70%, #7c3aed 0%, #a855f7 15%, #c084fc 30%, #e879f9 45%, #ec4899 60%, #f97316 75%, #f59e0b 90%, #fbbf24 100%)",
+  },
+  {
+    id: "arctic-aurora",
+    name: "Arctic Aurora",
+    gradient:
+      "radial-gradient(circle at 60% 40%, #06b6d4 0%, #3b82f6 20%, #8b5cf6 40%, #ec4899 60%, #f97316 80%, #f59e0b 100%)",
+  },
+  {
+    id: "lava-volcano",
+    name: "Lava Volcano",
+    gradient:
+      "radial-gradient(circle at 50% 80%, #dc2626 0%, #ea580c 15%, #f59e0b 30%, #fbbf24 45%, #f97316 60%, #ef4444 75%, #dc2626 90%, #b91c1c 100%)",
+  },
+  {
+    id: "midnight-velvet",
+    name: "Midnight Velvet",
+    gradient:
+      "radial-gradient(circle at 80% 20%, #1e1b4b 0%, #312e81 20%, #7c3aed 40%, #a855f7 60%, #ec4899 80%, #f97316 100%)",
+  },
+  {
+    id: "emerald-paradise",
+    name: "Emerald Paradise",
+    gradient:
+      "radial-gradient(circle at 25% 75%, #065f46 0%, #047857 20%, #059669 40%, #10b981 60%, #34d399 80%, #6ee7b7 100%)",
+  },
+  {
+    id: "golden-sunset",
+    name: "Golden Sunset",
+    gradient:
+      "radial-gradient(circle at 45% 55%, #92400e 0%, #d97706 20%, #f59e0b 40%, #fbbf24 60%, #fcd34d 80%, #fef3c7 100%)",
+  },
+  {
+    id: "cyber-punk",
+    name: "Cyber Punk",
+    gradient:
+      "radial-gradient(circle at 50% 50%, #ff0080 0%, #7928ca 25%, #06b6d4 50%, #10b981 75%, #f59e0b 100%)",
+  },
+  {
+    id: "royal-purple",
+    name: "Royal Purple",
+    gradient:
+      "radial-gradient(circle at 35% 65%, #581c87 0%, #7c3aed 20%, #a855f7 40%, #c084fc 60%, #e879f9 80%, #f97316 100%)",
+  },
 ];
 
 const solidColors = [
@@ -148,10 +259,15 @@ export function LeftSidebar(props: LeftSidebarProps) {
     Record<string, boolean>
   >({
     media: true,
+    siteUrl: true,
     style: true,
     border: true,
     shadow: true,
+    background: true,
   });
+  const [gradientType, setGradientType] = useState<"linear" | "radial">(
+    "linear"
+  );
 
   const toggleSection = (s: string) =>
     setExpandedSections((prev) => ({ ...prev, [s]: !prev[s] }));
@@ -182,11 +298,28 @@ export function LeftSidebar(props: LeftSidebarProps) {
 
   return (
     <div
-      className="w-full md:w-[220px] border-r border-white/10 bg-[#0a0a0a] overflow-y-auto"
+      className="w-full md:w-[280px] border-r border-white/10 bg-[#0a0a0a] overflow-y-auto"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {/* Tabs */}
-      <div className="border-b border-white/10 p-4">
+      <div className="border-b border-white/10 p-4 flex flex-col items-center space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center">
+            <svg
+              version="1.0"
+              xmlns="http://www.w3.org/2000/svg"
+              width="266.667"
+              height="266.667"
+              viewBox="0 0 200 200"
+            >
+              <path
+                d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
+                fill="#fff"
+              />
+            </svg>
+          </div>
+          <span className="text-lg font-bold text-white">Mokkio</span>
+        </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="relative grid w-full grid-cols-2 bg-white/5 overflow-hidden px-1 py-1">
             {/* Indicador de pestaña activa */}
@@ -700,7 +833,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       <Label className="text-xs text-white/60 mb-2 block">
                         Color
                       </Label>
-                      <div className="grid grid-cols-6 gap-1">
+                      <div className="flex flex-row flex-wrap gap-4">
                         {[
                           "#000000",
                           "#ffffff",
@@ -784,9 +917,39 @@ export function LeftSidebar(props: LeftSidebarProps) {
 
               {/* Gradient */}
               <div>
-                <p className="text-xs text-white/40 mb-2">Gradient</p>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setGradientType("linear")}
+                    className={`flex-1 h-8 rounded-lg border text-xs text-white cursor-pointer ${
+                      gradientType === "linear"
+                        ? "border-purple-500 bg-purple-500/20"
+                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    Linear
+                  </button>
+                  <button
+                    onClick={() => setGradientType("radial")}
+                    className={`flex-1 h-8 rounded-lg border text-xs text-white cursor-pointer ${
+                      gradientType === "radial"
+                        ? "border-purple-500 bg-purple-500/20"
+                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    Radial
+                  </button>
+                </div>
+
+                <p className="text-xs text-white/40 mb-2">
+                  {gradientType === "linear"
+                    ? "Linear Gradient"
+                    : "Radial Gradient"}
+                </p>
                 <div className="grid grid-cols-4 gap-1.5">
-                  {gradientPresets.map((p) => (
+                  {(gradientType === "linear"
+                    ? gradientPresets
+                    : radialGradientPresets
+                  ).map((p) => (
                     <button
                       key={p.id}
                       onClick={() => {

@@ -147,9 +147,9 @@ function PresetThumb(props: {
     [w, h]
   );
   const cloneW = CANVAS_WIDTH * K;
-  const cloneH = CANVAS_WIDTH * 0.5625 * K;
+  const cloneH = CANVAS_WIDTH * 0.7 * K;
   const cloneLeft = (w - cloneW) / 2;
-  const cloneTop = (h - cloneH) / 2;
+  const cloneTop = (h - cloneH) / 2 + 19;
 
   return (
     <button
@@ -288,18 +288,19 @@ export function RightSidebar(props: RightSidebarProps) {
   const cloneLeft = (pw - cloneW) / 2;
   const cloneTop = (ph - cloneH) / 2;
 
-  const viewportW = cloneW * (100 / zoom);
-  const viewportH = cloneH * (100 / zoom);
+  const viewportW = cloneW * (99 / zoom);
+  const viewportH = cloneH * (99 / zoom);
   const viewportL =
     cloneLeft +
     cloneW / 2 -
     viewportW / 2 +
-    panX * (cloneW / CANVAS_WIDTH) * (100 / zoom);
+    panX * (cloneW / CANVAS_WIDTH) * (99 / zoom);
   const viewportT =
     cloneTop +
     cloneH / 2 -
     viewportH / 2 +
-    panY * (cloneH / (CANVAS_WIDTH * 0.5625)) * (100 / zoom);
+    panY * (cloneH / (CANVAS_WIDTH * 0.5625)) * (100 / zoom) -
+    1.7;
 
   // límites
   const clampPanX = useCallback(
@@ -580,7 +581,7 @@ export function RightSidebar(props: RightSidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white"
+            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white cursor-pointer"
             onClick={() => setZoom(Math.max(75, zoom - 1))}
           >
             <svg
@@ -608,7 +609,7 @@ export function RightSidebar(props: RightSidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white"
+            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white cursor-pointer"
             onClick={() => setZoom(Math.min(800, zoom + 1))}
           >
             <svg

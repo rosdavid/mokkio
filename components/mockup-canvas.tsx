@@ -54,12 +54,50 @@ interface MockupCanvasProps {
 }
 
 const gradientPresets: Record<string, string> = {
+  // Linear gradients - Ultra Modern Wallpaper Collection
   "purple-pink": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
   "blue-purple": "linear-gradient(135deg, #667eea 0%, #f093fb 100%)",
   "pink-orange": "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
   "green-blue": "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
   "orange-red": "linear-gradient(135deg, #ff6a00 0%, #ee0979 100%)",
   "teal-lime": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+  "cosmic-flow":
+    "linear-gradient(45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)",
+  "sunset-dream":
+    "linear-gradient(120deg, #ff6b35 0%, #f7931e 20%, #ffb627 40%, #ff9505 60%, #f7931e 80%, #ff6b35 100%)",
+  "ocean-breeze":
+    "linear-gradient(60deg, #1e3a8a 0%, #3b82f6 25%, #06b6d4 50%, #10b981 75%, #34d399 100%)",
+  "neon-glow":
+    "linear-gradient(90deg, #ff0080 0%, #7928ca 20%, #4c1d95 40%, #06b6d4 60%, #10b981 80%, #f59e0b 100%)",
+  "galaxy-wave":
+    "linear-gradient(30deg, #7c3aed 0%, #a855f7 15%, #c084fc 30%, #e879f9 45%, #ec4899 60%, #f97316 75%, #f59e0b 90%, #fbbf24 100%)",
+  "arctic-light":
+    "linear-gradient(150deg, #06b6d4 0%, #3b82f6 20%, #8b5cf6 40%, #ec4899 60%, #f97316 80%, #f59e0b 100%)",
+  // Radial gradients - Ultra Modern Wallpaper Collection
+  "cosmic-dream":
+    "radial-gradient(circle at 20% 50%, #ff0080 0%, #7928ca 25%, #4c1d95 50%, #1e1b4b 75%, #0f0f23 100%)",
+  "sunset-blaze":
+    "radial-gradient(circle at 40% 60%, #ff6b35 0%, #f7931e 20%, #ffb627 40%, #ff9505 60%, #ff6b35 80%, #d97706 100%)",
+  "ocean-mystery":
+    "radial-gradient(circle at 70% 30%, #1e3a8a 0%, #3b82f6 20%, #06b6d4 40%, #10b981 60%, #059669 80%, #047857 100%)",
+  "neon-city":
+    "radial-gradient(circle at 50% 50%, #ff0080 0%, #7928ca 25%, #4c1d95 50%, #06b6d4 75%, #10b981 100%)",
+  "galaxy-spiral":
+    "radial-gradient(circle at 30% 70%, #7c3aed 0%, #a855f7 15%, #c084fc 30%, #e879f9 45%, #ec4899 60%, #f97316 75%, #f59e0b 90%, #fbbf24 100%)",
+  "arctic-aurora":
+    "radial-gradient(circle at 60% 40%, #06b6d4 0%, #3b82f6 20%, #8b5cf6 40%, #ec4899 60%, #f97316 80%, #f59e0b 100%)",
+  "lava-volcano":
+    "radial-gradient(circle at 50% 80%, #dc2626 0%, #ea580c 15%, #f59e0b 30%, #fbbf24 45%, #f97316 60%, #ef4444 75%, #dc2626 90%, #b91c1c 100%)",
+  "midnight-velvet":
+    "radial-gradient(circle at 80% 20%, #1e1b4b 0%, #312e81 20%, #7c3aed 40%, #a855f7 60%, #ec4899 80%, #f97316 100%)",
+  "emerald-paradise":
+    "radial-gradient(circle at 25% 75%, #065f46 0%, #047857 20%, #059669 40%, #10b981 60%, #34d399 80%, #6ee7b7 100%)",
+  "golden-sunset":
+    "radial-gradient(circle at 45% 55%, #92400e 0%, #d97706 20%, #f59e0b 40%, #fbbf24 60%, #fcd34d 80%, #fef3c7 100%)",
+  "cyber-punk":
+    "radial-gradient(circle at 50% 50%, #ff0080 0%, #7928ca 25%, #06b6d4 50%, #10b981 75%, #f59e0b 100%)",
+  "royal-purple":
+    "radial-gradient(circle at 35% 65%, #581c87 0%, #7c3aed 20%, #a855f7 40%, #c084fc 60%, #e879f9 80%, #f97316 100%)",
 };
 
 /* ---------- color helpers ---------- */
