@@ -10,6 +10,7 @@ import { ExportSection } from "./ExportSection";
 import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import Image from "next/image";
+import { Footer } from "./Footer";
 
 interface LandingPopupProps {
   onClose: () => void;
@@ -169,6 +170,7 @@ export function LandingPopup({ onClose }: LandingPopupProps) {
           <div id="faq-section">
             <FAQSection />
           </div>
+          <Footer />
         </div>
         {/* Botón sticky siempre visible en el bottom center del popup */}
         <div className="absolute bottom-0 left-0 right-0 py-4 text-center z-10">

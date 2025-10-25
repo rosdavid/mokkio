@@ -50,18 +50,6 @@ export function HeroSection() {
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.18) transparent;
           }
-          /* Fix for mobile viewport height issues */
-          html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-          }
-          /* Ensure no scroll on mobile */
-          @supports (height: 100dvh) {
-            html, body {
-              height: 100dvh;
-            }
           }
         `;
     document.head.appendChild(style);
@@ -70,7 +58,7 @@ export function HeroSection() {
     };
   }, []);
   return (
-    <section className="relative px-4 text-center overflow-hidden min-h-dvh flex items-center">
+    <section className="relative text-center overflow-hidden min-h-dvh flex items-center">
       {/* Video de fondo y overlay degradado */}
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <video
@@ -87,7 +75,7 @@ export function HeroSection() {
         <div className="absolute inset-0 w-full h-full bg-linear-to-b from-blue-900/70 via-purple-900/60 to-transparent backdrop-blur-sm"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto z-10 w-full px-4 sm:px-6 lg:px-8">
+      <div className="relative w-full z-10 px-4 sm:px-6 lg:px-8 sm:max-w-7xl sm:mx-auto">
         {/* Logo y título centrado */}
         <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 animate-in fade-in duration-1000 delay-50">
           <div className="shrink-0 flex items-center gap-2">
