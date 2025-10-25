@@ -56,7 +56,7 @@ export function HeroSection() {
     };
   }, []);
   return (
-    <section className="relative px-4 text-center overflow-hidden min-h-screen flex items-center">
+    <section className="relative px-4 text-center overflow-hidden max-h-screen flex items-center">
       {/* Video de fondo y overlay degradado */}
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <video
