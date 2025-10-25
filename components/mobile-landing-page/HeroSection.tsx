@@ -1,8 +1,60 @@
 "use client";
 
-import { Smartphone, Tablet, AlertTriangle } from "lucide-react";
+import {
+  Smartphone,
+  Tablet,
+  AlertTriangle,
+  Heart,
+  Monitor,
+} from "lucide-react";
+import { useEffect } from "react";
 
 export function HeroSection() {
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+          @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animate-gradientMove {
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease-in-out infinite;
+          }
+          @keyframes heartbeatColor {
+            0%, 100% { color: #f43f5e; }
+            40% { color: #b91c1c; }
+            60% { color: #b91c1c; }
+            80% { color: #f43f5e; }
+          }
+          .animate-heartbeat {
+            animation: heartbeatColor 1.6s infinite;
+          }
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 10px;
+            background: transparent;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.18);
+            border-radius: 8px;
+            border: 2px solid rgba(0,0,0,0.12);
+            box-shadow: 0 0 8px 2px rgba(0,0,0,0.12);
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          /* Firefox */
+          .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.18) transparent;
+          }
+        `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   return (
     <section className="relative px-4 py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 text-center overflow-hidden min-h-screen flex items-center">
       {/* Video de fondo y overlay degradado */}
@@ -51,33 +103,55 @@ export function HeroSection() {
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-extrabold text-white mb-4 sm:mb-6 md:mb-8 leading-tight animate-in fade-in duration-1000 delay-300">
-          Mokkio is
+          Create Stunning
           <span className="block bg-linear-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent animate-in fade-in duration-1000 delay-400">
-            Coming Soon
+            Mockups
           </span>
           <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-light text-white/80 animate-in fade-in duration-1000 delay-500">
-            to Mobile & Tablet
+            in Seconds
           </span>
         </h1>
 
         <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-white/80 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto leading-relaxed animate-in fade-in duration-1000 delay-600">
-          We&apos;re working hard to bring Mokkio to your mobile and tablet
+          I&apos;m working hard to bring Mokkio to your mobile and tablet
           devices. For now, please access from a desktop computer for the best
           experience.
         </p>
 
         <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8 md:mb-10 lg:mb-12 animate-in fade-in duration-1000 delay-700">
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-800 flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 mr-0.5"></span>
             <Smartphone className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Mobile Support </span>Soon
           </div>
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-900 flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2 h-2 bg-orange-500 rounded-full shrink-0 mr-0.5"></span>
             <Tablet className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Tablet Support </span>Soon
           </div>
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-1000 flex items-center gap-1.5 sm:gap-2">
-            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="w-2 h-2 bg-green-500 rounded-full shrink-0 mr-0.5"></span>
+            <Monitor className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Desktop Only </span>for Now
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 animate-in fade-in duration-1000 delay-1100">
+          <div className="text-sm flex flex-row items-center justify-center gap-4">
+            <span className="text-white flex items-center gap-1">
+              Made with
+              <Heart className="inline w-4 h-4 animate-heartbeat text-pink-500" />
+              by David Ros
+            </span>
+            <a
+              className="text-blue-500 hover:underline"
+              href="https://davidros.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visit my website
+            </a>
           </div>
         </div>
       </div>
