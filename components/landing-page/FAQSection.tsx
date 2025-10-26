@@ -68,7 +68,7 @@ export function FAQSection() {
             >
               <button
                 onClick={() => toggleFAQ(index)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-white/10 transition-colors group"
+                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-white/10 transition-colors group cursor-pointer"
               >
                 <span className="text-lg font-semibold text-white group-hover:text-purple-200 transition-colors">
                   {faq.question}
