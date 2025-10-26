@@ -20,7 +20,7 @@ export function Footer({
 
   if (variant === "minimal") {
     return (
-      <footer className="bg-black border-t border-white/10 py-8 w-full">
+      <footer className="bg-[#0a0a0a] border-t border-white/10 py-8 w-full">
         <div className="w-full px-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             {/* Footer Links */}
@@ -53,7 +53,7 @@ export function Footer({
   }
 
   return (
-    <footer className="bg-black border-t border-white/10 pt-12 w-full">
+    <footer className="bg-[#0a0a0a] border-t border-white/10 pt-12 w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8 sm:max-w-7xl sm:mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -152,7 +152,7 @@ export function Footer({
         </div>
 
         {/* Bottom Section */}
-        <div className="border-t border-white/10 mt-8 pt-8"></div>
+        <div className="border-t border-white/10 mt-8 py-6"></div>
       </div>
     </footer>
   );
