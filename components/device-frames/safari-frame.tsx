@@ -10,6 +10,7 @@ interface SafariFrameProps {
   referenceWidth?: number;
   headerScale?: number;
   fitToContainer?: boolean;
+  theme?: "light" | "dark";
 }
 
 export function SafariFrame({
@@ -21,6 +22,7 @@ export function SafariFrame({
   referenceWidth,
   headerScale,
   fitToContainer,
+  theme = "light",
 }: SafariFrameProps) {
   // const { isExporting } = useExport();
 
@@ -42,16 +44,32 @@ export function SafariFrame({
   const omniPadX = Math.max(10, Math.round(14 * scale));
   const omniFont = isPreview ? 8 : Math.max(11, Math.round(14 * scale));
 
-  // ---------- Shared styles ----------
-  const iconTone = "#6B7280";
-  const iconMuted = "#9CA3AF";
+  // ---------- Shared styles based on theme ----------
+  const isDark = theme === "dark";
+  const iconTone = isDark ? "#ffffff" : "#6B7280";
+  const iconMuted = isDark ? "#9CA3AF" : "#9CA3AF";
+  const backgroundColor = isDark ? "#1e1e1e" : "#fff";
+  const headerBackground = isDark
+    ? "linear-gradient(to bottom, rgba(45,45,48,0.92), rgba(32,33,36,0.82))"
+    : "linear-gradient(to bottom, rgba(250,250,252,0.92), rgba(244,245,248,0.82))";
+  const headerBorder = isDark
+    ? "1px solid rgba(255,255,255,0.1)"
+    : "1px solid rgba(0,0,0,0.08)";
+  const omniboxBackground = isDark ? "#2d2d30" : "#ffffff";
+  const omniboxBorder = isDark
+    ? "1px solid rgba(255,255,255,0.08)"
+    : "1px solid rgba(0,0,0,0.08)";
+  const omniboxShadow = isDark
+    ? "inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.2)"
+    : "inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.04)";
+  const textColor = isDark ? "#ffffff" : "#3F3F46";
 
   return (
     <div
       style={{
         position: "relative",
         overflow: "hidden",
-        background: "#fff",
+        background: backgroundColor,
         boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
         width: fitToContainer ? "100%" : `min(${width}px, 90vw)`,
         height: fitToContainer
@@ -71,9 +89,8 @@ export function SafariFrame({
           width: "100%",
           display: "flex",
           alignItems: "center",
-          background:
-            "linear-gradient(to bottom, rgba(250,250,252,0.92), rgba(244,245,248,0.82))",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
+          background: headerBackground,
+          borderBottom: headerBorder,
           backdropFilter: "blur(14px) saturate(180%)",
           WebkitBackdropFilter: "blur(14px) saturate(180%)",
         }}
@@ -184,12 +201,11 @@ export function SafariFrame({
                 height: omniHeight,
                 minHeight: 0,
                 width: "min(72%, 760px)",
-                background: "#ffffff",
+                background: omniboxBackground,
                 borderRadius: 10,
                 padding: `0 ${omniPadX}px`,
-                border: "1px solid rgba(0,0,0,0.08)",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.04)",
+                border: omniboxBorder,
+                boxShadow: omniboxShadow,
               }}
             >
               {/* left magnifier */}
@@ -213,7 +229,7 @@ export function SafariFrame({
               <span
                 style={{
                   fontSize: omniFont,
-                  color: "#3F3F46",
+                  color: textColor,
                   overflow: "hidden",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",

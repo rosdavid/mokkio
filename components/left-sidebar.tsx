@@ -119,6 +119,10 @@ interface LeftSidebarProps {
   setBackgroundNoise: (value: number) => void;
   backgroundBlur: number;
   setBackgroundBlur: (value: number) => void;
+
+  /** NEW: browser theme mode */
+  browserMode: "light" | "dark";
+  setBrowserMode: (mode: "light" | "dark") => void;
 }
 
 const gradientPresets = [
@@ -410,6 +414,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
     shadow: true,
     background: true,
     effects: true,
+    browserStyle: true,
   });
   const [backgroundExpandedSections, setBackgroundExpandedSections] = useState<
     Record<string, boolean>
@@ -904,6 +909,53 @@ export function LeftSidebar(props: LeftSidebarProps) {
                   className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white"
                   placeholder="yourwebsite.com"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* STYLE */}
+          {["safari", "browser", "chrome"].includes(props.selectedDevice) && (
+            <div className="bg-white/10 p-2.5 rounded-lg">
+              <button
+                onClick={() => toggleSection("browserStyle")}
+                className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider"
+              >
+                STYLE
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform duration-200 ${
+                    expandedSections.browserStyle ? "" : "-rotate-90"
+                  }`}
+                />
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ${
+                  expandedSections.browserStyle
+                    ? "max-h-64 opacity-100 mt-2"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => props.setBrowserMode("light")}
+                    className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                      props.browserMode === "light"
+                        ? "border-purple-500 bg-purple-500/20"
+                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    Light Mode
+                  </button>
+                  <button
+                    onClick={() => props.setBrowserMode("dark")}
+                    className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                      props.browserMode === "dark"
+                        ? "border-purple-500 bg-purple-500/20"
+                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    Dark Mode
+                  </button>
+                </div>
               </div>
             </div>
           )}

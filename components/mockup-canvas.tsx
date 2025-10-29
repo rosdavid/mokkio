@@ -62,6 +62,7 @@ interface MockupCanvasProps {
   /** NEW: dynamic canvas size */
   canvasWidth?: number;
   canvasHeight?: number;
+  browserMode: "light" | "dark";
 }
 
 const gradientPresets: Record<string, string> = {
@@ -204,6 +205,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
     /** NEW: dynamic canvas size props */
     canvasWidth,
     canvasHeight,
+    browserMode,
   } = props;
 
   /** NEW: fallback to constants if not provided */
@@ -743,6 +745,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
           borderRadius={effectiveBorderRadius}
           siteUrl={siteUrl}
           referenceWidth={renderSize.width}
+          theme={browserMode}
         >
           {renderContent(idx, dims.type)}
         </SafariFrame>
@@ -757,6 +760,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
           borderRadius={effectiveBorderRadius}
           siteUrl={siteUrl}
           referenceWidth={renderSize.width}
+          theme={browserMode}
         >
           {renderContent(idx, dims.type)}
         </ChromeFrame>
@@ -771,6 +775,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
           borderRadius={effectiveBorderRadius}
           siteUrl={siteUrl}
           referenceWidth={renderSize.width}
+          theme={browserMode}
         >
           {renderContent(idx, dims.type)}
         </SafariFrame>

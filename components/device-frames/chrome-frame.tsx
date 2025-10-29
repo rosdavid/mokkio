@@ -15,6 +15,7 @@ interface ChromeFrameProps {
   referenceWidth?: number;
   headerScale?: number;
   fitToContainer?: boolean;
+  theme?: "light" | "dark";
 }
 
 export function ChromeFrame({
@@ -26,6 +27,7 @@ export function ChromeFrame({
   referenceWidth,
   headerScale,
   fitToContainer,
+  theme = "light",
 }: ChromeFrameProps) {
   // const { isExporting } = useExport();
 
@@ -53,20 +55,24 @@ export function ChromeFrame({
   const fontSm = isPreview ? 8 : Math.max(11, Math.round(13 * scale));
   const fontMd = isPreview ? 9 : Math.max(12, Math.round(14 * scale));
 
-  // --- Colors ---
-  const chromeBGTop = "#eceff3"; // tab strip background
-  const hairline = "rgba(0,0,0,0.08)";
-  const tabActiveBG = "#ffffff";
-  const tabInactiveFG = "#5f6368";
-  const iconTone = "#5f6368";
-  const iconMuted = "#a1a7b0";
+  // --- Colors based on theme ---
+  const isDark = theme === "dark";
+  const chromeBGTop = isDark ? "#2d2d30" : "#eceff3"; // tab strip background
+  const hairline = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+  const tabActiveBG = isDark ? "#3c3c3f" : "#ffffff";
+  const tabInactiveFG = isDark ? "#a1a7b0" : "#5f6368";
+  const iconTone = isDark ? "#ffffff" : "#5f6368";
+  const iconMuted = isDark ? "#6b7280" : "#a1a7b0";
+  const backgroundColor = isDark ? "#1e1e1e" : "#fff";
+  const textColor = isDark ? "#ffffff" : "#202124";
+  const urlTextColor = isDark ? "#ffffff" : "#202124";
 
   return (
     <div
       style={{
         position: "relative",
         overflow: "hidden",
-        background: "#fff",
+        background: backgroundColor,
         boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
         width: fitToContainer ? "100%" : `min(${width}px, 90vw)`,
         height: fitToContainer ? "100%" : `min(${height + headerH}px, 80vh)`,
@@ -151,13 +157,15 @@ export function ChromeFrame({
                 alignItems: "center",
                 gap: Math.max(6, Math.round(8 * scale)),
                 background: tabActiveBG,
-                color: "#202124",
+                color: textColor,
                 borderBottom: "none",
                 borderRadius: `${tabRadius}px ${tabRadius}px 0 0`,
                 position: "relative",
-                top: 1, // subtle alignment like Chrome
+                top: 2, // subtle alignment like Chrome
                 zIndex: 3,
-                boxShadow: "0 -1px 0 #fff",
+                boxShadow: isDark
+                  ? "0 -1px 0 rgba(255,255,255,0.1)"
+                  : "0 -1px 0 rgba(0,0,0,0.08)",
               }}
             >
               <span
@@ -318,11 +326,15 @@ export function ChromeFrame({
                 gap: Math.max(6, Math.round(8 * scale)),
                 height: omniH,
                 width: "100%",
-                background: "#fff",
+                background: isDark ? "#2d2d30" : "#ffffff",
                 borderRadius: 50,
-                border: `1px solid ${hairline}`,
+                border: `1px solid ${
+                  isDark ? "rgba(255,255,255,0.1)" : hairline
+                }`,
                 padding: `0 ${omniPadX}px`,
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                boxShadow: isDark
+                  ? "inset 0 1px 0 rgba(255,255,255,0.1)"
+                  : "inset 0 1px 0 rgba(255,255,255,0.7)",
                 minWidth: 0,
               }}
             >
@@ -346,7 +358,7 @@ export function ChromeFrame({
               <span
                 style={{
                   fontSize: fontMd,
-                  color: "#202124",
+                  color: urlTextColor,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",

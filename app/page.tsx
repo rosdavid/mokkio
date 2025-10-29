@@ -62,6 +62,7 @@ interface AppState {
   canvasWidth: number;
   canvasHeight: number;
   selectedResolution: string;
+  browserMode: "light" | "dark";
 }
 
 export default function MockupEditorPage() {
@@ -165,6 +166,7 @@ export default function MockupEditorPage() {
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const [selectedResolution, setSelectedResolution] = useState("hd-720p");
+  const [browserMode, setBrowserMode] = useState<"light" | "dark">("light");
 
   /** Map preset id -> width/height */
   const RESOLUTIONS = useMemo(
@@ -250,6 +252,7 @@ export default function MockupEditorPage() {
         canvasWidth,
         canvasHeight,
         selectedResolution,
+        browserMode,
         ...updates,
       };
       setHistory((prev) => {
@@ -294,6 +297,7 @@ export default function MockupEditorPage() {
       canvasWidth,
       canvasHeight,
       selectedResolution,
+      browserMode,
       historyIndex,
     ]
   );
@@ -418,6 +422,7 @@ export default function MockupEditorPage() {
       canvasWidth: CANVAS_WIDTH,
       canvasHeight: CANVAS_HEIGHT,
       selectedResolution: "hd-720p",
+      browserMode: "light",
     };
     setHistory([initialState]);
     setHistoryIndex(0);
@@ -737,6 +742,15 @@ export default function MockupEditorPage() {
     [saveToHistory, RESOLUTIONS]
   );
 
+  const setBrowserModeWithHistory = useCallback(
+    (v: "light" | "dark" | ((p: "light" | "dark") => "light" | "dark")) => {
+      const newValue = typeof v === "function" ? v(browserMode) : v;
+      setBrowserMode(newValue);
+      saveToHistory({ browserMode: newValue });
+    },
+    [saveToHistory, browserMode]
+  );
+
   const resetToDefaults = () => {
     const s: AppState = {
       uploadedImages: [null, null, null, null],
@@ -771,6 +785,7 @@ export default function MockupEditorPage() {
       canvasWidth: CANVAS_WIDTH,
       canvasHeight: CANVAS_HEIGHT,
       selectedResolution: "hd-720p",
+      browserMode: "light",
     };
 
     setUploadedImages(s.uploadedImages);
@@ -805,6 +820,7 @@ export default function MockupEditorPage() {
     setCanvasWidth(s.canvasWidth);
     setCanvasHeight(s.canvasHeight);
     setSelectedResolution(s.selectedResolution);
+    setBrowserMode(s.browserMode);
 
     setHistory([s]);
     setHistoryIndex(0);
@@ -883,6 +899,7 @@ export default function MockupEditorPage() {
                     hideMockup={hideMockup}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
+                    browserMode={browserMode}
                   />
                 </div>
               </div>
@@ -963,6 +980,8 @@ export default function MockupEditorPage() {
                     onToggleHideMockup={onToggleHideMockup}
                     selectedResolution={selectedResolution}
                     setSelectedResolution={setSelectedResolutionWithHistory}
+                    browserMode={browserMode}
+                    setBrowserMode={setBrowserModeWithHistory}
                   />
                 </div>
               </div>
@@ -1073,6 +1092,8 @@ export default function MockupEditorPage() {
               onToggleHideMockup={onToggleHideMockup}
               selectedResolution={selectedResolution}
               setSelectedResolution={setSelectedResolutionWithHistory}
+              browserMode={browserMode}
+              setBrowserMode={setBrowserModeWithHistory}
             />
 
             <div className="flex flex-1 flex-col min-w-0 gap-8">
@@ -1127,6 +1148,7 @@ export default function MockupEditorPage() {
                     hideMockup={hideMockup}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
+                    browserMode={browserMode}
                   />
                 </div>
               </div>

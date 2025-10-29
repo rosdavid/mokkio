@@ -35,7 +35,7 @@ const mockups = [
     icon: Globe,
     title: "Browser Mockups",
     description: "Clean browser frames for web designs and responsive layouts.",
-    devices: ["Chrome", "Safari", "Firefox", "Edge"],
+    devices: ["Chrome", "Safari"],
   },
 ];
 
