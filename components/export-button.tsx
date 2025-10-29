@@ -374,7 +374,7 @@ export const ExportButton = forwardRef<
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `mockup-${Date.now()}.${format}`;
+      link.download = `mokkio-${Date.now()}.${format}`;
       link.href = url;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 100);
