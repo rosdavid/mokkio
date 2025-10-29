@@ -13,18 +13,17 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   metadataBase: new URL("https://mokkio.vercel.app"),
   title: {
-    default:
-      "Mokkio – Create Beautiful Device & Browser Mockups (Free, No Watermark)",
+    default: "Mokkio – Create Beautiful Device & Browser Mockups For Free",
     template: "%s | Mokkio",
   },
   description:
-    "Create device, browser, and code frame mockups in seconds. Full customization: backgrounds, shadow presets, zoom, perspective, and layouts. Export PNG/JPEG/WebP. Free, no sign-up.",
+    "Create device, browser, and code frame mockups in seconds. Full customization: backgrounds, shadow presets, zoom, perspective, effects, and layouts. Export PNG/JPEG/WebP. Free, no sign-up.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "Mokkio",
     url: "https://mokkio.vercel.app/",
-    title: "Create Beautiful Device & Browser Mockups (Free) | Mokkio",
+    title: "Create Beautiful Device & Browser Mockups For Free | Mokkio",
     description:
       "Instant mockups for iPhone, iPad, MacBook, browser & code frames. No watermark, no sign-up.",
     images: [
@@ -38,9 +37,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mokkio – Create Device & Browser Mockups (Free)",
+    title: "Mokkio – Create Device & Browser Mockups For Free",
     description:
-      "Generate mockups with custom backgrounds, shadow presets, zoom, perspective, and layouts. Free, no sign-up.",
+      "Generate mockups with custom backgrounds, shadow presets, zoom, perspective, effects, and layouts. Free, no sign-up.",
     images: ["/mokkio-app.png"],
   },
   robots: {
@@ -72,7 +71,7 @@ export default function RootLayout({
     featureList: [
       "Device mockups (iPhone, iPad, MacBook, browser, screenshot)",
       "Custom backgrounds & gradients",
-      "Shadow presets & glow effects",
+      "Shadow presets & effects",
       "Zoom, pan & perspective",
       "High-resolution exports (PNG/JPEG/WebP)",
       "No watermark, no sign-up, free to use",
