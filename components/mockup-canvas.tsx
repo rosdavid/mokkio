@@ -936,6 +936,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
             height: `${CH}px`,
             transform: `scale(${scaleFactor})`,
             transformOrigin: "top left",
+            top: "-10px",
             willChange: "transform",
           }}
         >

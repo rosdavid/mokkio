@@ -323,21 +323,21 @@ export function RightSidebar(props: RightSidebarProps) {
   const cloneLeft = (pw - cloneW) / 2;
   const cloneTop = (ph - cloneH) / 2;
 
-  const viewportW = cloneW * (99 / zoom);
-  const viewportH = cloneH * (99 / zoom);
+  const viewportW = cloneW * (96 / zoom);
+  const viewportH = cloneH * (96 / zoom);
 
   // pan mapping to preview coordinates
   const viewportL =
     cloneLeft +
     cloneW / 2 -
     viewportW / 2 +
-    panX * (cloneW / canvasWidth) * (99 / zoom);
+    panX * (cloneW / canvasWidth) * (96 / zoom);
   const viewportT =
     cloneTop +
     cloneH / 2 -
     viewportH / 2 +
-    panY * (cloneH / canvasHeight) * (100 / zoom) -
-    1.7;
+    panY * (cloneH / canvasHeight) * (96 / zoom) -
+    2;
 
   // limits
   const clampPanX = useCallback(
