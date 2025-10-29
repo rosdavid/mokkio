@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState, CSSProperties } from "react";
 import { SimpleDeviceFrame } from "@/components/device-frames/simple-device-frame";
 import { BrowserFrame } from "@/components/device-frames/browser-frame";
+import { IPhone17ProFrame } from "@/components/device-frames/iphone-17-pro-frame";
+import { IPhone17ProMaxFrame } from "@/components/device-frames/iphone-17-pro-max-frame";
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -27,8 +29,13 @@ interface MockupCanvasProps {
     | "abstract"
     | "earth"
     | "radiant"
-    | "texture";
+    | "texture"
+    | "transparent"
+    | "image";
   backgroundColor: string;
+  backgroundImage?: string;
+  backgroundNoise: number;
+  backgroundBlur: number;
   padding: number;
   shadowOpacity: number;
   borderRadius: number;
@@ -51,6 +58,10 @@ interface MockupCanvasProps {
   layoutMode: "single" | "double" | "triple";
   siteUrl?: string;
   onImageUpload?: (file: File, index?: number) => void;
+  hideMockup?: boolean;
+  /** NEW: dynamic canvas size */
+  canvasWidth?: number;
+  canvasHeight?: number;
 }
 
 const gradientPresets: Record<string, string> = {
@@ -142,7 +153,9 @@ const dominantFromBackground = (
     | "abstract"
     | "earth"
     | "radiant"
-    | "texture",
+    | "texture"
+    | "transparent"
+    | "image",
   colorHex: string,
   preset: string
 ) => {
@@ -163,6 +176,9 @@ export function MockupCanvas(props: MockupCanvasProps) {
     selectedPreset,
     backgroundType,
     backgroundColor,
+    backgroundImage,
+    backgroundNoise,
+    backgroundBlur,
     shadowOpacity,
     borderRadius,
     borderType,
@@ -184,7 +200,15 @@ export function MockupCanvas(props: MockupCanvasProps) {
     layoutMode,
     siteUrl,
     onImageUpload,
+    hideMockup,
+    /** NEW: dynamic canvas size props */
+    canvasWidth,
+    canvasHeight,
   } = props;
+
+  /** NEW: fallback to constants if not provided */
+  const CW = canvasWidth ?? CANVAS_WIDTH;
+  const CH = canvasHeight ?? CANVAS_HEIGHT;
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
@@ -213,18 +237,21 @@ export function MockupCanvas(props: MockupCanvasProps) {
     }
   }, [currentImage]);
 
-  // Observa el ancho disponible del contenedor central
+  // Fit-to-container by width AND height (keeps equal vertical margin)
   useEffect(() => {
     const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect?.width ?? CANVAS_WIDTH;
-      const sRaw = (w - SAFE_MARGIN * 2) / CANVAS_WIDTH;
-      // ⬇️ sin tope inferior: permite seguir encogiendo, pero nunca 0.
-      const s = Math.max(0.01, Math.min(1, sRaw));
+      const rect = entries[0]?.contentRect;
+      const w = rect?.width ?? CW;
+      const h = rect?.height ?? CH;
+
+      const sW = (w - SAFE_MARGIN * 2) / CW;
+      const sH = (h - SAFE_MARGIN * 2) / CH;
+      const s = Math.max(0.01, Math.min(1, Math.min(sW, sH)));
       setScaleFactor(s);
     });
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, []);
+  }, [CW, CH]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -262,7 +289,83 @@ export function MockupCanvas(props: MockupCanvasProps) {
     if (backgroundType === "gradient" && gradientPresets[selectedPreset]) {
       return { background: gradientPresets[selectedPreset] };
     }
+    if (
+      backgroundType === "cosmic" &&
+      selectedPreset?.startsWith("cosmic-gradient-")
+    ) {
+      const num = selectedPreset.replace("cosmic-gradient-", "");
+      return {
+        backgroundImage: `url(/cosmic-gradient-${num}.png)`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    }
+    if (backgroundType === "image" && backgroundImage) {
+      return {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    }
     return { backgroundColor };
+  };
+
+  const getBackgroundEffectsStyle = (): CSSProperties => {
+    const filters: string[] = [];
+
+    // Blur effect (0-20px)
+    if (backgroundBlur > 0) {
+      filters.push(`blur(${backgroundBlur}px)`);
+    }
+
+    return {
+      filter: filters.length > 0 ? filters.join(" ") : undefined,
+    };
+  };
+
+  const renderNoiseOverlay = () => {
+    // No renderizar ni crear canvas si el noise es 0 o menor
+    if (typeof backgroundNoise !== "number" || backgroundNoise <= 0) {
+      return null;
+    }
+
+    // Opacidad máxima del noise: 0.5 (slider 100)
+    const noiseOpacity = (backgroundNoise / 100) * 0.5;
+    if (noiseOpacity === 0) {
+      return null;
+    }
+
+    // Create procedural noise using canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    ctx.clearRect(0, 0, 256, 256);
+    const numPoints = Math.floor(8000 * (backgroundNoise / 100));
+    for (let i = 0; i < numPoints; i++) {
+      const x = Math.random() * 256;
+      const y = Math.random() * 256;
+      const gray = Math.floor(Math.random() * 256);
+      ctx.fillStyle = `rgba(${gray},${gray},${gray},${noiseOpacity})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    const noiseDataUrl = canvas.toDataURL("image/png");
+
+    return (
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("${noiseDataUrl}")`,
+          backgroundSize: "256px 256px",
+          mixBlendMode: "overlay",
+        }}
+      />
+    );
   };
 
   // === (UNICA) serie de cálculos de dimensiones ===
@@ -495,7 +598,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
                   isDragging
                     ? "scale-110 animate-bounce"
                     : isHovered
-                    ? "scale-105"
+                    ? "scale-105 animate-bounce"
                     : ""
                 }`}
               >
@@ -668,6 +771,22 @@ export function MockupCanvas(props: MockupCanvasProps) {
       );
     }
 
+    if (selectedDevice === "iphone-17-pro") {
+      return (
+        <IPhone17ProFrame borderRadius={effectiveBorderRadius}>
+          {renderContent(idx, dims.type)}
+        </IPhone17ProFrame>
+      );
+    }
+
+    if (selectedDevice === "iphone-17-pro-max") {
+      return (
+        <IPhone17ProMaxFrame borderRadius={effectiveBorderRadius}>
+          {renderContent(idx, dims.type)}
+        </IPhone17ProMaxFrame>
+      );
+    }
+
     return (
       <SimpleDeviceFrame
         width={renderSize.width}
@@ -796,54 +915,56 @@ export function MockupCanvas(props: MockupCanvasProps) {
     );
   };
 
-  // ----------- RETURN (centrado + escala sin tope inferior) -----------
+  // ----------- RETURN (centered + scale to fit, no scroll) -----------
   return (
-    <div ref={containerRef} className="w-full flex items-center justify-center">
+    <div
+      ref={containerRef}
+      className="w-full h-full flex items-center justify-center" // <- h-full so we can fit by height too
+    >
       <div
         className="relative"
         style={{
-          width: CANVAS_WIDTH * scaleFactor,
-          height: CANVAS_HEIGHT * scaleFactor,
+          width: CW * scaleFactor,
+          height: CH * scaleFactor,
         }}
       >
         <div
           id="mockup-canvas"
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden relative"
           style={{
-            ...getBackgroundStyle(),
-            width: `${CANVAS_WIDTH}px`,
-            height: `${CANVAS_HEIGHT}px`,
+            width: `${CW}px`,
+            height: `${CH}px`,
             transform: `scale(${scaleFactor})`,
             transformOrigin: "top left",
             willChange: "transform",
           }}
         >
-          {sceneType === "shapes" && (
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-              <div className="absolute bottom-20 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
-            </div>
-          )}
-
-          {/* PAN wrapper */}
+          {/* Background layer with effects */}
           <div
+            className="absolute inset-0"
             style={{
-              width: "100%",
-              height: "100%",
-              transform: `translate(${-panX}px, ${-panY}px)`,
-              transformOrigin: "center",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              willChange: "transform",
+              ...getBackgroundStyle(),
+              ...getBackgroundEffectsStyle(),
             }}
           >
-            {/* ZOOM wrapper */}
+            {renderNoiseOverlay()}
+          </div>
+
+          {/* Content layer (mockup) - positioned above background */}
+          <div className="absolute inset-0">
+            {sceneType === "shapes" && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                <div className="absolute bottom-20 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
+              </div>
+            )}
+
+            {/* PAN wrapper */}
             <div
               style={{
                 width: "100%",
                 height: "100%",
-                transform: `scale(${zAbs})`,
+                transform: `translate(${-panX}px, ${-panY}px)`,
                 transformOrigin: "center",
                 display: "flex",
                 alignItems: "center",
@@ -851,7 +972,21 @@ export function MockupCanvas(props: MockupCanvasProps) {
                 willChange: "transform",
               }}
             >
-              {renderMockups()}
+              {/* ZOOM wrapper */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  transform: `scale(${zAbs})`,
+                  transformOrigin: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  willChange: "transform",
+                }}
+              >
+                {hideMockup ? null : renderMockups()}
+              </div>
             </div>
           </div>
         </div>
