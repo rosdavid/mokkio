@@ -1027,6 +1027,7 @@ export default function MockupEditorPage() {
                     sceneType={sceneType}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
+                    browserMode={browserMode}
                   />
                 </div>
               </div>
@@ -1190,6 +1191,7 @@ export default function MockupEditorPage() {
               sceneType={sceneType}
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
+              browserMode={browserMode}
             />
           </>
         )}

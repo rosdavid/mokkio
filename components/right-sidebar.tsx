@@ -71,6 +71,9 @@ interface RightSidebarProps {
   /** NEW: dynamic canvas size */
   canvasWidth: number;
   canvasHeight: number;
+
+  /** NEW: browser mode for theme switching */
+  browserMode?: "light" | "dark";
 }
 
 const LAYOUT_PRESETS = [
@@ -114,6 +117,7 @@ function PresetThumb(props: {
   /** NEW */
   canvasWidth: number;
   canvasHeight: number;
+  browserMode?: "light" | "dark";
 }) {
   const {
     presetId,
@@ -142,6 +146,7 @@ function PresetThumb(props: {
     /** NEW */
     canvasWidth,
     canvasHeight,
+    browserMode = "light",
   } = props;
 
   const ref = useRef<HTMLDivElement>(null);
@@ -240,6 +245,7 @@ function PresetThumb(props: {
               /** NEW */
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
+              browserMode={browserMode}
             />
           </div>
         </div>
@@ -282,6 +288,7 @@ export function RightSidebar(props: RightSidebarProps) {
     /** NEW */
     canvasWidth,
     canvasHeight,
+    browserMode = "light",
   } = props;
 
   // ---------- Preview de ZOOM ----------
@@ -578,6 +585,7 @@ export function RightSidebar(props: RightSidebarProps) {
                 /** NEW */
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}
+                browserMode={browserMode}
               />
             </div>
           </div>
@@ -708,6 +716,7 @@ export function RightSidebar(props: RightSidebarProps) {
               /** NEW */
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
+              browserMode={browserMode}
             />
           ))}
         </div>
