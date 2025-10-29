@@ -3,7 +3,8 @@
 
 import { useEffect, useId, useRef, useState, CSSProperties } from "react";
 import { SimpleDeviceFrame } from "@/components/device-frames/simple-device-frame";
-import { BrowserFrame } from "@/components/device-frames/browser-frame";
+import { SafariFrame } from "@/components/device-frames/safari-frame";
+import { ChromeFrame } from "@/components/device-frames/chrome-frame";
 import { IPhone17ProFrame } from "@/components/device-frames/iphone-17-pro-frame";
 import { IPhone17ProMaxFrame } from "@/components/device-frames/iphone-17-pro-max-frame";
 import {
@@ -734,9 +735,9 @@ export function MockupCanvas(props: MockupCanvasProps) {
 
   /* ---------- render del “mockup” (dispositivo) ---------- */
   const renderInnerByDevice = (idx: number) => {
-    if (dims.type === "browser") {
+    if (selectedDevice === "safari") {
       return (
-        <BrowserFrame
+        <SafariFrame
           width={renderSize.width}
           height={renderSize.height}
           borderRadius={effectiveBorderRadius}
@@ -744,7 +745,35 @@ export function MockupCanvas(props: MockupCanvasProps) {
           referenceWidth={renderSize.width}
         >
           {renderContent(idx, dims.type)}
-        </BrowserFrame>
+        </SafariFrame>
+      );
+    }
+
+    if (selectedDevice === "chrome") {
+      return (
+        <ChromeFrame
+          width={renderSize.width}
+          height={renderSize.height}
+          borderRadius={effectiveBorderRadius}
+          siteUrl={siteUrl}
+          referenceWidth={renderSize.width}
+        >
+          {renderContent(idx, dims.type)}
+        </ChromeFrame>
+      );
+    }
+
+    if (dims.type === "browser") {
+      return (
+        <SafariFrame
+          width={renderSize.width}
+          height={renderSize.height}
+          borderRadius={effectiveBorderRadius}
+          siteUrl={siteUrl}
+          referenceWidth={renderSize.width}
+        >
+          {renderContent(idx, dims.type)}
+        </SafariFrame>
       );
     }
 

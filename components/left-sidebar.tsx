@@ -436,6 +436,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
         return "2560×1600px";
       case "ipad-pro":
         return "2048×2732px";
+      case "safari":
+        return "1920×1080px";
+      case "chrome":
+        return "1920×1080px";
       default:
         return "Any resolution";
     }
@@ -447,7 +451,9 @@ export function LeftSidebar(props: LeftSidebarProps) {
     "iphone-17-pro-max": "iPhone 17 Pro Max - 1320×2868px",
     "ipad-pro": "iPad Pro - 2048×2732px",
     "macbook-pro": "MacBook Pro - 2560×1600px",
+    safari: "Safari - 1920×1080px",
     browser: "Browser - 1920×1080px",
+    chrome: "Chrome - 1920×1080px",
   };
 
   const getDeviceInfo = (deviceKey: string) => {
@@ -667,9 +673,14 @@ export function LeftSidebar(props: LeftSidebarProps) {
                           onClick={() => props.setSelectedDevice("macbook-pro")}
                         />
                         <DeviceButton
-                          deviceKey="browser"
-                          isSelected={props.selectedDevice === "browser"}
-                          onClick={() => props.setSelectedDevice("browser")}
+                          deviceKey="safari"
+                          isSelected={props.selectedDevice === "safari"}
+                          onClick={() => props.setSelectedDevice("safari")}
+                        />
+                        <DeviceButton
+                          deviceKey="chrome"
+                          isSelected={props.selectedDevice === "chrome"}
+                          onClick={() => props.setSelectedDevice("chrome")}
                         />
                       </div>
                     </TabsContent>
@@ -729,9 +740,14 @@ export function LeftSidebar(props: LeftSidebarProps) {
                     <TabsContent value="browser" className="mt-2">
                       <div className="grid grid-cols-3 gap-2">
                         <DeviceButton
-                          deviceKey="browser"
-                          isSelected={props.selectedDevice === "browser"}
-                          onClick={() => props.setSelectedDevice("browser")}
+                          deviceKey="safari"
+                          isSelected={props.selectedDevice === "safari"}
+                          onClick={() => props.setSelectedDevice("safari")}
+                        />
+                        <DeviceButton
+                          deviceKey="chrome"
+                          isSelected={props.selectedDevice === "chrome"}
+                          onClick={() => props.setSelectedDevice("chrome")}
                         />
                       </div>
                     </TabsContent>
@@ -861,7 +877,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
           </div>
 
           {/* Site URL */}
-          {props.selectedDevice === "browser" && (
+          {["safari", "browser", "chrome"].includes(props.selectedDevice) && (
             <div className="bg-white/10 p-2.5 rounded-lg">
               <button
                 onClick={() => toggleSection("siteUrl")}

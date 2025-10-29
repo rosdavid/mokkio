@@ -22,7 +22,7 @@ export const getDeviceDimensions = (selectedDevice?: string) => {
     { width: number; height: number; type: string }
   > = {
     screenshot: { width: 1200, height: 800, type: "screenshot" },
-    browser: { width: 1440, height: 900, type: "browser" },
+    safari: { width: 1440, height: 900, type: "browser" },
     "iphone-17-pro": { width: 393, height: 852, type: "mobile" },
     "iphone-17-pro-max": { width: 431, height: 937, type: "mobile" },
     "macbook-pro": { width: 1512, height: 982, type: "desktop" },
