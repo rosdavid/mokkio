@@ -1,7 +1,6 @@
 // mockup-canvas.tsx
 "use client";
 
-import Image from "next/image";
 import { useEffect, useId, useRef, useState, CSSProperties } from "react";
 import { SimpleDeviceFrame } from "@/components/device-frames/simple-device-frame";
 import { BrowserFrame } from "@/components/device-frames/browser-frame";
@@ -296,7 +295,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
       const num = selectedPreset.replace("cosmic-gradient-", "");
       return {
         backgroundImage: `url(/cosmic-gradient-${num}.png)`,
-        backgroundSize: "cover",
+        backgroundSize: "100% 100%",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       };
@@ -304,7 +303,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
     if (backgroundType === "image" && backgroundImage) {
       return {
         backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
+        backgroundSize: "100% 100%",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       };
@@ -721,21 +720,15 @@ export function MockupCanvas(props: MockupCanvasProps) {
     return (
       <div
         className={`relative h-full w-full overflow-hidden bg-transparent ${getDeviceContentClass()}`}
-      >
-        <Image
-          src={uploadedImage || "/placeholder.svg"}
-          alt="Uploaded mockup"
-          fill
-          className={
-            deviceType === "screenshot"
-              ? "object-contain"
-              : deviceType === "browser"
-              ? "object-cover"
-              : "object-cover object-top"
-          }
-          unoptimized
-        />
-      </div>
+        style={{
+          backgroundImage: `url(${uploadedImage})`,
+          backgroundSize: deviceType === "screenshot" ? "contain" : "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          transform: deviceType === "screenshot" ? "none" : `scale(${zoom})`,
+          transformOrigin: "center",
+        }}
+      />
     );
   };
 
