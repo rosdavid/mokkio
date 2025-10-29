@@ -914,7 +914,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
           )}
 
           {/* STYLE */}
-          {["safari", "browser", "chrome"].includes(props.selectedDevice) && (
+          {(["safari", "browser", "chrome"].includes(props.selectedDevice) ||
+            ["iphone-17-pro", "iphone-17-pro-max"].includes(
+              props.selectedDevice
+            )) && (
             <div className="bg-white/10 p-2.5 rounded-lg">
               <button
                 onClick={() => toggleSection("browserStyle")}
@@ -935,26 +938,61 @@ export function LeftSidebar(props: LeftSidebarProps) {
                 }`}
               >
                 <div className="grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    onClick={() => props.setBrowserMode("light")}
-                    className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
-                      props.browserMode === "light"
-                        ? "border-purple-500 bg-purple-500/20"
-                        : "border-white/10 bg-white/5 hover:bg-white/10"
-                    }`}
-                  >
-                    Light Mode
-                  </button>
-                  <button
-                    onClick={() => props.setBrowserMode("dark")}
-                    className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
-                      props.browserMode === "dark"
-                        ? "border-purple-500 bg-purple-500/20"
-                        : "border-white/10 bg-white/5 hover:bg-white/10"
-                    }`}
-                  >
-                    Dark Mode
-                  </button>
+                  {/* Browser devices: Light/Dark mode */}
+                  {["safari", "browser", "chrome"].includes(
+                    props.selectedDevice
+                  ) && (
+                    <>
+                      <button
+                        onClick={() => props.setBrowserMode("light")}
+                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                          props.browserMode === "light"
+                            ? "border-purple-500 bg-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        Light Mode
+                      </button>
+                      <button
+                        onClick={() => props.setBrowserMode("dark")}
+                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                          props.browserMode === "dark"
+                            ? "border-purple-500 bg-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        Dark Mode
+                      </button>
+                    </>
+                  )}
+
+                  {/* Mobile devices: Display/Device Frame */}
+                  {["iphone-17-pro", "iphone-17-pro-max"].includes(
+                    props.selectedDevice
+                  ) && (
+                    <>
+                      <button
+                        onClick={() => props.setBrowserMode("light")}
+                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                          props.browserMode === "light"
+                            ? "border-purple-500 bg-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        Display
+                      </button>
+                      <button
+                        onClick={() => props.setBrowserMode("dark")}
+                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                          props.browserMode === "dark"
+                            ? "border-purple-500 bg-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        Device Frame
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

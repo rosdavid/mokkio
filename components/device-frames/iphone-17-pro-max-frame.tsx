@@ -1,35 +1,66 @@
 import type React from "react";
+import Image from "next/image";
+
 interface DeviceFrameProps {
   children: React.ReactNode;
   borderRadius: number;
+  showFrame?: boolean;
 }
 
 export function IPhone17ProMaxFrame({
   children,
-  borderRadius,
+  showFrame = false,
 }: DeviceFrameProps) {
-  return (
-    <div className="relative" style={{ width: "350px", height: "750px" }}>
-      {/* Device Frame */}
-      <div
-        className="relative overflow-hidden p-2"
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      >
-        {/* Screen */}
+  if (showFrame) {
+    return (
+      <div className="relative" style={{ width: "440px", height: "956px" }}>
+        {/* Screen Content */}
         <div
-          className="relative overflow-hidden bg-white"
+          className="absolute overflow-hidden"
           style={{
-            borderRadius: `${borderRadius}px`,
-            width: "calc(100% - 16px)", // adjust for padding
-            height: "calc(100% - 16px)",
-            margin: "8px",
+            top: "96px",
+            left: "44px",
+            width: "352px",
+            height: "765px",
+            borderRadius: "50px",
+            zIndex: 10,
           }}
         >
           {children}
         </div>
+        {/* Device Frame Image */}
+        <div className="relative" style={{ zIndex: 20, pointerEvents: "none" }}>
+          <Image
+            src="/iphone-17-pro-max.png"
+            alt="iPhone 17 Pro Max Frame"
+            width={440}
+            height={956}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" style={{ width: "440px", height: "956px" }}>
+      {/* Screen */}
+      <div
+        className="relative overflow-hidden bg-white"
+        style={{
+          top: "96px",
+          left: "44px",
+          width: "352px",
+          height: "765px",
+          borderRadius: "50px",
+          zIndex: 10,
+        }}
+      >
+        {children}
       </div>
     </div>
   );

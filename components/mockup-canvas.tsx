@@ -725,10 +725,18 @@ export function MockupCanvas(props: MockupCanvasProps) {
         className={`relative h-full w-full overflow-hidden bg-transparent ${getDeviceContentClass()}`}
         style={{
           backgroundImage: `url(${uploadedImage})`,
-          backgroundSize: deviceType === "screenshot" ? "contain" : "100% 100%",
+          backgroundSize:
+            deviceType === "mobile"
+              ? "cover"
+              : deviceType === "screenshot"
+              ? "contain"
+              : "100% 100%",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          transform: deviceType === "screenshot" ? "none" : `scale(${zoom})`,
+          transform:
+            deviceType === "screenshot" || deviceType === "mobile"
+              ? "none"
+              : `scale(${zoom})`,
           transformOrigin: "center",
         }}
       />
@@ -800,7 +808,10 @@ export function MockupCanvas(props: MockupCanvasProps) {
 
     if (selectedDevice === "iphone-17-pro") {
       return (
-        <IPhone17ProFrame borderRadius={effectiveBorderRadius}>
+        <IPhone17ProFrame
+          borderRadius={effectiveBorderRadius}
+          showFrame={browserMode === "dark"}
+        >
           {renderContent(idx, dims.type)}
         </IPhone17ProFrame>
       );
@@ -808,7 +819,10 @@ export function MockupCanvas(props: MockupCanvasProps) {
 
     if (selectedDevice === "iphone-17-pro-max") {
       return (
-        <IPhone17ProMaxFrame borderRadius={effectiveBorderRadius}>
+        <IPhone17ProMaxFrame
+          borderRadius={effectiveBorderRadius}
+          showFrame={browserMode === "dark"}
+        >
           {renderContent(idx, dims.type)}
         </IPhone17ProMaxFrame>
       );
