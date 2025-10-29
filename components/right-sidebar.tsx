@@ -4,10 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import {
-  CANVAS_WIDTH,
-  getEffectiveZoom as getEffectiveZoomUtil,
-} from "@/lib/mockup-utils";
+import { getEffectiveZoom as getEffectiveZoomUtil } from "@/lib/mockup-utils"; // <- remove CANVAS_WIDTH import
 import { MockupCanvas } from "@/components/mockup-canvas";
 import { AdSenseBlock } from "@/components/AdSenseBlock";
 
@@ -49,8 +46,13 @@ interface RightSidebarProps {
     | "abstract"
     | "earth"
     | "radiant"
-    | "texture";
+    | "texture"
+    | "transparent"
+    | "image";
   backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundNoise?: number;
+  backgroundBlur?: number;
   selectedPreset?: string;
 
   panX: number;
@@ -65,6 +67,10 @@ interface RightSidebarProps {
   commitPanHistory?: () => void;
 
   sceneType?: "none" | "shadow" | "shapes";
+
+  /** NEW: dynamic canvas size */
+  canvasWidth: number;
+  canvasHeight: number;
 }
 
 const LAYOUT_PRESETS = [
@@ -90,6 +96,9 @@ function PresetThumb(props: {
   layoutMode: "single" | "double" | "triple";
   backgroundType?: string;
   backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundNoise?: number;
+  backgroundBlur?: number;
   selectedPreset?: string;
   padding: number;
   shadowOpacity: number;
@@ -102,6 +111,9 @@ function PresetThumb(props: {
   shadowType: string;
   siteUrl: string;
   sceneType?: "none" | "shadow" | "shapes";
+  /** NEW */
+  canvasWidth: number;
+  canvasHeight: number;
 }) {
   const {
     presetId,
@@ -112,6 +124,9 @@ function PresetThumb(props: {
     layoutMode,
     backgroundType,
     backgroundColor,
+    backgroundImage,
+    backgroundNoise,
+    backgroundBlur,
     selectedPreset,
     padding,
     shadowOpacity,
@@ -124,6 +139,9 @@ function PresetThumb(props: {
     shadowType,
     siteUrl,
     sceneType = "none",
+    /** NEW */
+    canvasWidth,
+    canvasHeight,
   } = props;
 
   const ref = useRef<HTMLDivElement>(null);
@@ -143,14 +161,16 @@ function PresetThumb(props: {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
+  /** NEW: scale to fit by both dimensions */
   const K = useMemo(
-    () => Math.min((w || 0) / CANVAS_WIDTH, (h || 0) / (CANVAS_WIDTH * 0.5625)),
-    [w, h]
+    () => Math.min((w || 0) / canvasWidth, (h || 0) / canvasHeight),
+    [w, h, canvasWidth, canvasHeight]
   );
-  const cloneW = CANVAS_WIDTH * K;
-  const cloneH = CANVAS_WIDTH * 0.7 * K;
+
+  const cloneW = canvasWidth * K;
+  const cloneH = canvasHeight * K;
   const cloneLeft = (w - cloneW) / 2;
-  const cloneTop = (h - cloneH) / 2 + 19;
+  const cloneTop = (h - cloneH) / 2;
 
   return (
     <button
@@ -174,8 +194,8 @@ function PresetThumb(props: {
         >
           <div
             style={{
-              width: CANVAS_WIDTH,
-              height: CANVAS_WIDTH * 0.5625,
+              width: canvasWidth,
+              height: canvasHeight,
               transform: `scale(${K})`,
               transformOrigin: "top left",
             }}
@@ -195,9 +215,13 @@ function PresetThumb(props: {
                   | "abstract"
                   | "earth"
                   | "radiant"
-                  | "texture") || "solid"
+                  | "texture"
+                  | "image") || "solid"
               }
               backgroundColor={backgroundColor || "#000"}
+              backgroundImage={backgroundImage}
+              backgroundNoise={backgroundNoise || 0}
+              backgroundBlur={backgroundBlur || 0}
               padding={padding}
               shadowOpacity={shadowOpacity}
               borderRadius={borderRadius}
@@ -213,6 +237,9 @@ function PresetThumb(props: {
               panY={0}
               layoutMode={layoutMode}
               siteUrl={siteUrl}
+              /** NEW */
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
             />
           </div>
         </div>
@@ -240,6 +267,9 @@ export function RightSidebar(props: RightSidebarProps) {
     shadowType,
     backgroundType,
     backgroundColor,
+    backgroundImage,
+    backgroundNoise,
+    backgroundBlur,
     selectedPreset,
     panX,
     panY,
@@ -249,6 +279,9 @@ export function RightSidebar(props: RightSidebarProps) {
     commitPanHistory, // 👈 nuevos (opc.)
     siteUrl,
     sceneType = "none",
+    /** NEW */
+    canvasWidth,
+    canvasHeight,
   } = props;
 
   // ---------- Preview de ZOOM ----------
@@ -279,45 +312,47 @@ export function RightSidebar(props: RightSidebarProps) {
     [zoom, layoutMode, selectedDevice, selectedTemplate]
   );
 
+  /** NEW: generic scale (no 16:9 assumption) */
   const K = useMemo(
-    () =>
-      Math.min((pw || 0) / CANVAS_WIDTH, (ph || 0) / (CANVAS_WIDTH * 0.5625)),
-    [pw, ph]
+    () => Math.min((pw || 0) / canvasWidth, (ph || 0) / canvasHeight),
+    [pw, ph, canvasWidth, canvasHeight]
   );
-  const cloneW = CANVAS_WIDTH * K;
-  const cloneH = CANVAS_WIDTH * 0.5625 * K;
+
+  const cloneW = canvasWidth * K;
+  const cloneH = canvasHeight * K;
   const cloneLeft = (pw - cloneW) / 2;
   const cloneTop = (ph - cloneH) / 2;
 
   const viewportW = cloneW * (99 / zoom);
   const viewportH = cloneH * (99 / zoom);
+
+  // pan mapping to preview coordinates
   const viewportL =
     cloneLeft +
     cloneW / 2 -
     viewportW / 2 +
-    panX * (cloneW / CANVAS_WIDTH) * (99 / zoom);
+    panX * (cloneW / canvasWidth) * (99 / zoom);
   const viewportT =
     cloneTop +
     cloneH / 2 -
     viewportH / 2 +
-    panY * (cloneH / (CANVAS_WIDTH * 0.5625)) * (100 / zoom) -
+    panY * (cloneH / canvasHeight) * (100 / zoom) -
     1.7;
 
-  // límites
+  // limits
   const clampPanX = useCallback(
     (x: number) => {
-      const max = (CANVAS_WIDTH / 2) * (zoom / 100);
+      const max = (canvasWidth / 2) * (zoom / 100);
       return Math.min(max, Math.max(-max, x));
     },
-    [zoom]
+    [zoom, canvasWidth]
   );
   const clampPanY = useCallback(
     (y: number) => {
-      const canvasH = CANVAS_WIDTH * 0.5625;
-      const max = (canvasH / 2) * (zoom / 100);
+      const max = (canvasHeight / 2) * (zoom / 100);
       return Math.min(max, Math.max(-max, y));
     },
-    [zoom]
+    [zoom, canvasHeight]
   );
 
   // rueda: zoom anclado al cursor (histórico ya existente)
@@ -481,11 +516,10 @@ export function RightSidebar(props: RightSidebarProps) {
 
         <div
           ref={previewRef}
-          className="mb-3 rounded-lg aspect-video relative overflow-hidden bg-transparent"
+          className="mb-3 rounded-lg aspect-video relative overflow-hidden bg-transparent border border-white/10"
           onWheel={onWheel}
           onDoubleClick={onDoubleClick}
           onClick={onClick}
-          title="Doble clic: reset; rueda: zoom al cursor"
         >
           <div
             className="absolute"
@@ -499,8 +533,8 @@ export function RightSidebar(props: RightSidebarProps) {
           >
             <div
               style={{
-                width: CANVAS_WIDTH,
-                height: CANVAS_WIDTH * 0.5625,
+                width: canvasWidth,
+                height: canvasHeight,
                 transform: `scale(${K})`,
                 transformOrigin: "top left",
               }}
@@ -520,9 +554,12 @@ export function RightSidebar(props: RightSidebarProps) {
                     | "abstract"
                     | "earth"
                     | "radiant"
-                    | "texture") || "solid"
+                    | "texture"
+                    | "image") || "solid"
                 }
                 backgroundColor={backgroundColor || "#000"}
+                backgroundNoise={backgroundNoise || 0}
+                backgroundBlur={backgroundBlur || 0}
                 padding={padding}
                 shadowOpacity={shadowOpacity}
                 borderRadius={borderRadius}
@@ -538,6 +575,9 @@ export function RightSidebar(props: RightSidebarProps) {
                 panY={0}
                 layoutMode={layoutMode}
                 siteUrl={siteUrl}
+                /** NEW */
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
               />
             </div>
           </div>
@@ -650,6 +690,9 @@ export function RightSidebar(props: RightSidebarProps) {
               layoutMode={layoutMode}
               backgroundType={backgroundType}
               backgroundColor={backgroundColor}
+              backgroundImage={backgroundImage}
+              backgroundNoise={backgroundNoise}
+              backgroundBlur={backgroundBlur}
               selectedPreset={selectedPreset}
               padding={padding}
               shadowOpacity={shadowOpacity}
@@ -662,6 +705,9 @@ export function RightSidebar(props: RightSidebarProps) {
               shadowType={shadowType}
               siteUrl={siteUrl}
               sceneType={sceneType}
+              /** NEW */
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
             />
           ))}
         </div>
