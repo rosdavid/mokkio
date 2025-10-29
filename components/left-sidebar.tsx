@@ -409,6 +409,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
     border: true,
     shadow: true,
     background: true,
+    effects: true,
   });
   const [backgroundExpandedSections, setBackgroundExpandedSections] = useState<
     Record<string, boolean>
@@ -1388,44 +1389,60 @@ export function LeftSidebar(props: LeftSidebarProps) {
 
           {/* Effects Section */}
           <div className="bg-white/10 p-2.5 rounded-lg">
-            <div className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+            <button
+              onClick={() => toggleSection("effects")}
+              className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider"
+            >
               EFFECTS
-            </div>
-            <div className="space-y-4">
-              {/* Noise */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs text-white/60">Noise</Label>
-                  <span className="text-xs text-white/40">
-                    {props.backgroundNoise}%
-                  </span>
+              <ChevronDown
+                className={`h-3 w-3 transition-transform duration-200 ${
+                  expandedSections.effects ? "" : "-rotate-90"
+                }`}
+              />
+            </button>
+            <div
+              className={`overflow-hidden transition-all duration-300 ${
+                expandedSections.effects
+                  ? "max-h-96 opacity-100 mt-2"
+                  : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="space-y-4">
+                {/* Noise */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs text-white/60">Noise</Label>
+                    <span className="text-xs text-white/40">
+                      {props.backgroundNoise}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[props.backgroundNoise]}
+                    onValueChange={([v]) => props.setBackgroundNoise(v)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
                 </div>
-                <Slider
-                  value={[props.backgroundNoise]}
-                  onValueChange={([v]) => props.setBackgroundNoise(v)}
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
 
-              {/* Blur */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs text-white/60">Blur</Label>
-                  <span className="text-xs text-white/40">
-                    {Math.round((props.backgroundBlur / 20) * 100)}%
-                  </span>
+                {/* Blur */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs text-white/60">Blur</Label>
+                    <span className="text-xs text-white/40">
+                      {Math.round((props.backgroundBlur / 20) * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[props.backgroundBlur]}
+                    onValueChange={([v]) => props.setBackgroundBlur(v)}
+                    min={0}
+                    max={20}
+                    step={0.5}
+                    className="w-full"
+                  />
                 </div>
-                <Slider
-                  value={[props.backgroundBlur]}
-                  onValueChange={([v]) => props.setBackgroundBlur(v)}
-                  min={0}
-                  max={20}
-                  step={0.5}
-                  className="w-full"
-                />
               </div>
             </div>
           </div>
