@@ -15,35 +15,21 @@ const mockups = [
     title: "Mobile Mockups",
     description:
       "Perfect iPhone and Android device frames with realistic shadows and reflections.",
-    devices: [
-      "iPhone 15 Pro",
-      "iPhone 15 Pro Max (Comming Soon)",
-      "Samsung Galaxy S23 (Comming Soon)",
-      "Google Pixel 7 (Comming Soon)",
-    ],
+    devices: ["iPhone 17 Pro", "iPhone 17 Pro Max"],
   },
   {
     icon: Tablet,
     title: "Tablet Mockups",
     description:
       "iPad and Android tablet frames for app and website presentations.",
-    devices: [
-      'iPad Pro 12.9"',
-      "iPad Air (Comming Soon)",
-      "Samsung Tab S8 (Comming Soon)",
-      "Surface Pro (Comming Soon)",
-    ],
+    devices: ['iPad Pro 12.9"'],
   },
   {
     icon: Monitor,
     title: "Desktop Mockups",
     description:
       "MacBook and Windows laptop frames for web and software showcases.",
-    devices: [
-      'MacBook Pro 16"',
-      "MacBook Air (Comming Soon)",
-      "Surface Laptop (Comming Soon)",
-    ],
+    devices: ['MacBook Pro 16"'],
   },
   {
     icon: Globe,

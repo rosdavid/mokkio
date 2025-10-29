@@ -99,8 +99,7 @@ export function HeroSection() {
         <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-10 mt-4 sm:mt-6 md:mt-8 animate-in fade-in duration-1000 delay-100">
           <span className="inline-flex items-center gap-2 bg-orange-500/60 text-orange-100 border border-orange-400 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-full text-sm sm:text-base font-medium mb-4 animate-in fade-in duration-1000 delay-200">
             <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">🚧 </span>Coming Soon for Mobile
-            & Tablet!<span className="hidden sm:inline"> 🚧</span>
+            Coming Soon for Mobile & Tablet!
           </span>
         </div>
 
@@ -167,6 +166,11 @@ export function HeroSection() {
             >
               Visit my website
             </a>
+          </div>
+          <div className="text-sm flex flex-row items-center justify-center gap-4">
+            <span className="text-white flex items-center gap-1">
+              Currently in v1.0.0-beta.2
+            </span>
           </div>
         </div>
       </div>

@@ -29,11 +29,11 @@ const styles = [
   },
   {
     icon: Zap,
-    title: "Glow Effects",
-    description: "Add stunning glow effects to make your mockups pop",
+    title: "Effects",
+    description: "Add stunning effects to make your mockups pop",
     features: [
-      "Inner Glow",
-      "Outer Glow",
+      "Noise Efect",
+      "Blur Effect",
       "Color Control",
       "Intensity Adjustment",
     ],
