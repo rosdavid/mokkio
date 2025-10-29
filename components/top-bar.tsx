@@ -9,9 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Undo2, Redo2, Maximize2 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Undo2, Redo2, Keyboard, Download } from "lucide-react";
 import { ExportButton } from "@/components/export-button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface TopBarProps {
@@ -37,6 +42,36 @@ export function TopBar({
   isMobile = false,
 }: TopBarProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const exportButtonRef = useRef<{ openMenu: () => void }>(null);
+  const isMac =
+    typeof window !== "undefined" &&
+    navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === "z" &&
+        !event.shiftKey &&
+        (event.ctrlKey || event.metaKey)
+      ) {
+        event.preventDefault();
+        onUndo?.();
+      } else if (event.key === "y" && event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        onRedo?.();
+      } else if (event.key === "z" && event.shiftKey && event.metaKey) {
+        event.preventDefault();
+        onRedo?.();
+      } else if (event.key === "e" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        exportButtonRef.current?.openMenu();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onUndo, onRedo]);
 
   const handleStartOverClick = () => {
     setShowConfirmDialog(true);
@@ -100,13 +135,53 @@ export function TopBar({
             >
               Start Over
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-white/60 hover:text-neutral-500 cursor-pointer"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
+            <Popover open={showShortcuts} onOpenChange={setShowShortcuts}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-white/60 hover:text-neutral-500 cursor-pointer"
+                >
+                  <Keyboard className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-[#0a0a0a] border-white/10 text-white supports-backdrop-filter:bg-[#0a0a0a]/80 backdrop-blur-xl supports-backdrop-filter:backdrop-saturate-150">
+                <div className="p-4 space-y-3">
+                  <h4 className="font-semibold text-center">
+                    Keyboard Shortcuts
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Undo2 className="h-4 w-4" />
+                        <span>Undo</span>
+                      </div>
+                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
+                        {isMac ? "⌘ Z" : "Ctrl Z"}
+                      </kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Redo2 className="h-4 w-4" />
+                        <span>Redo</span>
+                      </div>
+                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
+                        {isMac ? "⌘ ⇧ Z" : "Ctrl Y"}
+                      </kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Download className="h-4 w-4" />
+                        <span>Export</span>
+                      </div>
+                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
+                        {isMac ? "⌘ E" : "Ctrl E"}
+                      </kbd>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Right Section */}
@@ -120,7 +195,7 @@ export function TopBar({
                 <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
               </svg>
             </Button>
-            <ExportButton isMobile={isMobile} />
+            <ExportButton ref={exportButtonRef} isMobile={isMobile} />
           </div>
         </div>
       </div>
