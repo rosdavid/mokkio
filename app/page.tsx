@@ -2,7 +2,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { MockupCanvas } from "@/components/mockup-canvas";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
@@ -10,6 +10,7 @@ import { TopBar } from "@/components/top-bar";
 import { ExportProvider } from "@/lib/export-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LandingPopup } from "@/components/landing-page/LandingPopup";
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "@/lib/mockup-utils";
 
 interface AppState {
   uploadedImages: (string | null)[];
@@ -24,9 +25,14 @@ interface AppState {
     | "abstract"
     | "earth"
     | "radiant"
-    | "texture";
+    | "texture"
+    | "transparent"
+    | "image";
   backgroundColor: string;
+  backgroundImage?: string;
   selectedPreset: string;
+  backgroundNoise: number;
+  backgroundBlur: number;
 
   deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
   /** NUEVO: grosor del borde (px) */
@@ -50,6 +56,12 @@ interface AppState {
   panY: number;
   layoutMode: "single" | "double" | "triple";
   siteUrl: string;
+  hideMockup: boolean;
+
+  /** NEW: canvas size and preset id */
+  canvasWidth: number;
+  canvasHeight: number;
+  selectedResolution: string;
 }
 
 export default function MockupEditorPage() {
@@ -95,7 +107,12 @@ export default function MockupEditorPage() {
   const [backgroundType, setBackgroundType] =
     useState<AppState["backgroundType"]>("gradient");
   const [backgroundColor, setBackgroundColor] = useState("#6366f1");
+  const [backgroundImage, setBackgroundImage] = useState<string | undefined>(
+    undefined
+  );
   const [selectedPreset, setSelectedPreset] = useState("purple-pink");
+  const [backgroundNoise, setBackgroundNoise] = useState(0);
+  const [backgroundBlur, setBackgroundBlur] = useState(0);
 
   // ---- Style (borde/anillo)
   const [deviceStyle, setDeviceStyle] =
@@ -132,7 +149,8 @@ export default function MockupEditorPage() {
   const [layoutMode, setLayoutMode] = useState<"single" | "double" | "triple">(
     "single"
   );
-  const [siteUrl, setSiteUrl] = useState<string>("https://mokk.io");
+  const [siteUrl, setSiteUrl] = useState<string>("https://mokkio.me");
+  const [hideMockup, setHideMockup] = useState(false);
 
   // ---- Landing Popup
   const [isLandingOpen, setIsLandingOpen] = useState(true);
@@ -142,6 +160,28 @@ export default function MockupEditorPage() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+
+  // ---- NEW: canvas size and preset id
+  const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
+  const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
+  const [selectedResolution, setSelectedResolution] = useState("hd-720p");
+
+  /** Map preset id -> width/height */
+  const RESOLUTIONS = useMemo(
+    (): Record<string, { w: number; h: number }> => ({
+      "hd-720p": { w: 1280, h: 720 },
+      "hd-3-2": { w: 1920, h: 1280 },
+      "hd-4-3": { w: 1920, h: 1440 },
+      "hd-1080p": { w: 1920, h: 1080 },
+      "ig-square": { w: 1080, h: 1080 },
+      "ig-portrait-45": { w: 1080, h: 1350 },
+      "story-1080x1920": { w: 1080, h: 1920 },
+      "twitter-1500x500": { w: 1500, h: 500 },
+      "twitter-1200x675": { w: 1200, h: 675 },
+      "4k-uhd": { w: 3840, h: 2160 },
+    }),
+    []
+  );
 
   useEffect(() => {
     if (layoutMode === "triple") setZoom(60);
@@ -182,7 +222,10 @@ export default function MockupEditorPage() {
         selectedTemplate,
         backgroundType,
         backgroundColor,
+        backgroundImage,
         selectedPreset,
+        backgroundNoise,
+        backgroundBlur,
         deviceStyle,
         styleEdge,
         borderType,
@@ -202,6 +245,11 @@ export default function MockupEditorPage() {
         panY,
         layoutMode,
         siteUrl,
+        hideMockup,
+        /** NEW */
+        canvasWidth,
+        canvasHeight,
+        selectedResolution,
         ...updates,
       };
       setHistory((prev) => {
@@ -218,7 +266,10 @@ export default function MockupEditorPage() {
       selectedTemplate,
       backgroundType,
       backgroundColor,
+      backgroundImage,
       selectedPreset,
+      backgroundNoise,
+      backgroundBlur,
       deviceStyle,
       styleEdge,
       borderType,
@@ -238,6 +289,11 @@ export default function MockupEditorPage() {
       panY,
       layoutMode,
       siteUrl,
+      hideMockup,
+      /** NEW */
+      canvasWidth,
+      canvasHeight,
+      selectedResolution,
       historyIndex,
     ]
   );
@@ -250,7 +306,10 @@ export default function MockupEditorPage() {
       setSelectedTemplate(s.selectedTemplate);
       setBackgroundType(s.backgroundType);
       setBackgroundColor(s.backgroundColor);
+      setBackgroundImage(s.backgroundImage);
       setSelectedPreset(s.selectedPreset);
+      setBackgroundNoise(s.backgroundNoise);
+      setBackgroundBlur(s.backgroundBlur);
       setDeviceStyle(s.deviceStyle);
       setStyleEdge(s.styleEdge);
       setBorderType(s.borderType);
@@ -270,6 +329,11 @@ export default function MockupEditorPage() {
       setPanY(s.panY);
       setLayoutMode(s.layoutMode);
       setSiteUrl(s.siteUrl);
+      setHideMockup(s.hideMockup);
+      /** NEW */
+      setCanvasWidth(s.canvasWidth);
+      setCanvasHeight(s.canvasHeight);
+      setSelectedResolution(s.selectedResolution);
       setHistoryIndex((p) => p - 1);
     }
   }, [history, historyIndex]);
@@ -282,7 +346,10 @@ export default function MockupEditorPage() {
       setSelectedTemplate(s.selectedTemplate);
       setBackgroundType(s.backgroundType);
       setBackgroundColor(s.backgroundColor);
+      setBackgroundImage(s.backgroundImage);
       setSelectedPreset(s.selectedPreset);
+      setBackgroundNoise(s.backgroundNoise);
+      setBackgroundBlur(s.backgroundBlur);
       setDeviceStyle(s.deviceStyle);
       setStyleEdge(s.styleEdge);
       setBorderType(s.borderType);
@@ -302,6 +369,11 @@ export default function MockupEditorPage() {
       setPanY(s.panY);
       setLayoutMode(s.layoutMode);
       setSiteUrl(s.siteUrl);
+      setHideMockup(s.hideMockup);
+      /** NEW */
+      setCanvasWidth(s.canvasWidth);
+      setCanvasHeight(s.canvasHeight);
+      setSelectedResolution(s.selectedResolution);
       setHistoryIndex((p) => p + 1);
     }
   }, [history, historyIndex]);
@@ -318,7 +390,10 @@ export default function MockupEditorPage() {
       selectedTemplate: null,
       backgroundType: "gradient",
       backgroundColor: "#6366f1",
+      backgroundImage: undefined,
       selectedPreset: "purple-pink",
+      backgroundNoise: 0,
+      backgroundBlur: 0,
       deviceStyle: "default",
       styleEdge: 12,
       borderType: "",
@@ -337,7 +412,12 @@ export default function MockupEditorPage() {
       panX: 0,
       panY: 0,
       layoutMode: "single",
-      siteUrl: "https://mokk.io",
+      siteUrl: "https://mokkio.me",
+      hideMockup: false,
+      /** NEW defaults */
+      canvasWidth: CANVAS_WIDTH,
+      canvasHeight: CANVAS_HEIGHT,
+      selectedResolution: "hd-720p",
     };
     setHistory([initialState]);
     setHistoryIndex(0);
@@ -405,6 +485,16 @@ export default function MockupEditorPage() {
     },
     [saveToHistory, backgroundColor]
   );
+  const setBackgroundImageWithHistory = useCallback(
+    (
+      v: string | undefined | ((p: string | undefined) => string | undefined)
+    ) => {
+      const newValue = typeof v === "function" ? v(backgroundImage) : v;
+      setBackgroundImage(newValue);
+      saveToHistory({ backgroundImage: newValue });
+    },
+    [saveToHistory, backgroundImage]
+  );
   const setSelectedPresetWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
       const newValue = typeof v === "function" ? v(selectedPreset) : v;
@@ -412,6 +502,22 @@ export default function MockupEditorPage() {
       saveToHistory({ selectedPreset: newValue });
     },
     [saveToHistory, selectedPreset]
+  );
+  const setBackgroundNoiseWithHistory = useCallback(
+    (v: number | ((p: number) => number)) => {
+      const newValue = typeof v === "function" ? v(backgroundNoise) : v;
+      setBackgroundNoise(newValue);
+      saveToHistory({ backgroundNoise: newValue });
+    },
+    [saveToHistory, backgroundNoise]
+  );
+  const setBackgroundBlurWithHistory = useCallback(
+    (v: number | ((p: number) => number)) => {
+      const newValue = typeof v === "function" ? v(backgroundBlur) : v;
+      setBackgroundBlur(newValue);
+      saveToHistory({ backgroundBlur: newValue });
+    },
+    [saveToHistory, backgroundBlur]
   );
   const setDeviceStyleWithHistory = useCallback(
     (
@@ -613,6 +719,24 @@ export default function MockupEditorPage() {
     [saveToHistory, siteUrl]
   );
 
+  const onToggleHideMockup = () => setHideMockup(!hideMockup);
+
+  // setter para el preset con history
+  const setSelectedResolutionWithHistory = useCallback(
+    (id: string) => {
+      const r = RESOLUTIONS[id] ?? RESOLUTIONS["hd-720p"];
+      setSelectedResolution(id);
+      setCanvasWidth(r.w);
+      setCanvasHeight(r.h);
+      saveToHistory({
+        selectedResolution: id,
+        canvasWidth: r.w,
+        canvasHeight: r.h,
+      });
+    },
+    [saveToHistory, RESOLUTIONS]
+  );
+
   const resetToDefaults = () => {
     const s: AppState = {
       uploadedImages: [null, null, null, null],
@@ -620,7 +744,10 @@ export default function MockupEditorPage() {
       selectedTemplate: null,
       backgroundType: "gradient",
       backgroundColor: "#6366f1",
+      backgroundImage: undefined,
       selectedPreset: "purple-pink",
+      backgroundNoise: 0,
+      backgroundBlur: 0,
       deviceStyle: "default",
       styleEdge: 12,
       borderType: "",
@@ -639,7 +766,11 @@ export default function MockupEditorPage() {
       panX: 0,
       panY: 0,
       layoutMode: "single",
-      siteUrl: "https://mokk.io",
+      siteUrl: "https://mokkio.me",
+      hideMockup: false,
+      canvasWidth: CANVAS_WIDTH,
+      canvasHeight: CANVAS_HEIGHT,
+      selectedResolution: "hd-720p",
     };
 
     setUploadedImages(s.uploadedImages);
@@ -647,7 +778,10 @@ export default function MockupEditorPage() {
     setSelectedTemplate(s.selectedTemplate);
     setBackgroundType(s.backgroundType);
     setBackgroundColor(s.backgroundColor);
+    setBackgroundImage(s.backgroundImage);
     setSelectedPreset(s.selectedPreset);
+    setBackgroundNoise(s.backgroundNoise);
+    setBackgroundBlur(s.backgroundBlur);
     setDeviceStyle(s.deviceStyle);
     setStyleEdge(s.styleEdge);
     setBorderType(s.borderType);
@@ -667,6 +801,10 @@ export default function MockupEditorPage() {
     setPanY(s.panY);
     setLayoutMode(s.layoutMode);
     setSiteUrl(s.siteUrl);
+    setHideMockup(s.hideMockup);
+    setCanvasWidth(s.canvasWidth);
+    setCanvasHeight(s.canvasHeight);
+    setSelectedResolution(s.selectedResolution);
 
     setHistory([s]);
     setHistoryIndex(0);
@@ -719,6 +857,9 @@ export default function MockupEditorPage() {
                     selectedPreset={selectedPreset}
                     backgroundType={backgroundType}
                     backgroundColor={backgroundColor}
+                    backgroundImage={backgroundImage}
+                    backgroundNoise={backgroundNoise}
+                    backgroundBlur={backgroundBlur}
                     padding={60}
                     shadowOpacity={shadowOpacity}
                     borderRadius={borderRadius}
@@ -739,6 +880,9 @@ export default function MockupEditorPage() {
                     panY={panY}
                     layoutMode={layoutMode}
                     onImageUpload={handleImageUpload}
+                    hideMockup={hideMockup}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
                   />
                 </div>
               </div>
@@ -771,8 +915,14 @@ export default function MockupEditorPage() {
                     setBackgroundType={setBackgroundTypeWithHistory}
                     backgroundColor={backgroundColor}
                     setBackgroundColor={setBackgroundColorWithHistory}
+                    backgroundImage={backgroundImage}
+                    setBackgroundImage={setBackgroundImageWithHistory}
                     selectedPreset={selectedPreset}
                     setSelectedPreset={setSelectedPresetWithHistory}
+                    backgroundNoise={backgroundNoise}
+                    setBackgroundNoise={setBackgroundNoiseWithHistory}
+                    backgroundBlur={backgroundBlur}
+                    setBackgroundBlur={setBackgroundBlurWithHistory}
                     deviceStyle={deviceStyle}
                     setDeviceStyle={setDeviceStyleWithHistory}
                     styleEdge={styleEdge}
@@ -809,6 +959,10 @@ export default function MockupEditorPage() {
                     layoutMode={layoutMode}
                     siteUrl={siteUrl}
                     setSiteUrl={setSiteUrlWithHistory}
+                    hideMockup={hideMockup}
+                    onToggleHideMockup={onToggleHideMockup}
+                    selectedResolution={selectedResolution}
+                    setSelectedResolution={setSelectedResolutionWithHistory}
                   />
                 </div>
               </div>
@@ -852,6 +1006,8 @@ export default function MockupEditorPage() {
                     setPanImmediate={setPanImmediate}
                     commitPanHistory={commitPanHistory}
                     sceneType={sceneType}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
                   />
                 </div>
               </div>
@@ -869,8 +1025,14 @@ export default function MockupEditorPage() {
               setBackgroundType={setBackgroundTypeWithHistory}
               backgroundColor={backgroundColor}
               setBackgroundColor={setBackgroundColorWithHistory}
+              backgroundImage={backgroundImage}
+              setBackgroundImage={setBackgroundImageWithHistory}
               selectedPreset={selectedPreset}
               setSelectedPreset={setSelectedPresetWithHistory}
+              backgroundNoise={backgroundNoise}
+              setBackgroundNoise={setBackgroundNoiseWithHistory}
+              backgroundBlur={backgroundBlur}
+              setBackgroundBlur={setBackgroundBlurWithHistory}
               deviceStyle={deviceStyle}
               setDeviceStyle={setDeviceStyleWithHistory}
               styleEdge={styleEdge}
@@ -907,6 +1069,10 @@ export default function MockupEditorPage() {
               layoutMode={layoutMode}
               siteUrl={siteUrl}
               setSiteUrl={setSiteUrlWithHistory}
+              hideMockup={hideMockup}
+              onToggleHideMockup={onToggleHideMockup}
+              selectedResolution={selectedResolution}
+              setSelectedResolution={setSelectedResolutionWithHistory}
             />
 
             <div className="flex flex-1 flex-col min-w-0 gap-8">
@@ -935,6 +1101,9 @@ export default function MockupEditorPage() {
                     selectedPreset={selectedPreset}
                     backgroundType={backgroundType}
                     backgroundColor={backgroundColor}
+                    backgroundImage={backgroundImage}
+                    backgroundNoise={backgroundNoise}
+                    backgroundBlur={backgroundBlur}
                     padding={60}
                     shadowOpacity={shadowOpacity}
                     borderRadius={borderRadius}
@@ -955,6 +1124,9 @@ export default function MockupEditorPage() {
                     panY={panY}
                     layoutMode={layoutMode}
                     onImageUpload={handleImageUpload}
+                    hideMockup={hideMockup}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
                   />
                 </div>
               </div>
@@ -982,6 +1154,9 @@ export default function MockupEditorPage() {
               shadowType={shadowType}
               backgroundType={backgroundType}
               backgroundColor={backgroundColor}
+              backgroundImage={backgroundImage}
+              backgroundNoise={backgroundNoise}
+              backgroundBlur={backgroundBlur}
               selectedPreset={selectedPreset}
               panX={panX}
               panY={panY}
@@ -991,6 +1166,8 @@ export default function MockupEditorPage() {
               setPanImmediate={setPanImmediate}
               commitPanHistory={commitPanHistory}
               sceneType={sceneType}
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
             />
           </>
         )}
