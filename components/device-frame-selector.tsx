@@ -1,20 +1,23 @@
-"use client"
-import { Button } from "@/components/ui/button"
-import { Smartphone, Monitor, Tablet, Globe } from "lucide-react"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Smartphone, Monitor, Tablet, Globe } from "lucide-react";
 
 interface DeviceFrameSelectorProps {
-  selectedDevice: string
-  setSelectedDevice: (device: string) => void
+  selectedDevice: string;
+  setSelectedDevice: (device: string) => void;
 }
 
-export function DeviceFrameSelector({ selectedDevice, setSelectedDevice }: DeviceFrameSelectorProps) {
+export function DeviceFrameSelector({
+  selectedDevice,
+  setSelectedDevice,
+}: DeviceFrameSelectorProps) {
   const deviceCategories = [
     {
       name: "Mobile",
       icon: Smartphone,
       devices: [
-        { id: "iphone-15-pro", name: "iPhone 15 Pro", size: "393×852" },
-        { id: "iphone-15-pro-max", name: "iPhone 15 Pro Max", size: "430×932" },
+        { id: "iphone-17-pro", name: "iPhone 17 Pro", size: "393×852" },
+        { id: "iphone-17-pro-max", name: "iPhone 17 Pro Max", size: "431×937" },
         { id: "android-pixel", name: "Pixel 8 Pro", size: "412×915" },
       ],
     },
@@ -44,7 +47,7 @@ export function DeviceFrameSelector({ selectedDevice, setSelectedDevice }: Devic
         { id: "firefox-browser", name: "Firefox", size: "1440×900" },
       ],
     },
-  ]
+  ];
 
   return (
     <div className="border-b border-border bg-card">
@@ -65,7 +68,9 @@ export function DeviceFrameSelector({ selectedDevice, setSelectedDevice }: Devic
                   className="shrink-0"
                 >
                   <span className="font-medium">{device.name}</span>
-                  <span className="ml-1.5 text-xs opacity-60">{device.size}</span>
+                  <span className="ml-1.5 text-xs opacity-60">
+                    {device.size}
+                  </span>
                 </Button>
               ))}
             </div>
@@ -73,5 +78,5 @@ export function DeviceFrameSelector({ selectedDevice, setSelectedDevice }: Devic
         ))}
       </div>
     </div>
-  )
+  );
 }
