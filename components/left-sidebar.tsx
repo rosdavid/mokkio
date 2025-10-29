@@ -3,10 +3,17 @@
 import type React from "react";
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, RefreshCw, Trash2, Upload } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ChevronDown,
+  ImageIcon,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -35,7 +42,9 @@ interface LeftSidebarProps {
     | "abstract"
     | "earth"
     | "radiant"
-    | "texture";
+    | "texture"
+    | "transparent"
+    | "image";
   setBackgroundType: (
     type:
       | "solid"
@@ -47,9 +56,13 @@ interface LeftSidebarProps {
       | "earth"
       | "radiant"
       | "texture"
+      | "transparent"
+      | "image"
   ) => void;
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
+  backgroundImage?: string | undefined;
+  setBackgroundImage: (img: string | undefined) => void;
   selectedPreset: string;
   setSelectedPreset: (preset: string) => void;
 
@@ -94,6 +107,18 @@ interface LeftSidebarProps {
   layoutMode: "single" | "double" | "triple";
   siteUrl?: string;
   setSiteUrl?: (url: string) => void;
+  hideMockup?: boolean;
+  onToggleHideMockup?: () => void;
+
+  /** NEW: frame resolution preset */
+  selectedResolution: string;
+  setSelectedResolution: (id: string) => void;
+
+  /** NEW: background effects */
+  backgroundNoise: number;
+  setBackgroundNoise: (value: number) => void;
+  backgroundBlur: number;
+  setBackgroundBlur: (value: number) => void;
 }
 
 const gradientPresets = [
@@ -251,10 +276,130 @@ const solidColors = [
   "#262626",
   "#171717",
   "#0a0a0a",
+  "#0f0f0f",
+  "#050505",
+];
+
+const blueColors = [
+  "#eff6ff",
+  "#dbeafe",
+  "#bfdbfe",
+  "#93c5fd",
+  "#60a5fa",
+  "#3b82f6",
+  "#2563eb",
+  "#1d4ed8",
+  "#1e40af",
+  "#1e3a8a",
+  "#172554",
+  "#0f172a",
+];
+
+const greenColors = [
+  "#f0fdf4",
+  "#dcfce7",
+  "#bbf7d0",
+  "#86efac",
+  "#4ade80",
+  "#22c55e",
+  "#16a34a",
+  "#15803d",
+  "#166534",
+  "#14532d",
+  "#0f5132",
+  "#052e16",
+];
+
+const yellowColors = [
+  "#fefce8",
+  "#fef3c7",
+  "#fde68a",
+  "#fcd34d",
+  "#fbbf24",
+  "#f59e0b",
+  "#d97706",
+  "#b45309",
+  "#92400e",
+  "#78350f",
+  "#451a03",
+  "#2d1206",
+];
+
+const redColors = [
+  "#fef2f2",
+  "#fee2e2",
+  "#fecaca",
+  "#fca5a5",
+  "#f87171",
+  "#ef4444",
+  "#dc2626",
+  "#b91c1c",
+  "#991b1b",
+  "#7f1d1d",
+  "#450a0a",
+  "#2d0606",
+];
+
+const orangeColors = [
+  "#fff7ed",
+  "#ffedd5",
+  "#fed7aa",
+  "#fdba74",
+  "#fb923c",
+  "#f97316",
+  "#ea580c",
+  "#c2410c",
+  "#9a3412",
+  "#7c2d12",
+  "#431407",
+  "#2d0f06",
+];
+
+const pinkColors = [
+  "#fdf2f8",
+  "#fce7f3",
+  "#fbcfe8",
+  "#f9a8d4",
+  "#f472b6",
+  "#ec4899",
+  "#db2777",
+  "#be185d",
+  "#9d174d",
+  "#831843",
+  "#500724",
+  "#350318",
+];
+
+const purpleColors = [
+  "#faf5ff",
+  "#f3e8ff",
+  "#e9d5ff",
+  "#d8b4fe",
+  "#c084fc",
+  "#a855f7",
+  "#9333ea",
+  "#7c3aed",
+  "#6b21a8",
+  "#581c87",
+  "#3b0764",
+  "#240b3b",
+];
+
+const colorGroups = [
+  { name: "Grays", colors: solidColors },
+  { name: "Blues", colors: blueColors },
+  { name: "Greens", colors: greenColors },
+  { name: "Yellows", colors: yellowColors },
+  { name: "Reds", colors: redColors },
+  { name: "Oranges", colors: orangeColors },
+  { name: "Pinks", colors: pinkColors },
+  { name: "Purples", colors: purpleColors },
 ];
 
 export function LeftSidebar(props: LeftSidebarProps) {
   const [activeTab, setActiveTab] = useState("mockup");
+  const [backgroundTab, setBackgroundTab] = useState("color");
+  const [deviceTab, setDeviceTab] = useState("all");
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
@@ -265,9 +410,14 @@ export function LeftSidebar(props: LeftSidebarProps) {
     shadow: true,
     background: true,
   });
-  const [gradientType, setGradientType] = useState<"linear" | "radial">(
-    "linear"
-  );
+  const [backgroundExpandedSections, setBackgroundExpandedSections] = useState<
+    Record<string, boolean>
+  >({
+    solid: false,
+    linear: false,
+    radial: false,
+    cosmic: false,
+  });
 
   const toggleSection = (s: string) =>
     setExpandedSections((prev) => ({ ...prev, [s]: !prev[s] }));
@@ -277,8 +427,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
     switch (props.selectedDevice) {
       case "browser":
         return "1920×1080px";
-      case "iphone-15-pro":
-        return "1179×2556px";
+      case "iphone-17-pro":
+        return "1206×2622px";
+      case "iphone-17-pro-max":
+        return "1320×2868px";
       case "macbook-pro":
         return "2560×1600px";
       case "ipad-pro":
@@ -288,21 +440,67 @@ export function LeftSidebar(props: LeftSidebarProps) {
     }
   };
 
-  const getBorderTypeFromRadius = (r: number) =>
-    r === 0 ? "sharp" : r === 20 ? "curved" : r === 40 ? "round" : null;
+  const deviceDisplayNames: Record<string, string> = {
+    screenshot: "Screenshot - Adapts to media",
+    "iphone-17-pro": "iPhone 17 Pro - 1206×2622px",
+    "iphone-17-pro-max": "iPhone 17 Pro Max - 1320×2868px",
+    "ipad-pro": "iPad Pro - 2048×2732px",
+    "macbook-pro": "MacBook Pro - 2560×1600px",
+    browser: "Browser - 1920×1080px",
+  };
+
+  const getDeviceInfo = (deviceKey: string) => {
+    const displayName = deviceDisplayNames[deviceKey] || deviceKey;
+    const parts = displayName.split(" - ");
+    return {
+      name: parts[0],
+      resolution: parts[1] || "Auto",
+    };
+  };
+
+  const DeviceButton = ({
+    deviceKey,
+    isSelected,
+    onClick,
+  }: {
+    deviceKey: string;
+    isSelected: boolean;
+    onClick: () => void;
+  }) => {
+    const { name, resolution } = getDeviceInfo(deviceKey);
+    return (
+      <button
+        onClick={onClick}
+        className={`flex flex-col items-center justify-center p-3 rounded-lg border text-center cursor-pointer transition-all duration-200 ${
+          isSelected
+            ? "border-purple-500 bg-purple-500/20"
+            : "border-white/10 bg-white/5 hover:bg-white/10"
+        }`}
+      >
+        <span className="text-xs text-white/60 leading-tight">
+          {resolution}
+        </span>
+        <span className="text-xs text-white font-medium mt-1 leading-tight">
+          {name}
+        </span>
+      </button>
+    );
+  };
+
   const getEffectiveBorderType = () => {
-    if (["sharp", "curved", "round"].includes(props.borderType))
-      return props.borderType;
-    return getBorderTypeFromRadius(props.borderRadius);
+    const radius = props.borderRadius;
+    if (radius <= 10) return "sharp";
+    if (radius <= 30) return "curved";
+    return "round";
   };
 
   return (
     <div
-      className="w-full md:w-[280px] border-r border-white/10 bg-[#0a0a0a] overflow-y-auto"
+      className="w-full md:w-[280px] border-r border-white/10 bg-[#0a0a0a] overflow-y-auto sticky top-0 h-screen"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {/* Tabs */}
-      <div className="border-b border-white/10 p-4 flex flex-col items-center space-y-4">
+      <div className="sticky top-0 z-30 border-b border-white/10 supports-backdrop-filter:border-white/20 p-4 flex flex-col items-center space-y-4 supports-backdrop-filter:bg-[#0a0a0a]/10 backdrop-blur-xl supports-backdrop-filter:backdrop-saturate-150">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center">
             <svg
@@ -320,9 +518,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
           </div>
           <span className="text-lg font-bold text-white">Mokkio</span>
         </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="relative grid w-full grid-cols-2 bg-white/5 overflow-hidden px-1 py-1">
-            {/* Indicador de pestaña activa */}
+            {/* Active tab indicator */}
             <span
               className="absolute top-1 h-[calc(100%-0.5rem)] w-[calc(50%-0.5rem)] bg-white/10 rounded-lg transition-all duration-300 pointer-events-none"
               style={{
@@ -355,24 +554,188 @@ export function LeftSidebar(props: LeftSidebarProps) {
               onValueChange={props.setSelectedDevice}
             >
               <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-sm">
-                <SelectValue />
+                <SelectValue>
+                  {props.selectedDevice
+                    ? deviceDisplayNames[props.selectedDevice] ||
+                      props.selectedDevice
+                    : "Select device"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] text-white border-white/10">
-                <SelectItem className="cursor-pointer" value="screenshot">
-                  Screenshot - Adapts to media
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="browser">
-                  Browser - 1920×1080px
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="iphone-15-pro">
-                  iPhone 15 Pro - 1179×2556px
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="macbook-pro">
-                  MacBook Pro - 2560×1600px
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="ipad-pro">
-                  iPad Pro - 2048×2732px
-                </SelectItem>
+                <div className="p-2">
+                  <Tabs
+                    value={deviceTab}
+                    onValueChange={setDeviceTab}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-6 bg-white/5 overflow-hidden px-1 py-1 mb-3">
+                      <TabsTrigger
+                        value="all"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "all"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        All
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="phone"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "phone"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        Phone
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="tablet"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "tablet"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        Tablet
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="laptop"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "laptop"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        Laptop
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="desktop"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "desktop"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        Desktop
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="browser"
+                        className={`text-xs text-white cursor-pointer z-10 transition-colors ${
+                          deviceTab === "browser"
+                            ? "bg-purple-500/20 border-purple-500"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        Browser
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* All Tab */}
+                    <TabsContent value="all" className="mt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <DeviceButton
+                          deviceKey="screenshot"
+                          isSelected={props.selectedDevice === "screenshot"}
+                          onClick={() => props.setSelectedDevice("screenshot")}
+                        />
+                        <DeviceButton
+                          deviceKey="iphone-17-pro"
+                          isSelected={props.selectedDevice === "iphone-17-pro"}
+                          onClick={() =>
+                            props.setSelectedDevice("iphone-17-pro")
+                          }
+                        />
+                        <DeviceButton
+                          deviceKey="iphone-17-pro-max"
+                          isSelected={
+                            props.selectedDevice === "iphone-17-pro-max"
+                          }
+                          onClick={() =>
+                            props.setSelectedDevice("iphone-17-pro-max")
+                          }
+                        />
+                        <DeviceButton
+                          deviceKey="ipad-pro"
+                          isSelected={props.selectedDevice === "ipad-pro"}
+                          onClick={() => props.setSelectedDevice("ipad-pro")}
+                        />
+                        <DeviceButton
+                          deviceKey="macbook-pro"
+                          isSelected={props.selectedDevice === "macbook-pro"}
+                          onClick={() => props.setSelectedDevice("macbook-pro")}
+                        />
+                        <DeviceButton
+                          deviceKey="browser"
+                          isSelected={props.selectedDevice === "browser"}
+                          onClick={() => props.setSelectedDevice("browser")}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Phone Tab */}
+                    <TabsContent value="phone" className="mt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <DeviceButton
+                          deviceKey="iphone-17-pro"
+                          isSelected={props.selectedDevice === "iphone-17-pro"}
+                          onClick={() =>
+                            props.setSelectedDevice("iphone-17-pro")
+                          }
+                        />
+                        <DeviceButton
+                          deviceKey="iphone-17-pro-max"
+                          isSelected={
+                            props.selectedDevice === "iphone-17-pro-max"
+                          }
+                          onClick={() =>
+                            props.setSelectedDevice("iphone-17-pro-max")
+                          }
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Tablet Tab */}
+                    <TabsContent value="tablet" className="mt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <DeviceButton
+                          deviceKey="ipad-pro"
+                          isSelected={props.selectedDevice === "ipad-pro"}
+                          onClick={() => props.setSelectedDevice("ipad-pro")}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Laptop Tab */}
+                    <TabsContent value="laptop" className="mt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <DeviceButton
+                          deviceKey="macbook-pro"
+                          isSelected={props.selectedDevice === "macbook-pro"}
+                          onClick={() => props.setSelectedDevice("macbook-pro")}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Desktop Tab */}
+                    <TabsContent value="desktop" className="mt-2">
+                      <div className="text-xs text-white/40 text-center py-4">
+                        No desktop devices available yet
+                      </div>
+                    </TabsContent>
+
+                    {/* Browser Tab */}
+                    <TabsContent value="browser" className="mt-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <DeviceButton
+                          deviceKey="browser"
+                          isSelected={props.selectedDevice === "browser"}
+                          onClick={() => props.setSelectedDevice("browser")}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
               </SelectContent>
             </Select>
             {props.selectedDevice === "screenshot" && (
@@ -451,7 +814,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                               e.stopPropagation();
                               props.onImageRemove(index);
                             }}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2"
+                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 cursor-pointer"
                             title="Remove image"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -464,7 +827,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                                 .getElementById(`file-input-${index}`)
                                 ?.click();
                             }}
-                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2"
+                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 cursor-pointer"
                             title="Replace image"
                           >
                             <RefreshCw className="h-4 w-4" />
@@ -475,6 +838,24 @@ export function LeftSidebar(props: LeftSidebarProps) {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Hide Mockup Checkbox */}
+          <div className="bg-white/10 p-2.5 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hide-mockup"
+                checked={props.hideMockup || false}
+                onCheckedChange={props.onToggleHideMockup}
+                className="border-white/20 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 cursor-pointer"
+              />
+              <label
+                htmlFor="hide-mockup"
+                className="text-xs text-white/60 cursor-pointer"
+              >
+                Hide Mockup
+              </label>
             </div>
           </div>
 
@@ -516,7 +897,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
               onClick={() => toggleSection("style")}
               className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider"
             >
-              STYLE
+              BORDER STYLE
               <ChevronDown
                 className={`h-3 w-3 transition-transform duration-200 ${
                   expandedSections.style ? "" : "-rotate-90"
@@ -576,7 +957,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                 onClick={() => toggleSection("border")}
                 className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider"
               >
-                BORDER
+                BORDER RADIUS
                 <ChevronDown
                   className={`h-3 w-3 transition-transform duration-200 ${
                     expandedSections.border ? "" : "-rotate-90"
@@ -874,6 +1255,182 @@ export function LeftSidebar(props: LeftSidebarProps) {
       {activeTab === "frame" && (
         <div className="space-y-4 p-4">
           <div className="bg-white/10 p-2.5 rounded-lg">
+            <div className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider">
+              RESOLUTION
+            </div>
+            <div className="mt-2">
+              <Select
+                value={props.selectedResolution}
+                onValueChange={props.setSelectedResolution}
+              >
+                <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-sm">
+                  <SelectValue placeholder="Choose resolution" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1a1a] text-white border-white/10">
+                  {/* General Section */}
+                  <SelectItem className="cursor-pointer" value="hd-720p">
+                    HD 1280×720 (16:9)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="hd-1080p">
+                    HD 1920×1080 (16:9)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="hd-3-2">
+                    HD 1920×1280 (3:2)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="hd-4-3">
+                    HD 1920×1440 (4:3)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="4k-uhd">
+                    4K UHD 3840×2160 (16:9)
+                  </SelectItem>
+
+                  {/* Divider */}
+                  <div className="h-px bg-white/10 my-1" />
+
+                  {/* Instagram Section */}
+                  <div className="px-2 py-1.5">
+                    <div className="flex items-center gap-2 text-xs text-white/60 font-medium">
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 2500 2500"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <defs>
+                          <radialGradient
+                            id="a"
+                            cx="332.14"
+                            cy="2511.81"
+                            r="3263.54"
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop offset=".09" stopColor="#fa8f21" />
+                            <stop offset=".78" stopColor="#d82d7e" />
+                          </radialGradient>
+                          <radialGradient
+                            id="b"
+                            cx="1516.14"
+                            cy="2623.81"
+                            r="2572.12"
+                            gradientUnits="userSpaceOnUse"
+                          >
+                            <stop
+                              offset=".64"
+                              stopColor="#8c3aaa"
+                              stopOpacity="0"
+                            />
+                            <stop offset="1" stopColor="#8c3aaa" />
+                          </radialGradient>
+                        </defs>
+                        <path
+                          d="M833.4 1250c0-230.11 186.49-416.7 416.6-416.7s416.7 186.59 416.7 416.7-186.59 416.7-416.7 416.7-416.6-186.59-416.6-416.7m-225.26 0c0 354.5 287.36 641.86 641.86 641.86s641.86-287.36 641.86-641.86S1604.5 608.14 1250 608.14 608.14 895.5 608.14 1250m1159.13-667.31a150 150 0 1 0 150.06-149.94h-.06a150.07 150.07 0 0 0-150 149.94M745 2267.47c-121.87-5.55-188.11-25.85-232.13-43-58.36-22.72-100-49.78-143.78-93.5s-70.88-85.32-93.5-143.68c-17.16-44-37.46-110.26-43-232.13-6.06-131.76-7.27-171.34-7.27-505.15s1.31-373.28 7.27-505.15c5.55-121.87 26-188 43-232.13 22.72-58.36 49.78-100 93.5-143.78s85.32-70.88 143.78-93.5c44-17.16 110.26-37.46 232.13-43 131.76-6.06 171.34-7.27 505-7.27s373.28 1.31 505.15 7.27c121.87 5.55 188 26 232.13 43 58.36 22.62 100 49.78 143.78 93.5s70.78 85.42 93.5 143.78c17.16 44 37.46 110.26 43 232.13 6.06 131.87 7.27 171.34 7.27 505.15s-1.21 373.28-7.27 505.15c-5.55 121.87-25.95 188.11-43 232.13-22.72 58.36-49.78 100-93.5 143.68s-85.42 70.78-143.78 93.5c-44 17.16-110.26 37.46-232.13 43-131.76 6.06-171.34 7.27-505.15 7.27s-373.28-1.21-505-7.27M734.65 7.57c-133.07 6.06-224 27.16-303.41 58.06C349 97.54 279.38 140.35 209.81 209.81S97.54 349 65.63 431.24c-30.9 79.46-52 170.34-58.06 303.41C1.41 867.93 0 910.54 0 1250s1.41 382.07 7.57 515.35c6.06 133.08 27.16 223.95 58.06 303.41 31.91 82.19 74.62 152 144.18 221.43S349 2402.37 431.24 2434.37c79.56 30.9 170.34 52 303.41 58.06C868 2498.49 910.54 2500 1250 2500s382.07-1.41 515.35-7.57c133.08-6.06 223.95-27.16 303.41-58.06 82.19-32 151.86-74.72 221.43-144.18s112.18-139.24 144.18-221.43c30.9-79.46 52.1-170.34 58.06-303.41 6.06-133.38 7.47-175.89 7.47-515.35s-1.41-382.07-7.47-515.35c-6.06-133.08-27.16-224-58.06-303.41-32-82.19-74.72-151.86-144.18-221.43S2150.95 97.54 2068.86 65.63c-79.56-30.9-170.44-52.1-303.41-58.06C1632.17 1.51 1589.56 0 1250.1 0S868 1.41 734.65 7.57"
+                          fill="url(#a)"
+                        />
+                        <path
+                          d="M833.4 1250c0-230.11 186.49-416.7 416.6-416.7s416.7 186.59 416.7 416.7-186.59 416.7-416.7 416.7-416.6-186.59-416.6-416.7m-225.26 0c0 354.5 287.36 641.86 641.86 641.86s641.86-287.36 641.86-641.86S1604.5 608.14 1250 608.14 608.14 895.5 608.14 1250m1159.13-667.31a150 150 0 1 0 150.06-149.94h-.06a150.07 150.07 0 0 0-150 149.94M745 2267.47c-121.87-5.55-188.11-25.85-232.13-43-58.36-22.72-100-49.78-143.78-93.5s-70.88-85.32-93.5-143.68c-17.16-44-37.46-110.26-43-232.13-6.06-131.76-7.27-171.34-7.27-505.15s1.31-373.28 7.27-505.15c5.55-121.87 26-188 43-232.13 22.72-58.36 49.78-100 93.5-143.78s85.32-70.88 143.78-93.5c44-17.16 110.26-37.46 232.13-43 131.76-6.06 171.34-7.27 505-7.27s373.28 1.31 505.15 7.27c121.87 5.55 188 26 232.13 43 58.36 22.62 100 49.78 143.78 93.5s70.78 85.42 93.5 143.78c17.16 44 37.46 110.26 43 232.13 6.06 131.87 7.27 171.34 7.27 505.15s-1.21 373.28-7.27 505.15c-5.55 121.87-25.95 188.11-43 232.13-22.72 58.36-49.78 100-93.5 143.68s-85.42 70.78-143.78 93.5c-44 17.16-110.26 37.46-232.13 43-131.76 6.06-171.34 7.27-505.15 7.27s-373.28-1.21-505-7.27M734.65 7.57c-133.07 6.06-224 27.16-303.41 58.06C349 97.54 279.38 140.35 209.81 209.81S97.54 349 65.63 431.24c-30.9 79.46-52 170.34-58.06 303.41C1.41 867.93 0 910.54 0 1250s1.41 382.07 7.57 515.35c6.06 133.08 27.16 223.95 58.06 303.41 31.91 82.19 74.62 152 144.18 221.43S349 2402.37 431.24 2434.37c79.56 30.9 170.34 52 303.41 58.06C868 2498.49 910.54 2500 1250 2500s382.07-1.41 515.35-7.57c133.08-6.06 223.95-27.16 303.41-58.06 82.19-32 151.86-74.72 221.43-144.18s112.18-139.24 144.18-221.43c30.9-79.46 52.1-170.34 58.06-303.41 6.06-133.38 7.47-175.89 7.47-515.35s-1.41-382.07-7.47-515.35c-6.06-133.08-27.16-224-58.06-303.41-32-82.19-74.72-151.86-144.18-221.43S2150.95 97.54 2068.86 65.63c-79.56-30.9-170.44-52.1-303.41-58.06C1632.17 1.51 1589.56 0 1250.1 0S868 1.41 734.65 7.57"
+                          fill="url(#b)"
+                        />
+                      </svg>
+                      INSTAGRAM
+                    </div>
+                  </div>
+                  <SelectItem className="cursor-pointer" value="ig-square">
+                    Instagram Square 1080×1080 (1:1)
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="ig-portrait-45">
+                    Instagram Portrait 1080×1350 (4:5)
+                  </SelectItem>
+                  <SelectItem
+                    className="cursor-pointer"
+                    value="story-1080x1920"
+                  >
+                    Instagram Stories/Reel 1080×1920 (9:16)
+                  </SelectItem>
+
+                  {/* Divider */}
+                  <div className="h-px bg-white/10 my-1" />
+
+                  {/* Twitter/X Section */}
+                  <div className="px-2 py-1.5">
+                    <div className="flex items-center gap-2 text-xs text-white/60 font-medium">
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="-0.25 -104.25 1109.5 1109.5"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M741 .2V0h52l19 3.8q19 3.7 34.5 9.7t30 14 26.301 16.3q11.7 8.2 21 17.4 9.198 9.3 28.699 4.8c19.501-4.5 27-7.167 42-12.5s29.834-11.333 44.5-18q22-10 26.801-12.7 4.7-2.799 5-3l.199-.3 1-.5 1-.5 1-.5 1-.5.2-.3.3-.2.301-.2.199-.3 1-.3 1-.2-.199 1.5-.301 1.5-.5 1.5-.5 1.5-.5 1-.5 1-.5 1.5q-.5 1.5-1 4t-9.5 20C1055.5 67 1051 73 1042 85s-17.066 21.066-24.199 27.2q-10.8 9.3-14.301 13-3.5 3.8-8.5 7l-5 3.3-1 .5-1 .5-.199.3-.301.2-.3.2-.2.3-1 .5-1 .5-.199.3-.301.2-.3.2-.2.3-.199.3-.301.2-.3.2-.2.3h5l28-6q28-6 53.5-14.5l27-9 3-1 1.5-.5 1-.5 1-.5 1-.5 1-.5 2-.3 2-.2v2l-.5.2-.5.3-.199.3-.301.2-.3.2-.2.3-.199.3-.301.2-.3.2-.2.3-.199.3-.301.2-.5 1-.5 1-.3.2q-.2.3-12.7 17-12.5 16.8-13.5 17-1 .3-2.8 3-1.7 2.8-21.2 22.3c-19.5 19.5-25.732 24.566-38.199 34.7q-18.8 15.3-19 37.6-.3 22.2-2.301 50.2-2 28-7.5 60.5T970 430t-28 80c-16.5 39-22.5 49.333-34.5 70s-23 38.167-33 52.5-20.166 27.833-30.5 40.5q-15.5 19-39.199 42.8-23.8 23.7-26 26-2.299 2.2-19.601 16.4-17.2 14.3-37 28.6-19.7 14.2-36.2 23.7c-16.5 9.5-24.266 13.566-39.8 21.7Q623 844.5 596 855c-27 10.5-37 13.5-57 19.5s-39.333 10.667-58 14q-28 5-63.5 8.5l-35.5 3.5v.5h-65v-.5l-8.5-.5q-8.5-.5-14-1t-41.5-5.5c-36-5-42.833-6.667-56.5-10q-20.5-5-61-19c-40.5-14-50.1-18.767-69.3-28.3q-28.7-14.2-36-18Q23 814.5 14 809l-9-5.5-.199-.3-.301-.2-.3-.2-.2-.3-1-.5-1-.5-.199-.3-.301-.2-.3-.2-.2-.3-.199-.3L.5 800H0v-2l1 .2 1 .3 4.5.5q4.5.5 24.5 1.5t42.5 0c22.5-1 30.334-2.167 46-4.5q23.5-3.5 55.5-12t58.801-20.2q26.7-11.8 38-17.6 11.2-5.7 34.199-21.2l23-15.5.2-.3.3-.2.301-.2.199-.3.2-.3.3-.2.301-.2.199-.3 1-.3 1-.2.2-1 .3-1 .301-.2.199-.3-8-.5q-8-.5-15.5-1c-7.5-.5-12.833-1.833-23.5-4.5q-15.999-4-34.5-12t-36-19-25.3-18.3q-7.7-7.2-20-20.4-12.2-13.3-21.2-27.3c-9-14-11.733-20.101-17.199-32.3L124.5 551l-.5-1.5-.5-1.5-.3-1-.2-1 1.5.2 1.5.3 11 1.5q11.001 1.5 34.5 1t32.5-2c9-1.5 9.667-1.667 11-2l2-.5 2.5-.5 2.5-.5.2-.3.3-.2.301-.2.199-.3-2-.5-2-.5-2-.5-2-.5-2-.5q-2-.5-7-2t-27-11-35-18.5a242 242 0 0 1-24.8-19.7Q107.5 478 93.5 461t-25-39.5-16.5-43a232 232 0 0 1-7.199-41.5L43 316l1 .2 1 .3 1 .5 1 .5 1 .5 1 .5 15.5 7q15.5 7 38.5 12t27.5 5.5l4.5.5h9l-.199-.3-.301-.2-.3-.2-.2-.3-.199-.3-.301-.2-.3-.2-.2-.3-1-.5-1-.5-.199-.3-.301-.2-.3-.2-.2-.3-1-.5-1-.5-.199-.3q-.3-.2-8.601-6.4-8.2-6.3-17.2-16.3c-9-10-12-13.667-18-21A162 162 0 0 1 77 271q-7-12.5-14.8-31.8-7.7-19.2-11.7-38.7T46 162t1-32.5c1.5-13.5 3-19.167 6-30.5s7.334-23.333 13-36l8.5-19 .5-1.5.5-1.5.301-.2.199-.3.2-.3.3-.2.301.2.199.3.2.3.3.2.301.2.199.3.2.3.3.2.5 1 .5 1 .301.2.199.3 13.5 15q13.5 15 32 33.5t20.5 19.2q2 .8 5 4.6 3 3.7 20 17.7t44.5 32.5 61 36.5 72 32.5 54 19 53 11.5c37.5 7 43.834 7.667 56.5 9q19 2 26 2.3l7 .2-.199-1.5-.301-1.5-2-12.5q-2-12.5-2-35c0-22.5 1.167-28.833 3.5-41.5q3.501-19 10.5-38.5t13.7-31.3q6.8-11.7 17.8-26.7t28.5-31 40-28.5C677 17.5 683.334 15.333 696 11q19-6.5 32-8.5t13-2.3z"
+                          fill="#5da8dc"
+                          stroke="#5da8dc"
+                          strokeWidth=".5"
+                        />
+                      </svg>
+                      X/TWITTER
+                    </div>
+                  </div>
+                  <SelectItem
+                    className="cursor-pointer"
+                    value="twitter-1500x500"
+                  >
+                    X/Twitter Cover 1500×500 (3:1)
+                  </SelectItem>
+                  <SelectItem
+                    className="cursor-pointer"
+                    value="twitter-1200x675"
+                  >
+                    X/Twitter Post 1200×675 (16:9)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Effects Section */}
+          <div className="bg-white/10 p-2.5 rounded-lg">
+            <div className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+              EFFECTS
+            </div>
+            <div className="space-y-4">
+              {/* Noise */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-white/60">Noise</Label>
+                  <span className="text-xs text-white/40">
+                    {props.backgroundNoise}%
+                  </span>
+                </div>
+                <Slider
+                  value={[props.backgroundNoise]}
+                  onValueChange={([v]) => props.setBackgroundNoise(v)}
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Blur */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-white/60">Blur</Label>
+                  <span className="text-xs text-white/40">
+                    {Math.round((props.backgroundBlur / 20) * 100)}%
+                  </span>
+                </div>
+                <Slider
+                  value={[props.backgroundBlur]}
+                  onValueChange={([v]) => props.setBackgroundBlur(v)}
+                  min={0}
+                  max={20}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/10 p-2.5 rounded-lg">
             <button
               onClick={() => toggleSection("background")}
               className="flex w-full items-center justify-between text-xs font-medium text-white/60 uppercase tracking-wider"
@@ -888,85 +1445,521 @@ export function LeftSidebar(props: LeftSidebarProps) {
             <div
               className={`overflow-hidden transition-all duration-300 ${
                 expandedSections.background
-                  ? "max-h-[560px] opacity-100 mt-2"
+                  ? "max-h-[2500px] opacity-100 mt-2"
                   : "max-h-0 opacity-0"
               }`}
             >
-              {/* Solid */}
-              <div className="mb-3">
-                <p className="text-xs text-white/40 mb-2">Solid Color</p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {solidColors.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => {
-                        props.setBackgroundType("solid");
-                        props.setBackgroundColor(c);
-                      }}
-                      className={`h-8 rounded border cursor-pointer ${
-                        props.backgroundColor === c &&
-                        props.backgroundType === "solid"
-                          ? "border-purple-500 ring-2 ring-purple-500/50"
-                          : "border-white/10"
+              {/* Tabs para fondo */}
+              <div className="mb-4">
+                <Tabs
+                  value={backgroundTab}
+                  onValueChange={setBackgroundTab}
+                  className="w-full"
+                >
+                  <TabsList className="grid w-full grid-cols-3 bg-white/5 overflow-hidden px-1 py-1">
+                    <TabsTrigger
+                      value="transparent"
+                      className={`flex items-center gap-2 text-xs text-white cursor-pointer z-10 transition-colors ${
+                        backgroundTab === "transparent"
+                          ? "bg-purple-500/20 border-purple-500"
+                          : "bg-transparent"
                       }`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
+                      onClick={() => {
+                        setBackgroundTab("transparent");
+                        props.setBackgroundType("transparent");
+                        props.setBackgroundColor("rgba(0,0,0,0)");
+                      }}
+                    >
+                      <span className="w-5 h-5 flex items-center justify-center">
+                        {/* Icono SVG para Transparent */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          xmlnsXlink="http://www.w3.org/1999/xlink"
+                          width="15"
+                          height="15"
+                          fill="none"
+                        >
+                          <rect
+                            width="15"
+                            height="15"
+                            fill="url(#transparent_svg__a)"
+                            fillOpacity="0.4"
+                            rx="6"
+                          ></rect>
+                          <rect
+                            width="14"
+                            height="14"
+                            x="0.5"
+                            y="0.5"
+                            stroke="#fff"
+                            strokeOpacity="0.16"
+                            rx="5.5"
+                          ></rect>
+                          <defs>
+                            <pattern
+                              id="transparent_svg__a"
+                              width="1"
+                              height="1"
+                              patternContentUnits="objectBoundingBox"
+                            >
+                              <use
+                                xlinkHref="#transparent_svg__b"
+                                transform="scale(.01563)"
+                              ></use>
+                            </pattern>
+                            <image
+                              xlinkHref="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA40lEQVR4Xu3bQQ6EQAhEUbj/oXsO8Sdh4XOvJAi/qkF3Zt6E6710++xuiD6T40uACtACqYlzD2IACFKBkoHcgmSQDJJBMngKIT6ADygF6DSYfcCLTzg/z0eGrASogDbT0gKxB2MB5pkiBoBgrEEMwIBjLx9fAAiCIAhygmkkRgYjhWMHditsL2AvYC+QIHjdwzk+BmAABmBAWc1kCF0bKRAEQRAEQRAMGaACbaCUz/P5BRiKxhQaiV07uRjfYgQDMKDpGAhGCMUCzD4CBEEw1iAGYIBPZMJh+g8/P8cKpAJfV4EfMee/sLtaEFIAAAAASUVORK5CYII="
+                              id="transparent_svg__b"
+                              width="64"
+                              height="64"
+                            ></image>
+                          </defs>
+                        </svg>
+                      </span>
+                      Tran...
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="color"
+                      className={`flex items-center gap-2 text-xs text-white cursor-pointer z-10 transition-colors ${
+                        backgroundTab === "color"
+                          ? "bg-purple-500/20 border-purple-500"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      <span className="w-5 h-5 flex items-center justify-center">
+                        {/* Icono círculo blanco para Color */}
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle
+                            cx="10"
+                            cy="10"
+                            r="8"
+                            fill="#fff"
+                            fillOpacity="0.8"
+                            stroke="#fff"
+                            strokeOpacity="0.2"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      </span>
+                      Color
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="image"
+                      className={`flex items-center gap-2 text-xs text-white cursor-pointer z-10 transition-colors ${
+                        backgroundTab === "image"
+                          ? "bg-purple-500/20 border-purple-500"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      <span className="w-5 h-5 flex items-center justify-center">
+                        {/* Icono para Image */}
+                        <ImageIcon className="h-4 w-4 text-white/80" />
+                      </span>
+                      Image
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
-
-              {/* Gradient */}
-              <div>
-                <div className="flex gap-2 mb-3">
+              {/* Tab: Transparent */}
+              {backgroundTab === "transparent" && (
+                <div className="flex flex-col items-center justify-center py-6">
                   <button
-                    onClick={() => setGradientType("linear")}
-                    className={`flex-1 h-8 rounded-lg border text-xs text-white cursor-pointer ${
-                      gradientType === "linear"
+                    onClick={() => {
+                      props.setBackgroundType("transparent");
+                      props.setBackgroundColor("rgba(0,0,0,0)");
+                    }}
+                    className={`h-10 w-32 rounded-lg border text-xs text-white cursor-pointer ${
+                      props.backgroundType === "transparent"
                         ? "border-purple-500 bg-purple-500/20"
                         : "border-white/10 bg-white/5 hover:bg-white/10"
                     }`}
                   >
-                    Linear
+                    No Background
                   </button>
-                  <button
-                    onClick={() => setGradientType("radial")}
-                    className={`flex-1 h-8 rounded-lg border text-xs text-white cursor-pointer ${
-                      gradientType === "radial"
-                        ? "border-purple-500 bg-purple-500/20"
-                        : "border-white/10 bg-white/5 hover:bg-white/10"
-                    }`}
-                  >
-                    Radial
-                  </button>
+                  <span className="text-xs text-white/40 mt-2">
+                    Export transparent PNG
+                  </span>
                 </div>
+              )}
+              {/* Tab: Color */}
+              {backgroundTab === "color" && (
+                <div className="space-y-6">
+                  {/* Solid Colors Section */}
+                  <div>
+                    <h3 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+                      Solid Colors
+                    </h3>
+                    <div className="grid grid-cols-4 gap-1.5 mb-2">
+                      {colorGroups
+                        .flatMap((group) => group.colors)
+                        .slice(0, 3)
+                        .map((c, index) => (
+                          <button
+                            key={`solid-${index}`}
+                            onClick={() => {
+                              props.setBackgroundType("solid");
+                              props.setBackgroundColor(c);
+                            }}
+                            className={`h-8 rounded border cursor-pointer ${
+                              props.backgroundColor === c &&
+                              props.backgroundType === "solid"
+                                ? "border-purple-500 ring-2 ring-purple-500/50"
+                                : "border-white/10"
+                            }`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      <button
+                        onClick={() =>
+                          setBackgroundExpandedSections((prev) => ({
+                            ...prev,
+                            solid: !prev.solid,
+                          }))
+                        }
+                        className={`h-8 rounded border border-white/10 cursor-pointer flex items-center justify-center transition-all duration-200 ${
+                          backgroundExpandedSections.solid
+                            ? "bg-purple-500 hover:bg-purple-600"
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                            backgroundExpandedSections.solid ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {backgroundExpandedSections.solid && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {colorGroups
+                          .flatMap((group) => group.colors)
+                          .slice(3)
+                          .map((c, index) => (
+                            <button
+                              key={`solid-expanded-${index}`}
+                              onClick={() => {
+                                props.setBackgroundType("solid");
+                                props.setBackgroundColor(c);
+                              }}
+                              className={`h-8 rounded border cursor-pointer ${
+                                props.backgroundColor === c &&
+                                props.backgroundType === "solid"
+                                  ? "border-purple-500 ring-2 ring-purple-500/50"
+                                  : "border-white/10"
+                              }`}
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                      </div>
+                    )}
+                  </div>
 
-                <p className="text-xs text-white/40 mb-2">
-                  {gradientType === "linear"
-                    ? "Linear Gradient"
-                    : "Radial Gradient"}
-                </p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(gradientType === "linear"
-                    ? gradientPresets
-                    : radialGradientPresets
-                  ).map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        props.setBackgroundType("gradient");
-                        props.setSelectedPreset(p.id);
-                      }}
-                      className={`h-8 rounded border cursor-pointer ${
-                        props.selectedPreset === p.id &&
-                        props.backgroundType === "gradient"
-                          ? "border-purple-500 ring-2 ring-purple-500/50"
-                          : "border-white/10"
-                      }`}
-                      style={{ background: p.gradient }}
-                    />
-                  ))}
+                  {/* Linear Gradients Section */}
+                  <div>
+                    <h3 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+                      Linear Gradients
+                    </h3>
+                    <div className="grid grid-cols-4 gap-1.5 mb-2">
+                      {gradientPresets.slice(0, 3).map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            props.setBackgroundType("gradient");
+                            props.setSelectedPreset(p.id);
+                          }}
+                          className={`h-8 rounded border cursor-pointer ${
+                            props.selectedPreset === p.id &&
+                            props.backgroundType === "gradient"
+                              ? "border-purple-500 ring-2 ring-purple-500/50"
+                              : "border-white/10"
+                          }`}
+                          style={{ background: p.gradient }}
+                        />
+                      ))}
+                      <button
+                        onClick={() =>
+                          setBackgroundExpandedSections((prev) => ({
+                            ...prev,
+                            linear: !prev.linear,
+                          }))
+                        }
+                        className={`h-8 rounded border border-white/10 cursor-pointer flex items-center justify-center transition-all duration-200 ${
+                          backgroundExpandedSections.linear
+                            ? "bg-purple-500 hover:bg-purple-600"
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                            backgroundExpandedSections.linear
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {backgroundExpandedSections.linear && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {gradientPresets.slice(3).map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              props.setBackgroundType("gradient");
+                              props.setSelectedPreset(p.id);
+                            }}
+                            className={`h-8 rounded border cursor-pointer ${
+                              props.selectedPreset === p.id &&
+                              props.backgroundType === "gradient"
+                                ? "border-purple-500 ring-2 ring-purple-500/50"
+                                : "border-white/10"
+                            }`}
+                            style={{ background: p.gradient }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Radial Gradients Section */}
+                  <div>
+                    <h3 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+                      Radial Gradients
+                    </h3>
+                    <div className="grid grid-cols-4 gap-1.5 mb-2">
+                      {radialGradientPresets.slice(0, 3).map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            props.setBackgroundType("gradient");
+                            props.setSelectedPreset(p.id);
+                          }}
+                          className={`h-8 rounded border cursor-pointer ${
+                            props.selectedPreset === p.id &&
+                            props.backgroundType === "gradient"
+                              ? "border-purple-500 ring-2 ring-purple-500/50"
+                              : "border-white/10"
+                          }`}
+                          style={{ background: p.gradient }}
+                        />
+                      ))}
+                      <button
+                        onClick={() =>
+                          setBackgroundExpandedSections((prev) => ({
+                            ...prev,
+                            radial: !prev.radial,
+                          }))
+                        }
+                        className={`h-8 rounded border border-white/10 cursor-pointer flex items-center justify-center transition-all duration-200 ${
+                          backgroundExpandedSections.radial
+                            ? "bg-purple-500 hover:bg-purple-600"
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                            backgroundExpandedSections.radial
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {backgroundExpandedSections.radial && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {radialGradientPresets.slice(3).map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              props.setBackgroundType("gradient");
+                              props.setSelectedPreset(p.id);
+                            }}
+                            className={`h-8 rounded border cursor-pointer ${
+                              props.selectedPreset === p.id &&
+                              props.backgroundType === "gradient"
+                                ? "border-purple-500 ring-2 ring-purple-500/50"
+                                : "border-white/10"
+                            }`}
+                            style={{ background: p.gradient }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cosmic Gradients Section */}
+                  <div>
+                    <h3 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">
+                      Cosmic Gradients
+                    </h3>
+                    <div className="grid grid-cols-4 gap-1.5 mb-2">
+                      {Array.from({ length: 3 }, (_, i) => i + 1).map((num) => (
+                        <button
+                          key={`cosmic-${num}`}
+                          onClick={() => {
+                            props.setBackgroundType("cosmic");
+                            props.setSelectedPreset(`cosmic-gradient-${num}`);
+                          }}
+                          className={`h-8 rounded border cursor-pointer overflow-hidden ${
+                            props.selectedPreset === `cosmic-gradient-${num}` &&
+                            props.backgroundType === "cosmic"
+                              ? "border-purple-500 ring-2 ring-purple-500/50"
+                              : "border-white/10"
+                          }`}
+                        >
+                          <Image
+                            src={`/cosmic-gradient-${num}.png`}
+                            alt={`Cosmic Gradient ${num}`}
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() =>
+                          setBackgroundExpandedSections((prev) => ({
+                            ...prev,
+                            cosmic: !prev.cosmic,
+                          }))
+                        }
+                        className={`h-8 rounded border border-white/10 cursor-pointer flex items-center justify-center transition-all duration-200 ${
+                          backgroundExpandedSections.cosmic
+                            ? "bg-purple-500 hover:bg-purple-600"
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                            backgroundExpandedSections.cosmic
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {backgroundExpandedSections.cosmic && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {Array.from({ length: 7 }, (_, i) => i + 4).map(
+                          (num) => (
+                            <button
+                              key={`cosmic-${num}`}
+                              onClick={() => {
+                                props.setBackgroundType("cosmic");
+                                props.setSelectedPreset(
+                                  `cosmic-gradient-${num}`
+                                );
+                              }}
+                              className={`h-8 rounded border cursor-pointer overflow-hidden ${
+                                props.selectedPreset ===
+                                  `cosmic-gradient-${num}` &&
+                                props.backgroundType === "cosmic"
+                                  ? "border-purple-500 ring-2 ring-purple-500/50"
+                                  : "border-white/10"
+                              }`}
+                            >
+                              <Image
+                                src={`/cosmic-gradient-${num}.png`}
+                                alt={`Cosmic Gradient ${num}`}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                                unoptimized
+                              />
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              {/* Tab: Image */}
+              {backgroundTab === "image" && (
+                <div className="flex flex-col items-center justify-center py-6">
+                  {props.backgroundImage ? (
+                    <div className="relative group">
+                      <Image
+                        src={props.backgroundImage}
+                        alt="Background image"
+                        width={200}
+                        height={150}
+                        className="rounded-lg object-cover"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => {
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = "image/*";
+                            input.onchange = (e) => {
+                              const file = (e.target as HTMLInputElement)
+                                .files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  props.setBackgroundImage(
+                                    event.target?.result as string
+                                  );
+                                  props.setBackgroundType("image");
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 cursor-pointer"
+                          title="Replace image"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            props.setBackgroundImage(undefined);
+                            props.setBackgroundType("transparent");
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 cursor-pointer"
+                          title="Remove image"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center cursor-pointer relative aspect-video bg-white/5 border border-white/10 border-dashed rounded-lg hover:bg-white/10 transition-colors p-4">
+                      <Upload className="h-6 w-6 text-white/40 mb-2" />
+                      <span className="text-xs text-white/40 text-center">
+                        Drop or click to upload background image
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              props.setBackgroundImage(
+                                event.target?.result as string
+                              );
+                              props.setBackgroundType("image");
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
