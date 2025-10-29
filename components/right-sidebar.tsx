@@ -643,7 +643,7 @@ export function RightSidebar(props: RightSidebarProps) {
             value={[zoom]}
             onValueChange={([v]) => setZoom(v)}
             min={75}
-            max={800}
+            max={564}
             step={1}
             className="flex-1"
           />
@@ -651,7 +651,7 @@ export function RightSidebar(props: RightSidebarProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white cursor-pointer"
-            onClick={() => setZoom(Math.min(800, zoom + 1))}
+            onClick={() => setZoom(Math.min(564, zoom + 1))}
           >
             <svg
               className="h-4 w-4"
