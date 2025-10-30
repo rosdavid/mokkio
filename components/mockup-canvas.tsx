@@ -730,14 +730,24 @@ export function MockupCanvas(props: MockupCanvasProps) {
               ? "cover"
               : deviceType === "screenshot"
               ? "contain"
+              : selectedDevice === "safari"
+              ? "cover"
+              : selectedDevice === "chrome"
+              ? "100% 100%"
               : "100% 100%",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           transform:
-            deviceType === "screenshot" || deviceType === "mobile"
+            deviceType === "screenshot" ||
+            deviceType === "mobile" ||
+            deviceType === "desktop" ||
+            deviceType === "tablet" ||
+            selectedDevice === "safari"
               ? "none"
               : `scale(${zoom})`,
           transformOrigin: "center",
+          width: "100%",
+          height: "100%",
         }}
       />
     );
