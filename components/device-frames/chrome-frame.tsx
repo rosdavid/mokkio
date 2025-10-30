@@ -74,8 +74,8 @@ export function ChromeFrame({
         overflow: "hidden",
         background: backgroundColor,
         boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
-        width: fitToContainer ? "100%" : `min(${width}px, 90vw)`,
-        height: fitToContainer ? "100%" : `min(${height + headerH}px, 80vh)`,
+        width: fitToContainer ? "100%" : `${width}px`,
+        height: fitToContainer ? "100%" : `${height + headerH}px`,
         borderRadius: `${borderRadius}px`,
         display: "flex",
         flexDirection: "column",
@@ -430,7 +430,9 @@ export function ChromeFrame({
       </div>
 
       {/* ---------- CONTENT ---------- */}
-      <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
+      <div style={{ flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
+        {children}
+      </div>
     </div>
   );
 }
