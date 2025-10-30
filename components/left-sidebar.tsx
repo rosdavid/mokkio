@@ -5,6 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
+  ChevronLeft,
   ImageIcon,
   RefreshCw,
   Trash2,
@@ -121,8 +122,11 @@ interface LeftSidebarProps {
   setBackgroundBlur: (value: number) => void;
 
   /** NEW: browser theme mode */
-  browserMode: "light" | "dark";
-  setBrowserMode: (mode: "light" | "dark") => void;
+  browserMode: string;
+  setBrowserMode: (mode: string) => void;
+
+  /** NEW: open landing popup */
+  onOpenLandingPopup?: () => void;
 }
 
 const gradientPresets = [
@@ -605,6 +609,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
       {/* Tabs */}
       <div className="sticky top-0 z-30 border-b border-white/10 supports-backdrop-filter:border-white/20 p-4 flex flex-col items-center space-y-4 supports-backdrop-filter:bg-[#0a0a0a]/10 backdrop-blur-xl supports-backdrop-filter:backdrop-saturate-150">
         <div className="flex items-center gap-3">
+          <ChevronLeft
+            className="text-white cursor-pointer"
+            onClick={props.onOpenLandingPopup}
+          />
           <div className="flex h-9 w-9 items-center justify-center">
             <svg
               version="1.0"
@@ -1208,26 +1216,73 @@ export function LeftSidebar(props: LeftSidebarProps) {
                     props.selectedDevice
                   ) && (
                     <>
-                      <button
-                        onClick={() => props.setBrowserMode("light")}
-                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
-                          props.browserMode === "light"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-white/10 bg-white/5 hover:bg-white/10"
-                        }`}
-                      >
-                        Display
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("dark")}
-                        className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
-                          props.browserMode === "dark"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-white/10 bg-white/5 hover:bg-white/10"
-                        }`}
-                      >
-                        Device Frame
-                      </button>
+                      {props.selectedDevice === "iphone-17-pro" ? (
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("display")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "display"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("blue")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "blue"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Blue
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("silver")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "silver"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Silver
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("orange")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "orange"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Orange
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("light")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "light"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("dark")}
+                            className={`h-10 rounded-lg border text-xs text-white cursor-pointer ${
+                              props.browserMode === "dark"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Device Frame
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

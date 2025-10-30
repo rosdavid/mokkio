@@ -15,7 +15,7 @@ interface ChromeFrameProps {
   referenceWidth?: number;
   headerScale?: number;
   fitToContainer?: boolean;
-  theme?: "light" | "dark";
+  theme?: string;
 }
 
 export function ChromeFrame({

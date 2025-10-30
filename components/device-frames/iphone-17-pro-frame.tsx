@@ -4,14 +4,29 @@ import Image from "next/image";
 interface DeviceFrameProps {
   children: React.ReactNode;
   borderRadius: number;
-  showFrame?: boolean;
+  mode: string;
 }
 
 export function IPhone17ProFrame({
   children,
   borderRadius,
-  showFrame = false,
+  mode,
 }: DeviceFrameProps) {
+  const showFrame = mode !== "display";
+
+  let frameSrc = "/iphone-17-pro.png";
+  switch (mode) {
+    case "blue":
+      frameSrc = "/iphone-17-pro.png";
+      break;
+    case "silver":
+      frameSrc = "/iphone-17-pro-silver.png";
+      break;
+    case "orange":
+      frameSrc = "/iphone-17-pro-orange.png";
+      break;
+  }
+
   if (showFrame) {
     return (
       <div className="relative" style={{ width: "402px", height: "874px" }}>
@@ -32,7 +47,7 @@ export function IPhone17ProFrame({
         {/* Device Frame Image */}
         <div className="relative" style={{ zIndex: 20, pointerEvents: "none" }}>
           <Image
-            src="/iphone-17-pro.png"
+            src={frameSrc}
             alt="iPhone 17 Pro Frame"
             width={402}
             height={874}

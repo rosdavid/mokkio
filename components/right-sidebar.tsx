@@ -73,7 +73,7 @@ interface RightSidebarProps {
   canvasHeight: number;
 
   /** NEW: browser mode for theme switching */
-  browserMode?: "light" | "dark";
+  browserMode?: string;
 }
 
 const LAYOUT_PRESETS = [
@@ -117,7 +117,7 @@ function PresetThumb(props: {
   /** NEW */
   canvasWidth: number;
   canvasHeight: number;
-  browserMode?: "light" | "dark";
+  browserMode?: string;
 }) {
   const {
     presetId,

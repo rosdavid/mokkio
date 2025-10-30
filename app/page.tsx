@@ -62,7 +62,7 @@ interface AppState {
   canvasWidth: number;
   canvasHeight: number;
   selectedResolution: string;
-  browserMode: "light" | "dark";
+  browserMode: string;
 }
 
 export default function MockupEditorPage() {
@@ -166,7 +166,7 @@ export default function MockupEditorPage() {
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const [selectedResolution, setSelectedResolution] = useState("hd-720p");
-  const [browserMode, setBrowserMode] = useState<"light" | "dark">("light");
+  const [browserMode, setBrowserMode] = useState<string>("light");
 
   /** Map preset id -> width/height */
   const RESOLUTIONS = useMemo(
@@ -743,7 +743,7 @@ export default function MockupEditorPage() {
   );
 
   const setBrowserModeWithHistory = useCallback(
-    (v: "light" | "dark" | ((p: "light" | "dark") => "light" | "dark")) => {
+    (v: string | ((p: string) => string)) => {
       const newValue = typeof v === "function" ? v(browserMode) : v;
       setBrowserMode(newValue);
       saveToHistory({ browserMode: newValue });
@@ -982,6 +982,7 @@ export default function MockupEditorPage() {
                     setSelectedResolution={setSelectedResolutionWithHistory}
                     browserMode={browserMode}
                     setBrowserMode={setBrowserModeWithHistory}
+                    onOpenLandingPopup={() => setIsLandingOpen(true)}
                   />
                 </div>
               </div>
@@ -1095,6 +1096,7 @@ export default function MockupEditorPage() {
               setSelectedResolution={setSelectedResolutionWithHistory}
               browserMode={browserMode}
               setBrowserMode={setBrowserModeWithHistory}
+              onOpenLandingPopup={() => setIsLandingOpen(true)}
             />
 
             <div className="flex flex-1 flex-col min-w-0 gap-8">

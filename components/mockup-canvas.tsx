@@ -62,7 +62,7 @@ interface MockupCanvasProps {
   /** NEW: dynamic canvas size */
   canvasWidth?: number;
   canvasHeight?: number;
-  browserMode: "light" | "dark";
+  browserMode: string;
 }
 
 const gradientPresets: Record<string, string> = {
@@ -820,7 +820,7 @@ export function MockupCanvas(props: MockupCanvasProps) {
       return (
         <IPhone17ProFrame
           borderRadius={effectiveBorderRadius}
-          showFrame={browserMode === "dark"}
+          mode={browserMode}
         >
           {renderContent(idx, dims.type)}
         </IPhone17ProFrame>
