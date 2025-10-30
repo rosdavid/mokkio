@@ -400,6 +400,16 @@ const colorGroups = [
   { name: "Purples", colors: purpleColors },
 ];
 
+// Configuración de badges para dispositivos
+const deviceBadges: Record<string, { badge?: string }> = {
+  "ipad-pro": { badge: "NEW" },
+  "iphone-17-pro": { badge: "NEW" },
+  "iphone-17-pro-max": { badge: "NEW" },
+  "macbook-pro": { badge: "NEW" },
+  chrome: { badge: "NEW" },
+  safari: { badge: "NEW" },
+};
+
 export function LeftSidebar(props: LeftSidebarProps) {
   const [activeTab, setActiveTab] = useState("mockup");
   const [backgroundTab, setBackgroundTab] = useState("color");
@@ -432,7 +442,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
   const getRecommendedResolution = () => {
     switch (props.selectedDevice) {
       case "browser":
-        return "1920×1080px";
+        return "Any resolution";
       case "iphone-17-pro":
         return "1206×2622px";
       case "iphone-17-pro-max":
@@ -442,9 +452,9 @@ export function LeftSidebar(props: LeftSidebarProps) {
       case "ipad-pro":
         return "2048×2732px";
       case "safari":
-        return "1920×1080px";
+        return "Any resolution";
       case "chrome":
-        return "1920×1080px";
+        return "Any resolution";
       default:
         return "Any resolution";
     }
@@ -454,11 +464,11 @@ export function LeftSidebar(props: LeftSidebarProps) {
     screenshot: "Screenshot - Adapts to media",
     "iphone-17-pro": "iPhone 17 Pro - 1206×2622px",
     "iphone-17-pro-max": "iPhone 17 Pro Max - 1320×2868px",
-    "ipad-pro": "iPad Pro - 2048×2732px",
-    "macbook-pro": "MacBook Pro - 2560×1600px",
-    safari: "Safari - 1920×1080px",
-    browser: "Browser - 1920×1080px",
-    chrome: "Chrome - 1920×1080px",
+    "ipad-pro": "iPad Pro 13 - 2048×2732px",
+    "macbook-pro": "MacBook Pro 16 - 2560×1600px",
+    safari: "Safari - Adapts to media",
+    browser: "Browser - Adapts to media",
+    chrome: "Chrome - Adapts to media",
   };
 
   const getDeviceInfo = (deviceKey: string) => {
@@ -480,25 +490,106 @@ export function LeftSidebar(props: LeftSidebarProps) {
     onClick: () => void;
   }) => {
     const { name, resolution } = getDeviceInfo(deviceKey);
+    const deviceConfig = deviceBadges[deviceKey] || {};
     return (
-      <button
-        onClick={onClick}
-        className={`flex flex-col items-center justify-center p-3 rounded-lg border text-center cursor-pointer transition-all duration-200 ${
-          isSelected
-            ? "border-purple-500 bg-purple-500/20"
-            : "border-white/10 bg-white/5 hover:bg-white/10"
-        }`}
-      >
-        <span className="text-xs text-white/60 leading-tight">
-          {resolution}
-        </span>
-        <span className="text-xs text-white font-medium mt-1 leading-tight">
-          {name}
-        </span>
-      </button>
+      <div className="relative">
+        <button
+          onClick={onClick}
+          className={`w-44 h-44 flex flex-col items-center justify-center p-3 rounded-lg border text-center cursor-pointer transition-all duration-200 ${
+            isSelected
+              ? "border-purple-500 bg-purple-500/20"
+              : "border-white/10 bg-white/5 hover:bg-white/10"
+          }`}
+        >
+          <div className="flex-1 flex items-center justify-center mb-2 min-h-10">
+            {deviceKey === "screenshot" && (
+              <Image
+                src="/davidros.vercel.app.webp"
+                alt="David Ros thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "chrome" && (
+              <Image
+                src="/chrome-thumbnail.webp"
+                alt="Chrome thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "safari" && (
+              <Image
+                src="/safari-thumbnail.webp"
+                alt="Safari thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "iphone-17-pro" && (
+              <Image
+                src="/iphone-17-pro-thumbnail.png"
+                alt="iPhone 17 Pro thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "iphone-17-pro-max" && (
+              <Image
+                src="/iphone-17-pro-max-thumbnail.png"
+                alt="iPhone 17 Pro Max thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "ipad-pro" && (
+              <Image
+                src="/ipad-pro-13-thumbnail.png"
+                alt="iPad Pro thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+            {deviceKey === "macbook-pro" && (
+              <Image
+                src="/macbook-pro-16-thumbnail.png"
+                alt="MacBook Pro 16 thumbnail"
+                width={96}
+                height={96}
+                className="rounded-md object-contain"
+                unoptimized
+              />
+            )}
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-white/60 leading-tight block">
+              {resolution}
+            </div>
+            <div className="text-base text-white font-medium mt-2 leading-tight block">
+              {name}
+            </div>
+          </div>
+        </button>
+        {deviceConfig.badge && (
+          <div className="absolute top-2 right-2 bg-linear-to-r from-purple-500 to-pink-500 text-white text-xs font-bold p-1 rounded-md border border-white/20 pointer-events-none">
+            {deviceConfig.badge}
+          </div>
+        )}
+      </div>
     );
   };
-
   const getEffectiveBorderType = () => {
     const radius = props.borderRadius;
     if (radius <= 10) return "sharp";
@@ -565,12 +656,158 @@ export function LeftSidebar(props: LeftSidebarProps) {
               value={props.selectedDevice}
               onValueChange={props.setSelectedDevice}
             >
-              <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-sm">
+              <SelectTrigger
+                className="w-full bg-white/5 border-white/10 text-white text-sm"
+                style={{ height: "64px" }}
+              >
                 <SelectValue>
-                  {props.selectedDevice
-                    ? deviceDisplayNames[props.selectedDevice] ||
-                      props.selectedDevice
-                    : "Select device"}
+                  {props.selectedDevice ? (
+                    props.selectedDevice === "screenshot" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/davidros.vercel.app.webp"
+                          alt="David Ros thumbnail"
+                          width={64}
+                          height={64}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "chrome" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/chrome-thumbnail.webp"
+                          alt="Chrome thumbnail"
+                          width={64}
+                          height={64}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "safari" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/safari-thumbnail.webp"
+                          alt="Safari thumbnail"
+                          width={64}
+                          height={64}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "iphone-17-pro" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/iphone-17-pro-thumbnail.png"
+                          alt="iPhone 17 Pro thumbnail"
+                          width={40}
+                          height={40}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "iphone-17-pro-max" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/iphone-17-pro-max-thumbnail.png"
+                          alt="iPhone 17 Pro Max thumbnail"
+                          width={40}
+                          height={40}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "ipad-pro" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/ipad-pro-13-thumbnail.png"
+                          alt="iPad Pro 13 thumbnail"
+                          width={40}
+                          height={40}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : props.selectedDevice === "macbook-pro" ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/macbook-pro-16-thumbnail.png"
+                          alt="MacBook Pro 16 thumbnail"
+                          width={40}
+                          height={40}
+                          className="rounded-md object-contain"
+                          unoptimized
+                        />
+                        <div className="flex flex-col items-start justify-center">
+                          <span className="text-sm text-white font-medium">
+                            {getDeviceInfo(props.selectedDevice).name}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {getDeviceInfo(props.selectedDevice).resolution}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center">
+                        <span className="text-sm text-white font-medium">
+                          {getDeviceInfo(props.selectedDevice).name}
+                        </span>
+                        <span className="text-xs text-white/60">
+                          {getDeviceInfo(props.selectedDevice).resolution}
+                        </span>
+                      </div>
+                    )
+                  ) : (
+                    "Select device"
+                  )}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] text-white border-white/10">
