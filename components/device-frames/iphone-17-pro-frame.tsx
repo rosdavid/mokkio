@@ -54,7 +54,7 @@ export function IPhone17ProFrame({
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "fill", // Changed from "contain" to "fill" to ensure exact fit
+              objectFit: "contain", // Changed from "contain" to "fill" to ensure exact fit
             }}
           />
         </div>

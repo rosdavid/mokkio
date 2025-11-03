@@ -1,5 +1,5 @@
 import React from "react";
-import { RefreshCcwIcon } from "lucide-react";
+import { RotateCw } from "lucide-react";
 
 interface SafariFrameProps {
   children: React.ReactNode;
@@ -242,7 +242,7 @@ export function SafariFrame({
               </span>
 
               {/* reload (inside field, right side) */}
-              <RefreshCcwIcon size={tool} strokeWidth={2} color={iconTone} />
+              <RotateCw size={tool} strokeWidth={2} color={iconTone} />
             </div>
           </div>
 

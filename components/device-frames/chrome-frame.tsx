@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  RefreshCcwIcon,
-  ArrowLeft,
-  ArrowRight,
-  PuzzleIcon,
-} from "lucide-react";
+import { RotateCw, ArrowLeft, ArrowRight, PuzzleIcon } from "lucide-react";
 
 interface ChromeFrameProps {
   children: React.ReactNode;
@@ -312,7 +307,7 @@ export function ChromeFrame({
             {/* Forward (muted) */}
             <ArrowRight size={toolIcon} strokeWidth={2} color={iconMuted} />
             {/* Refresh */}
-            <RefreshCcwIcon size={toolIcon} strokeWidth={2} color={iconTone} />
+            <RotateCw size={toolIcon} strokeWidth={2} color={iconTone} />
           </div>
 
           {/* Omnibox */}

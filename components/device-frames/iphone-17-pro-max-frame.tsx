@@ -4,13 +4,29 @@ import Image from "next/image";
 interface DeviceFrameProps {
   children: React.ReactNode;
   borderRadius: number;
-  showFrame?: boolean;
+  mode: string;
 }
 
 export function IPhone17ProMaxFrame({
   children,
-  showFrame = false,
+  borderRadius,
+  mode,
 }: DeviceFrameProps) {
+  const showFrame = mode !== "display";
+
+  let frameSrc = "/iphone-17-pro-max.png";
+  switch (mode) {
+    case "blue":
+      frameSrc = "/iphone-17-pro-max.png";
+      break;
+    case "silver":
+      frameSrc = "/iphone-17-pro-max-silver.png";
+      break;
+    case "orange":
+      frameSrc = "/iphone-17-pro-max-orange.png";
+      break;
+  }
+
   if (showFrame) {
     return (
       <div className="relative" style={{ width: "440px", height: "956px" }}>
@@ -22,7 +38,7 @@ export function IPhone17ProMaxFrame({
             left: "44px",
             width: "352px",
             height: "765px",
-            borderRadius: "50px",
+            borderRadius: `${borderRadius}px`,
             zIndex: 10,
           }}
         >
@@ -31,14 +47,14 @@ export function IPhone17ProMaxFrame({
         {/* Device Frame Image */}
         <div className="relative" style={{ zIndex: 20, pointerEvents: "none" }}>
           <Image
-            src="/iphone-17-pro-max.png"
+            src={frameSrc}
             alt="iPhone 17 Pro Max Frame"
             width={440}
             height={956}
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: "fill",
             }}
           />
         </div>
@@ -56,7 +72,7 @@ export function IPhone17ProMaxFrame({
           left: "44px",
           width: "352px",
           height: "765px",
-          borderRadius: "50px",
+          borderRadius: `${borderRadius}px`,
           zIndex: 10,
         }}
       >
