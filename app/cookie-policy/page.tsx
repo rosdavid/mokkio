@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
 export const metadata = {
   title: "Cookie Policy | Mokkio",
   description:
@@ -8,7 +11,15 @@ export default function CookiePolicyPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8">Cookie Policy</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors duration-200"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-4xl font-bold">Cookie Policy</h1>
+        </div>
 
         <div className="space-y-8 text-white/80">
           <section>
@@ -104,48 +115,8 @@ export default function CookiePolicyPage() {
                 </p>
                 <div className="space-y-2">
                   <div className="border-l-2 border-orange-500 pl-3">
-                    <strong className="text-white">__gads</strong>
                     <p className="text-sm text-white/60">
-                      Google Ads advertising and retargeting
-                    </p>
-                    <p className="text-xs text-white/40">
-                      Duration: 1 year | Provider: Google LLC
-                    </p>
-                  </div>
-                  <div className="border-l-2 border-orange-500 pl-3">
-                    <strong className="text-white">__gac</strong>
-                    <p className="text-sm text-white/60">
-                      Google Ads campaign attribution and conversion tracking
-                    </p>
-                    <p className="text-xs text-white/40">
-                      Duration: 90 days | Provider: Google LLC
-                    </p>
-                  </div>
-                  <div className="border-l-2 border-orange-500 pl-3">
-                    <strong className="text-white">NID</strong>
-                    <p className="text-sm text-white/60">
-                      Google user preferences and personalization
-                    </p>
-                    <p className="text-xs text-white/40">
-                      Duration: 6 months | Provider: Google LLC
-                    </p>
-                  </div>
-                  <div className="border-l-2 border-orange-500 pl-3">
-                    <strong className="text-white">ANID</strong>
-                    <p className="text-sm text-white/60">
-                      Google advertising identifier
-                    </p>
-                    <p className="text-xs text-white/40">
-                      Duration: 1 year | Provider: Google LLC
-                    </p>
-                  </div>
-                  <div className="border-l-2 border-orange-500 pl-3">
-                    <strong className="text-white">__gpi</strong>
-                    <p className="text-sm text-white/60">
-                      Google Partner Integration for cross-site tracking
-                    </p>
-                    <p className="text-xs text-white/40">
-                      Duration: 1 year | Provider: Google LLC
+                      Not used at the moment
                     </p>
                   </div>
                 </div>
@@ -182,18 +153,15 @@ export default function CookiePolicyPage() {
                 <strong>Vercel:</strong> Hosting and analytics platform
               </li>
               <li>
-                <strong>Google AdSense:</strong> Advertising network (only if
-                accepted)
-              </li>
-              <li>
-                <strong>Ko-fi:</strong> Donation platform (external link)
+                <strong>Buy Me a Coffee :</strong> Donation platform (external
+                link)
               </li>
             </ul>
           </section>
 
           <section className="border-t border-white/20 pt-8">
             <p className="text-sm text-white/60">
-              Last updated: October 25, 2025
+              Last updated: October 31, 2025
             </p>
           </section>
         </div>

@@ -1,14 +1,26 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
+export const metadata = {
+  title: "Terms of Service | Mokkio",
+  description: "Read the terms of service for using Mokkio.",
+};
+
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-
         <div className="space-y-6 text-gray-300">
           <section>
-            <h2 className="text-2xl font-semibold text-white mb-4">
-              Acceptance of Terms
-            </h2>
+            <div className="flex items-center gap-4 mb-8">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-white/60 hover:text-white transition-colors duration-200"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+              <h1 className="text-4xl font-bold">Terms of Service</h1>
+            </div>
             <p className="mb-4">
               By accessing and using Mokkio, you accept and agree to be bound by
               the terms and provision of this agreement.
@@ -71,7 +83,7 @@ export default function TermsOfService() {
             </h2>
             <p className="mb-4">
               If you have any questions about these Terms of Service, please
-              contact us at: legal@mokkio.com
+              contact us at: contactmokkio@gmail.com
             </p>
           </section>
         </div>

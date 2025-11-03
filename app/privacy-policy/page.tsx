@@ -1,8 +1,19 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors duration-200"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-4xl font-bold">Privacy Policy</h1>
+        </div>
 
         <div className="space-y-6 text-gray-300">
           <section>
@@ -55,7 +66,7 @@ export default function PrivacyPolicy() {
             </h2>
             <p className="mb-4">
               If you have any questions about this Privacy Policy, please
-              contact us at: privacy@mokkio.com
+              contact us at: contactmokkio@gmail.com
             </p>
           </section>
         </div>
