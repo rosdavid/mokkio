@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,16 +8,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "./ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Undo2, Redo2, Keyboard, Download } from "lucide-react";
+  Undo2,
+  Redo2,
+  Keyboard,
+  Download,
+  Heart,
+  ChevronLeft,
+} from "lucide-react";
 import { ExportButton } from "@/components/export-button";
+import { SideMenu } from "@/components/side-menu";
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 
 interface TopBarProps {
   onStartOver?: () => void;
@@ -31,6 +34,11 @@ interface TopBarProps {
   showLeftSidebar?: boolean;
   showRightSidebar?: boolean;
   isMobile?: boolean;
+  // Side menu controls
+  showMenu?: boolean;
+  isMenuClosing?: boolean;
+  onMenuClick?: () => void;
+  onCloseMenu: () => void;
 }
 
 export function TopBar({
@@ -40,6 +48,10 @@ export function TopBar({
   canUndo,
   canRedo,
   isMobile = false,
+  showMenu = false,
+  isMenuClosing = false,
+  onMenuClick,
+  onCloseMenu,
 }: TopBarProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -73,6 +85,34 @@ export function TopBar({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onUndo, onRedo]);
 
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animate-gradientMove {
+        background-size: 200% 200%;
+        animation: gradientMove 3s ease-in-out infinite;
+      }
+      @keyframes heartbeatColor {
+        0%, 100% { color: #f43f5e; }
+        40% { color: #b91c1c; }
+        60% { color: #b91c1c; }
+        80% { color: #f43f5e; }
+      }
+      .animate-heartbeat {
+        animation: heartbeatColor 1.6s infinite;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const handleStartOverClick = () => {
     setShowConfirmDialog(true);
   };
@@ -88,123 +128,133 @@ export function TopBar({
 
   return (
     <>
-      <div className="flex px-4 py-3">
-        <div className="flex items-center justify-between w-full">
-          {/* Left Section - Ko-fi Support */}
-          <div className="flex items-center justify-center">
-            <a
-              href="https://ko-fi.com/R5R31NC8IM"
-              target="_blank"
-              className="hover:opacity-80 transition-opacity"
+      <div className="flex items-center justify-between w-full md:px-4 md:py-3">
+        {/* Left Section */}
+        <div className="items-center justify-center flex gap-2">
+          <ChevronLeft
+            className="text-foreground cursor-pointer md:hidden"
+            onClick={onMenuClick}
+          />
+          <div className="flex h-9 w-9 items-center justify-center md:hidden">
+            <svg
+              version="1.0"
+              xmlns="http://www.w3.org/2000/svg"
+              width="266.667"
+              height="266.667"
+              viewBox="0 0 200 200"
             >
-              <Image
-                width={180}
-                height={0}
-                style={{ border: "0px", height: "36px" }}
-                src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_beige.png?_gl=1*jzb8ds*_gcl_au*ODc1MTI4ODI0LjE3NjEzNjc4OTA.*_ga*MjEwMjUwMjk4MS4xNzYxMzY3ODkw*_ga_M13FZ7VQ2C*czE3NjEzNjc4ODkkbzEkZzEkdDE3NjEzNjk0MzUkajUzJGwwJGgw"
-                alt="Buy Me a Coffee at ko-fi.com"
+              <path
+                d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
+                fill="#fff"
               />
-            </a>
+            </svg>
           </div>
-
-          {/* Center Section */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-white/60 hover:text-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              onClick={onUndo}
-              disabled={!canUndo}
-            >
-              <Undo2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-white/60 hover:text-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              onClick={onRedo}
-              disabled={!canRedo}
-            >
-              <Redo2 className="h-4 w-4" />
-            </Button>
+          <a
+            href="https://buymeacoffee.com/mokkio"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button
               variant="ghost"
               size="sm"
-              className="text-sm text-white/60 hover:text-neutral-500 cursor-pointer"
-              onClick={handleStartOverClick}
+              className="text-muted-foreground hover:text-foreground/80 hover:bg-accent/50 transition-all duration-200 flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 hover:border-border cursor-pointer"
             >
-              Start Over
+              <Heart className="h-4 w-4 animate-heartbeat text-red-500" />
+              <span className="text-sm font-medium hidden md:flex">
+                Support Mokkio
+              </span>
             </Button>
-            <Popover open={showShortcuts} onOpenChange={setShowShortcuts}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-white/60 hover:text-neutral-500 cursor-pointer"
-                >
-                  <Keyboard className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 bg-[#0a0a0a] border-white/10 text-white supports-backdrop-filter:bg-[#0a0a0a]/80 backdrop-blur-xl supports-backdrop-filter:backdrop-saturate-150">
-                <div className="p-4 space-y-3">
-                  <h4 className="font-semibold text-center">
-                    Keyboard Shortcuts
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Undo2 className="h-4 w-4" />
-                        <span>Undo</span>
-                      </div>
-                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
-                        {isMac ? "⌘ Z" : "Ctrl Z"}
-                      </kbd>
+          </a>
+        </div>
+
+        {/* Center Section */}
+        <div className="flex items-center md:gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            onClick={onUndo}
+            disabled={!canUndo}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            onClick={onRedo}
+            disabled={!canRedo}
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-sm text-muted-foreground hover:text-foreground/80 cursor-pointer"
+            onClick={handleStartOverClick}
+          >
+            Start Over
+          </Button>
+          <Popover open={showShortcuts} onOpenChange={setShowShortcuts}>
+            <PopoverTrigger className="hidden md:flex" asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground/80 cursor-pointer"
+              >
+                <Keyboard className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 bg-popover border-border text-popover-foreground supports-backdrop-filter:bg-popover/80 backdrop-blur-xl supports-backdrop-filter:backdrop-saturate-150">
+              <div className="p-4 space-y-3">
+                <h4 className="font-semibold text-center">
+                  Keyboard Shortcuts
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Undo2 className="h-4 w-4" />
+                      <span>Undo</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Redo2 className="h-4 w-4" />
-                        <span>Redo</span>
-                      </div>
-                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
-                        {isMac ? "⌘ ⇧ Z" : "Ctrl Y"}
-                      </kbd>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-sans">
+                      {isMac ? "⌘ Z" : "Ctrl Z"}
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Redo2 className="h-4 w-4" />
+                      <span>Redo</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Download className="h-4 w-4" />
-                        <span>Export</span>
-                      </div>
-                      <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-sans">
-                        {isMac ? "⌘ E" : "Ctrl E"}
-                      </kbd>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-sans">
+                      {isMac ? "⌘ ⇧ Z" : "Ctrl Y"}
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      <span>Export</span>
                     </div>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-sans">
+                      {isMac ? "⌘ E" : "Ctrl E"}
+                    </kbd>
                   </div>
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-          {/* Right Section */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
-            >
-              <svg className="h-5 w-5" fill="#fff" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-              </svg>
-            </Button>
-            <ExportButton ref={exportButtonRef} isMobile={isMobile} />
-          </div>
+        {/* Right Section */}
+        <div className="flex items-center gap-3">
+          <ExportButton ref={exportButtonRef} isMobile={isMobile} />
         </div>
       </div>
 
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="bg-[#0a0a0a] border-white/10">
+        <DialogContent className="bg-popover border-border">
           <DialogHeader>
-            <DialogTitle className="text-white">Are you sure?</DialogTitle>
-            <DialogDescription className="text-white/70">
+            <DialogTitle className="text-foreground">Are you sure?</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               This action will reset all settings to their default
               configuration. This action cannot be undone.
             </DialogDescription>
@@ -213,7 +263,7 @@ export function TopBar({
             <Button
               variant="ghost"
               onClick={handleCancelStartOver}
-              className="text-white/60 hover:text-neutral-500 cursor-pointer"
+              className="text-muted-foreground hover:text-foreground/80 cursor-pointer"
             >
               Cancel
             </Button>
@@ -226,6 +276,12 @@ export function TopBar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SideMenu
+        isOpen={showMenu}
+        isClosing={isMenuClosing}
+        onClose={onCloseMenu}
+      />
     </>
   );
 }
