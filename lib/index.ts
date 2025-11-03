@@ -1,6 +1,6 @@
 // Authentication utilities
-export * from './auth/supabase';
+export * from './supabase';
 
 // Mockup utilities
 export * from './mockup/mockup-utils';
-export * from './mockup/export-context';
+export * from './export-context';
