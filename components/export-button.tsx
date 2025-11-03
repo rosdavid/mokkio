@@ -1,3 +1,4 @@
+// export-buttonn.tsx
 "use client";
 
 import {
@@ -5,21 +6,21 @@ import {
   forwardRef,
   useImperativeHandle,
   useCallback,
-  useEffect,
   useMemo,
 } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "./ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Download, ChevronDown, Loader2 } from "lucide-react";
-import * as htmlToImage from "html-to-image";
 import { toast } from "sonner";
 import { useExport } from "@/lib/export-context";
+import * as htmlToImage from "html-to-image";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
@@ -29,15 +30,48 @@ export const ExportButton = forwardRef<
 >(({ isMobile = false }, ref) => {
   const [isExporting, setIsExporting] = useState(false);
   const [open, setOpen] = useState(false);
+  const [showMobileDialog, setShowMobileDialog] = useState(false);
   const { setIsExporting: setGlobalIsExporting } = useExport();
 
   useImperativeHandle(
     ref,
     () => ({
-      openMenu: () => setOpen(true),
+      openMenu: () => {
+        if (isMobile) {
+          setShowMobileDialog(true);
+        } else {
+          setOpen(true);
+        }
+      },
     }),
-    []
+    [isMobile]
   );
+
+  /* ---------------------- iOS / WebKit helpers ---------------------- */
+
+  // iOS / iPadOS on WebKit detection (also covers iPadOS reporting as Mac with touch)
+  const isIOSWebKit = () => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isTouchMac = navigator.maxTouchPoints > 2 && /Macintosh/.test(ua);
+    const isIOSFamily = /iPad|iPhone|iPod/.test(ua) || isTouchMac;
+    const isWebKit = /WebKit/i.test(ua) && !/Edge|OPR|Chromium/i.test(ua);
+    return isIOSFamily && isWebKit;
+  };
+
+  // Clamp scale to avoid Safari canvas memory limits (~16–20MP is a safe target)
+  const clampScaleForIOS = (
+    baseW: number,
+    baseH: number,
+    desiredScale: number
+  ) => {
+    const MAX_PIXELS = 16_000_000; // conservative threshold
+    const maxScale = Math.sqrt(MAX_PIXELS / (baseW * baseH));
+    return Math.max(
+      0.5,
+      Math.min(desiredScale, isFinite(maxScale) ? maxScale : desiredScale)
+    );
+  };
 
   /* ---------------------- Size estimation helpers ---------------------- */
 
@@ -60,7 +94,6 @@ export const ExportButton = forwardRef<
   const getCanvasBaseSize = useCallback(() => {
     const el = document.getElementById("mockup-canvas") as HTMLElement | null;
     if (!el) return null;
-    // Prefer explicit style width/height if present, fall back to client metrics
     const w =
       parseFloat(el.style.width) ||
       el.clientWidth ||
@@ -85,10 +118,9 @@ export const ExportButton = forwardRef<
         bg.includes("transparent") || bgColor.includes("rgba(0, 0, 0, 0)");
 
       const hasGradient = /gradient\(/i.test(bg);
-
       const hasImg = !!root.querySelector("img");
 
-      // Heuristic: the noise overlay is a div with background-image:data URL + mix-blend overlay
+      // Noise overlay heuristic
       const hasNoiseOverlay = Array.from(
         root.querySelectorAll<HTMLElement>("*")
       ).some((n) => {
@@ -108,15 +140,15 @@ export const ExportButton = forwardRef<
     }
   }, []);
 
-  // Bytes-per-pixel heuristics for each format and entropy level (empirical midpoints)
+  // Bytes-per-pixel heuristics
   const BPP_TABLE = useMemo(
     () => ({
       png: {
-        transparent: 0.1, // large transparent areas compress extremely well
-        flat: 0.22, // solid/clean UI
-        medium: 0.33, // gradients/shapes
-        "medium-high": 0.75, // screenshot/photo inside frame
-        high: 0.95, // photo + noise/texture
+        transparent: 0.1,
+        flat: 0.22,
+        medium: 0.33,
+        "medium-high": 0.75,
+        high: 0.95,
       },
       jpg: {
         transparent: 0.08,
@@ -138,7 +170,7 @@ export const ExportButton = forwardRef<
 
   const OVERHEAD = useMemo(
     () => ({
-      png: 20_000, // container + chunk headers
+      png: 20_000,
       jpg: 8_000,
       webp: 12_000,
     }),
@@ -158,29 +190,142 @@ export const ExportButton = forwardRef<
     [getCanvasBaseSize, detectEntropy, BPP_TABLE, OVERHEAD]
   );
 
-  const [sizeHints, setSizeHints] = useState<Record<string, string>>({});
+  /* ---------------------- DOM sanitizers for export ---------------------- */
 
-  const recomputeSizeHints = useCallback(() => {
-    const entries: Array<[ExportFormat, number, string]> = [
-      ["png", 1, "png@1"],
-      ["png", 2, "png@2"],
-      ["png", 4, "png@4"],
-      ["png", 8, "png@8"],
-      ["jpg", 4, "jpg@4"],
-      ["webp", 4, "webp@4"],
-    ];
-    const next: Record<string, string> = {};
-    for (const [fmt, scale, key] of entries) {
-      const bytes = estimateBytes(fmt, scale);
-      if (bytes != null) next[key] = prettyBytes(bytes);
+  // Inline/normalize computed styles that html-to-image cares about
+  const sanitizeNode = (node: Element) => {
+    const computed = window.getComputedStyle(node as Element);
+
+    const propsToInline = [
+      "background",
+      "background-color",
+      "color",
+      "border-color",
+      "border-radius",
+      "box-shadow",
+      "filter",
+      "outline-color",
+      "text-shadow",
+      "mix-blend-mode",
+      "background-image",
+      "opacity",
+    ] as const;
+
+    propsToInline.forEach((prop) => {
+      try {
+        const value = computed.getPropertyValue(prop);
+        if (value && value !== "none" && value !== "normal") {
+          if (
+            prop === "color" ||
+            prop === "border-color" ||
+            prop === "outline-color"
+          ) {
+            const sanitized = value
+              .replace(/oklch\([^)]*\)/gi, "#666666")
+              .replace(/color\([^)]*\)/gi, "#666666")
+              .replace(/lab\([^)]*\)/gi, "#666666")
+              .replace(/lch\([^)]*\)/gi, "#666666")
+              .replace(/color-mix\([^)]*\)/gi, "#666666");
+            (node as HTMLElement).style.setProperty(prop, sanitized);
+          } else if (
+            prop === "filter" ||
+            prop === "mix-blend-mode" ||
+            prop === "background-image" ||
+            prop === "opacity" ||
+            prop === "border-radius"
+          ) {
+            (node as HTMLElement).style.setProperty(prop, value);
+          } else {
+            const sanitized = value
+              .replace(/oklch\([^)]*\)/gi, "rgba(0,0,0,0)")
+              .replace(/color\([^)]*\)/gi, "rgba(0,0,0,0)")
+              .replace(/lab\([^)]*\)/gi, "rgba(0,0,0,0)")
+              .replace(/lch\([^)]*\)/gi, "rgba(0,0,0,0)")
+              .replace(/color-mix\([^)]*\)/gi, "rgba(0,0,0,0)")
+              .replace(/linear-gradient\([^)]*\)/gi, (m) => m)
+              .replace(/radial-gradient\([^)]*\)/gi, (m) => m)
+              .replace(/conic-gradient\([^)]*\)/gi, (m) => m);
+            (node as HTMLElement).style.setProperty(prop, sanitized);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    node.childNodes.forEach((child) => {
+      if (child.nodeType === 1) sanitizeNode(child as Element);
+    });
+  };
+
+  // Extra: make relative bg URLs absolute to avoid oddities on iOS
+  const absolutizeBackgroundUrls = (root: HTMLElement) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    const base = window.location.origin;
+    while (walker.nextNode()) {
+      const el = walker.currentNode as HTMLElement;
+      const cs = getComputedStyle(el);
+      const bi = cs.backgroundImage || "";
+      const m = bi.match(/url\(["']?(.*?)["']?\)/i);
+      if (m && m[1]) {
+        const url = m[1];
+        if (url.startsWith("/")) {
+          const abs = new URL(url, base).href;
+          el.style.backgroundImage = `url("${abs}")`;
+        }
+      }
     }
-    setSizeHints(next);
-  }, [estimateBytes]);
+  };
 
-  // Recalculate whenever the menu opens (cheap, reflects latest canvas state)
-  useEffect(() => {
-    if (open) recomputeSizeHints();
-  }, [open, recomputeSizeHints]);
+  // iOS-only: neutralize CSS that tends to break foreignObject
+  const stripProblematicCssForIOS = (root: HTMLElement) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    while (walker.nextNode()) {
+      const el = walker.currentNode as HTMLElement;
+      const cs = getComputedStyle(el);
+
+      // Noise overlay => kill blend mode (we also support hard-removal by data attribute)
+      if (el.hasAttribute("data-noise-overlay")) {
+        // Easiest path: remove it completely for export on iOS
+        el.remove();
+        continue;
+      }
+
+      const bgImg = cs.getPropertyValue("background-image") || "";
+      const blend = cs.getPropertyValue("mix-blend-mode") || "";
+      if (bgImg.includes("data:image") && blend === "overlay") {
+        el.style.setProperty("mix-blend-mode", "normal", "important");
+        el.style.setProperty("opacity", "0.35", "important");
+      }
+
+      // Filters / backdrop-filter → neutralize
+      const filter = cs.getPropertyValue("filter");
+      if (filter && filter !== "none") {
+        el.style.setProperty("filter", "none", "important");
+      }
+      const backdrop =
+        (cs as CSSStyleDeclaration).getPropertyValue?.(
+          "-webkit-backdrop-filter"
+        ) || cs.getPropertyValue("backdrop-filter");
+      if (backdrop && backdrop !== "none") {
+        el.style.setProperty("-webkit-backdrop-filter", "none", "important");
+        el.style.setProperty("backdrop-filter", "none", "important");
+      }
+
+      // Masks / clip-path → neutralize
+      const mask =
+        cs.getPropertyValue("mask") ||
+        (cs as CSSStyleDeclaration).getPropertyValue?.("-webkit-mask");
+      if (mask && mask !== "none") {
+        el.style.setProperty("mask", "none", "important");
+        el.style.setProperty("-webkit-mask", "none", "important");
+      }
+      const clipPath = cs.getPropertyValue("clip-path");
+      if (clipPath && clipPath !== "none") {
+        el.style.setProperty("clip-path", "none", "important");
+      }
+    }
+  };
 
   /* ---------------------- Export (real) ---------------------- */
 
@@ -188,32 +333,41 @@ export const ExportButton = forwardRef<
     node: HTMLElement,
     format: ExportFormat,
     scale: number,
-    backgroundColor?: string,
-    filter?: (node: HTMLElement) => boolean
+    backgroundColor?: string
   ): Promise<Blob | null> => {
-    // Use toCanvas for full control over output MIME and quality via canvas.toBlob
-    const canvas = await htmlToImage.toCanvas(node, {
-      pixelRatio: scale,
-      backgroundColor,
-      filter,
-    });
+    try {
+      const canvas = await htmlToImage.toCanvas(node, {
+        width: node.offsetWidth * scale,
+        height: node.offsetHeight * scale,
+        style: {
+          transform: "scale(" + scale + ")",
+          transformOrigin: "top left",
+        },
+        canvasWidth: node.offsetWidth * scale,
+        canvasHeight: node.offsetHeight * scale,
+        backgroundColor: backgroundColor || "transparent",
+        pixelRatio: 1,
+      });
 
-    // Quality: keep PNG lossless; use ~0.92 for JPEG/WEBP for good balance
-    const QUALITY = 0.92;
-    const mime =
-      format === "png"
-        ? "image/png"
-        : format === "jpg"
-        ? "image/jpeg"
-        : "image/webp";
+      const QUALITY = 0.92;
+      const mime =
+        format === "png"
+          ? "image/png"
+          : format === "jpg"
+          ? "image/jpeg"
+          : "image/webp";
 
-    return await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(
-        (b) => resolve(b),
-        mime,
-        format === "png" ? undefined : QUALITY
-      );
-    });
+      return await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(
+          (b) => resolve(b),
+          mime,
+          format === "png" ? undefined : QUALITY
+        );
+      });
+    } catch (error) {
+      console.error("Error in toBlobByFormat:", error);
+      return null;
+    }
   };
 
   const handleExport = async (format: ExportFormat, scale = 4) => {
@@ -225,146 +379,133 @@ export const ExportButton = forwardRef<
 
     setIsExporting(true);
     setGlobalIsExporting(true);
-
-    // Wait one microtask so UI can re-render exporting state
-    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve(); // allow UI to render spinner
 
     try {
-      // Clone the node we will rasterize
+      // Clone target node
       const clone = canvas.cloneNode(true) as HTMLElement;
 
-      // Capture original background before any sanitization
+      // Get original background (to decide forced bg)
       const originalComputed = window.getComputedStyle(canvas as Element);
       const originalBackground =
         originalComputed.getPropertyValue("background");
 
-      // Strip transforms for the clone
+      // Strip transforms on clone
       clone.style.transform = "none";
       clone.style.transformOrigin = "initial";
 
-      // Offscreen container
+      // Offscreen container to host the clone
       const offscreen = document.createElement("div");
       offscreen.style.position = "fixed";
       offscreen.style.left = "-9999px";
       offscreen.style.top = "-9999px";
+      offscreen.style.width = `${canvas.offsetWidth}px`;
+      offscreen.style.height = `${canvas.offsetHeight}px`;
       offscreen.style.pointerEvents = "none";
-      offscreen.style.opacity = "0";
+      offscreen.style.zIndex = "-9999";
+      offscreen.style.overflow = "hidden";
+      offscreen.style.isolation = "isolate";
+      offscreen.style.contain = "layout style paint";
+      offscreen.style.willChange = "transform";
+      offscreen.style.transform = "translateZ(0)";
       document.body.appendChild(offscreen);
       offscreen.appendChild(clone);
 
-      // Inline critical styles (your original sanitization)
-      const sanitizeNode = (node: Element) => {
-        const computed = window.getComputedStyle(node as Element);
+      // Force layout
+      void offscreen.offsetHeight;
+      void clone.offsetHeight;
 
-        if (node.id === "mockup-canvas") {
-          if (
-            originalBackground &&
-            originalBackground.includes("linear-gradient")
-          ) {
-            (node as HTMLElement).style.setProperty(
-              "background",
-              originalBackground
-            );
-          }
-        }
+      // Give a tick for styles to settle
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-        const propsToInline = [
-          "background",
-          "background-color",
-          "color",
-          "border-color",
-          "box-shadow",
-          "filter",
-          "outline-color",
-          "text-shadow",
-          "mix-blend-mode",
-          "background-image",
-          "opacity",
-        ] as const;
+      // Inline critical styles to clone
+      sanitizeNode(clone);
 
-        propsToInline.forEach((prop) => {
-          try {
-            const value = computed.getPropertyValue(prop);
-            if (value && value !== "none" && value !== "normal") {
-              if (
-                prop === "color" ||
-                prop === "border-color" ||
-                prop === "outline-color"
-              ) {
-                const sanitized = value
-                  .replace(/oklch\([^)]*\)/gi, "#666666")
-                  .replace(/color\([^)]*\)/gi, "#666666")
-                  .replace(/lab\([^)]*\)/gi, "#666666")
-                  .replace(/lch\([^)]*\)/gi, "#666666")
-                  .replace(/color-mix\([^)]*\)/gi, "#666666");
-                if (sanitized !== value)
-                  (node as HTMLElement).style.setProperty(prop, sanitized);
-              } else if (
-                prop === "filter" ||
-                prop === "mix-blend-mode" ||
-                prop === "background-image" ||
-                prop === "opacity"
-              ) {
-                (node as HTMLElement).style.setProperty(prop, value);
-              } else {
-                const sanitized = value
-                  .replace(/oklch\([^)]*\)/gi, "rgba(0,0,0,0)")
-                  .replace(/color\([^)]*\)/gi, "rgba(0,0,0,0)")
-                  .replace(/lab\([^)]*\)/gi, "rgba(0,0,0,0)")
-                  .replace(/lch\([^)]*\)/gi, "rgba(0,0,0,0)")
-                  .replace(/color-mix\([^)]*\)/gi, "rgba(0,0,0,0)")
-                  .replace(/linear-gradient\([^)]*\)/gi, (m) => m)
-                  .replace(/radial-gradient\([^)]*\)/gi, (m) => m)
-                  .replace(/conic-gradient\([^)]*\)/gi, (m) => m);
-                (node as HTMLElement).style.setProperty(prop, sanitized);
-              }
-            }
-          } catch {
-            /* swallow */
-          }
-        });
-
-        node.childNodes.forEach((child) => {
-          if (child.nodeType === 1) sanitizeNode(child as Element);
-        });
-      };
-      sanitizeNode(clone as Element);
-
-      // Remove rounded corners for export
+      // Remove outer rounding in exported root (only container, not mockups)
       clone.classList.remove("rounded-2xl");
+      if (clone.id === "mockup-canvas") {
+        clone.style.borderRadius = "0";
+      }
 
-      // Use toCanvas -> toBlob for correct MIME and quality per format
-      const bytesHint = estimateBytes(format, scale); // pre-estimate
+      // Normalize relative bg URLs to absolute
+      absolutizeBackgroundUrls(clone);
+
+      // iOS-specific CSS neutralization (in the clone only)
+      const onIOS = isIOSWebKit();
+      if (onIOS) {
+        stripProblematicCssForIOS(clone);
+      }
+
+      // Extra settle time
+      await new Promise((resolve) => setTimeout(resolve, 120));
+
+      // Compute effective scale (iOS may clamp)
       const base = getCanvasBaseSize();
-      const outW = base ? Math.round(base.w * scale) : undefined;
-      const outH = base ? Math.round(base.h * scale) : undefined;
+      let effScale = scale;
+      if (onIOS && base) {
+        effScale = clampScaleForIOS(base.w, base.h, scale);
+      }
 
-      const blob = await toBlobByFormat(
-        clone as HTMLElement,
-        format,
-        scale,
-        // Only force transparent BG when original is not a gradient
-        originalBackground && originalBackground.includes("linear-gradient")
-          ? undefined
-          : format === "png" || format === "webp"
-          ? "transparent"
-          : "#000000", // JPEG cannot be transparent; pick a safe default
-        (node) => {
-          try {
-            if (!(node instanceof Element)) return true;
-            const style = getComputedStyle(node);
-            return (
-              style.display !== "none" &&
-              style.visibility !== "hidden" &&
-              style.opacity !== "0"
-            );
-          } catch {
-            return true;
-          }
+      // Use modern-screenshot on iOS if available; fallback to html-to-image
+      let blob: Blob | null = null;
+
+      if (onIOS) {
+        try {
+          const mod = await import("modern-screenshot");
+          const type =
+            format === "png"
+              ? "image/png"
+              : format === "jpg"
+              ? "image/jpeg"
+              : "image/webp";
+          const quality = format === "png" ? undefined : 0.92;
+
+          const msBlob: Blob | null = await (
+            mod as typeof import("modern-screenshot")
+          ).domToBlob(clone, {
+            scale: effScale,
+            type,
+            quality,
+            backgroundColor:
+              originalBackground &&
+              originalBackground.includes("linear-gradient")
+                ? undefined
+                : format === "png" || format === "webp"
+                ? "transparent"
+                : "#000000",
+          });
+          blob = msBlob;
+        } catch (e) {
+          console.warn(
+            "modern-screenshot not available; falling back to html-to-image on iOS.",
+            e
+          );
+          blob = await toBlobByFormat(
+            clone,
+            format,
+            effScale,
+            originalBackground && originalBackground.includes("linear-gradient")
+              ? undefined
+              : format === "png" || format === "webp"
+              ? "transparent"
+              : "#000000"
+          );
         }
-      );
+      } else {
+        // Desktop / non-iOS route (html-to-image)
+        blob = await toBlobByFormat(
+          clone,
+          format,
+          effScale,
+          originalBackground && originalBackground.includes("linear-gradient")
+            ? undefined
+            : format === "png" || format === "webp"
+            ? "transparent"
+            : "#000000"
+        );
+      }
 
-      // Cleanup
+      // Cleanup offscreen host
       document.body.removeChild(offscreen);
 
       if (!blob) {
@@ -379,12 +520,13 @@ export const ExportButton = forwardRef<
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 100);
 
-      // Show final, real size + resolution
+      const bytesHint = estimateBytes(format, effScale);
+      const outW = base ? Math.round(base.w * effScale) : undefined;
+      const outH = base ? Math.round(base.h * effScale) : undefined;
+
       toast.success(
-        `Saved ${format.toUpperCase()} · ${outW ?? "?"}×${
-          outH ?? "?"
-        } · ${prettyBytes(blob.size)}${
-          bytesHint ? ` (est. ${prettyBytes(bytesHint)})` : ""
+        `Saved ${format.toUpperCase()} · ${outW ?? "?"}×${outH ?? "?"}${
+          bytesHint ? ` · ${prettyBytes(blob.size)}` : ""
         }`
       );
     } catch (error) {
@@ -396,99 +538,212 @@ export const ExportButton = forwardRef<
     }
   };
 
-  // Helper to show default button hint (PNG 4×) on desktop
+  /* ---------------------- UI ---------------------- */
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+    <>
+      {/* Desktop Dropdown */}
+      {!isMobile && (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className={`gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-medium ${
+                isMobile ? "h-8 px-3 text-sm" : ""
+              }`}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {isMobile ? "..." : "Exporting..."}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  {isMobile ? "Export" : "Export 4x · PNG"}
+                  <ChevronDown className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            className="w-60 bg-popover border-border"
+          >
+            {/* PNG */}
+            <DropdownMenuItem
+              onClick={() => handleExport("png", 1)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as PNG (1x)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleExport("png", 2)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as PNG (2x)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleExport("png", 4)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as PNG (4x)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleExport("png", 8)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as PNG (8x)</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator className="bg-border" />
+
+            {/* JPEG */}
+            <DropdownMenuItem
+              onClick={() => handleExport("jpg", 4)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as JPG (4x)</span>
+            </DropdownMenuItem>
+
+            {/* WebP */}
+            <DropdownMenuItem
+              onClick={() => handleExport("webp", 4)}
+              className="text-popover-foreground hover:bg-accent cursor-pointer"
+            >
+              <span>Export as WebP (4x)</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {/* Mobile Button */}
+      {isMobile && (
         <Button
-          className={`gap-2 bg-white text-black hover:bg-white/90 font-medium ${
-            isMobile ? "h-8 px-3 text-sm" : ""
-          }`}
+          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-medium h-8 px-3 text-sm"
           disabled={isExporting}
+          onClick={() => setShowMobileDialog(true)}
         >
           {isExporting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {isMobile ? "..." : "Exporting..."}
+              ...
             </>
           ) : (
             <>
               <Download className="h-4 w-4" />
-              {isMobile ? "Export" : "Export 4x · PNG"}
-              <ChevronDown className="h-4 w-4" />
+              Export
             </>
           )}
         </Button>
-      </DropdownMenuTrigger>
+      )}
 
-      <DropdownMenuContent
-        align="end"
-        className="w-60 bg-[#1a1a1a] border-white/10"
-      >
-        {/* PNG */}
-        <DropdownMenuItem
-          onClick={() => handleExport("png", 1)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as PNG (1x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["png@1"] ? `~${sizeHints["png@1"]}` : ""}
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleExport("png", 2)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as PNG (2x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["png@2"] ? `~${sizeHints["png@2"]}` : ""}
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleExport("png", 4)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as PNG (4x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["png@4"] ? `~${sizeHints["png@4"]}` : ""}
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleExport("png", 8)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as PNG (8x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["png@8"] ? `~${sizeHints["png@8"]}` : ""}
-          </span>
-        </DropdownMenuItem>
+      {/* Mobile Export Dialog */}
+      <Dialog open={showMobileDialog} onOpenChange={setShowMobileDialog}>
+        <DialogContent className="bg-popover border-border max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-foreground text-center">
+              Export Options
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {/* PNG Options */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">PNG</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleExport("png", 1);
+                    setShowMobileDialog(false);
+                  }}
+                  className="text-xs"
+                  disabled={isExporting}
+                >
+                  1x
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleExport("png", 2);
+                    setShowMobileDialog(false);
+                  }}
+                  className="text-xs"
+                  disabled={isExporting}
+                >
+                  2x
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleExport("png", 4);
+                    setShowMobileDialog(false);
+                  }}
+                  className="text-xs"
+                  disabled={isExporting}
+                >
+                  4x
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleExport("png", 8);
+                    setShowMobileDialog(false);
+                  }}
+                  className="text-xs"
+                  disabled={isExporting}
+                >
+                  8x
+                </Button>
+              </div>
+            </div>
 
-        <DropdownMenuSeparator className="bg-white/10" />
+            {/* JPEG Option */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                JPEG
+              </h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  handleExport("jpg", 4);
+                  setShowMobileDialog(false);
+                }}
+                className="w-full text-xs"
+                disabled={isExporting}
+              >
+                4x Quality
+              </Button>
+            </div>
 
-        {/* JPEG */}
-        <DropdownMenuItem
-          onClick={() => handleExport("jpg", 4)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as JPG (4x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["jpg@4"] ? `~${sizeHints["jpg@4"]}` : ""}
-          </span>
-        </DropdownMenuItem>
-
-        {/* WebP */}
-        <DropdownMenuItem
-          onClick={() => handleExport("webp", 4)}
-          className="text-white hover:bg-white/10 cursor-pointer"
-        >
-          <span>Export as WebP (4x)</span>
-          <span className="ml-auto text-white/40">
-            {sizeHints["webp@4"] ? `~${sizeHints["webp@4"]}` : ""}
-          </span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            {/* WebP Option */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                WebP
+              </h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  handleExport("webp", 4);
+                  setShowMobileDialog(false);
+                }}
+                className="w-full text-xs"
+                disabled={isExporting}
+              >
+                4x Quality
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 });
 
