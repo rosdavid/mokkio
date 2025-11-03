@@ -1,0 +1,47 @@
+import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase";
+
+export async function GET() {
+  try {
+    // Get all users (server-side admin client)
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch users" },
+        { status: 500 }
+      );
+    }
+
+    // Get user metadata and stats
+    const usersWithStats = await Promise.all(
+      users.users.map(async (user) => {
+        // Get user profile data if you have a profiles table
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        return {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          last_sign_in_at: user.last_sign_in_at,
+          email_confirmed_at: user.email_confirmed_at,
+          profile: profile || null,
+        };
+      })
+    );
+
+    return NextResponse.json({ users: usersWithStats });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
