@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { X, Settings, Check } from "lucide-react";
 
 interface CookiePreferences {
@@ -179,9 +179,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                     campaign effectiveness.
                   </p>
                   <div className="text-xs text-white/40 mt-2">
-                    <strong>Cookies:</strong> __gads, __gac, NID, ANID, __gpi
-                    <br />
-                    <strong>Provider:</strong> Google LLC (AdSense)
+                    <span>Not used at the moment</span>
                   </div>
                 </div>
               </div>
