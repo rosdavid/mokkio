@@ -1,14 +1,15 @@
 // app/layout.tsx
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Bricolage_Grotesque } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { MobileBlocker } from "@/components/MobileBlocker";
 import { ClientLayout } from "@/components/ClientLayout";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
+const bricolageGrotesque = Bricolage_Grotesque({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mokkio.vercel.app"),
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/favicon.ico", apple: "/mokkio-logo.png" },
 };
 
 export default function RootLayout({
@@ -79,8 +80,9 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <script
           type="application/ld+json"
           suppressHydrationWarning
@@ -90,9 +92,14 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <ClientLayout>
-          <MobileBlocker>{children}</MobileBlocker>
-        </ClientLayout>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ClientLayout>{children}</ClientLayout>
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

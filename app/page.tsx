@@ -2,15 +2,38 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MockupCanvas } from "@/components/mockup-canvas";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
+import { UnifiedMobileSidebar } from "@/components/unified-mobile-sidebar";
 import { TopBar } from "@/components/top-bar";
+import { MockupBar } from "@/components/mockup-bar";
 import { ExportProvider } from "@/lib/export-context";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { LandingPopup } from "@/components/landing-page/LandingPopup";
+import { useIsMobile, useIsMobileOrTablet } from "@/hooks/use-mobile";
+import { LandingPopup } from "../components/landing-page/LandingPopup";
+import { Loading } from "@/components/Loading";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "@/lib/mockup-utils";
+
+interface TextOverlay {
+  id: string;
+  content: string;
+  color: string;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  x: number;
+  y: number;
+  lineHeight: number;
+  letterSpacing: number;
+  textAlign: "left" | "center" | "right" | "justify";
+  opacity: number;
+  // New text styling properties
+  textShadowOffsetX: number;
+  textShadowOffsetY: number;
+  textShadowBlur: number;
+  textShadowColor: string;
+}
 
 interface AppState {
   uploadedImages: (string | null)[];
@@ -26,6 +49,7 @@ interface AppState {
     | "earth"
     | "radiant"
     | "texture"
+    | "textures"
     | "transparent"
     | "image";
   backgroundColor: string;
@@ -63,10 +87,14 @@ interface AppState {
   canvasHeight: number;
   selectedResolution: string;
   browserMode: string;
+
+  /** NEW: text overlays */
+  texts: TextOverlay[];
 }
 
 export default function MockupEditorPage() {
   const isMobile = useIsMobile();
+  const isMobileOrTablet = useIsMobileOrTablet();
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
 
@@ -86,13 +114,13 @@ export default function MockupEditorPage() {
   };
 
   useEffect(() => {
-    if (isMobile && (showLeftSidebar || showRightSidebar)) {
+    if (isMobileOrTablet && (showLeftSidebar || showRightSidebar)) {
       document.body.classList.add("sidebar-open");
     } else {
       document.body.classList.remove("sidebar-open");
     }
     return () => document.body.classList.remove("sidebar-open");
-  }, [isMobile, showLeftSidebar, showRightSidebar]);
+  }, [isMobileOrTablet, showLeftSidebar, showRightSidebar]);
 
   // ---- Media
   const [uploadedImages, setUploadedImages] = useState<(string | null)[]>([
@@ -154,7 +182,131 @@ export default function MockupEditorPage() {
   const [hideMockup, setHideMockup] = useState(false);
 
   // ---- Landing Popup
-  const [isLandingOpen, setIsLandingOpen] = useState(true);
+  const [isLandingOpen, setIsLandingOpen] = useState(false);
+
+  // ---- Side Menu
+  const [showMenu, setShowMenu] = useState(false);
+  const [isMenuClosing, setIsMenuClosing] = useState(false);
+
+  // ---- Mockup name state
+  const [mockupName, setMockupName] = useState("Untitled");
+  const [isExistingMockup, setIsExistingMockup] = useState(false);
+
+  const handleMenuClick = () => {
+    setShowMenu(true);
+    setIsMenuClosing(false);
+  };
+
+  const handleCloseMenu = () => {
+    setIsMenuClosing(true);
+    // Esperar a que termine la animación antes de cerrar
+    setTimeout(() => {
+      setShowMenu(false);
+      setIsMenuClosing(false);
+    }, 300);
+  };
+
+  // ---- App loading state
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Detect PWA mode and mobile
+  useEffect(() => {
+    const isPWA =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true;
+    const shouldShowLanding = !isPWA && !isMobileOrTablet;
+    setIsLandingOpen(shouldShowLanding);
+  }, [isMobileOrTablet]);
+
+  // ---- Load saved mockup from localStorage
+  useEffect(() => {
+    const loadSavedMockup = () => {
+      const savedMockup = localStorage.getItem("loadedMockup");
+      if (savedMockup) {
+        try {
+          const mockupData = JSON.parse(savedMockup);
+          // Apply the loaded data to the current state
+          if (mockupData.uploadedImages)
+            setUploadedImages(mockupData.uploadedImages);
+          if (mockupData.selectedDevice)
+            setSelectedDevice(mockupData.selectedDevice);
+          if (mockupData.selectedTemplate !== undefined)
+            setSelectedTemplate(mockupData.selectedTemplate);
+          if (mockupData.backgroundType)
+            setBackgroundType(mockupData.backgroundType);
+          if (mockupData.backgroundColor)
+            setBackgroundColor(mockupData.backgroundColor);
+          if (mockupData.backgroundImage !== undefined)
+            setBackgroundImage(mockupData.backgroundImage);
+          if (mockupData.selectedPreset)
+            setSelectedPreset(mockupData.selectedPreset);
+          if (mockupData.backgroundNoise !== undefined)
+            setBackgroundNoise(mockupData.backgroundNoise);
+          if (mockupData.backgroundBlur !== undefined)
+            setBackgroundBlur(mockupData.backgroundBlur);
+          if (mockupData.deviceStyle) setDeviceStyle(mockupData.deviceStyle);
+          if (mockupData.styleEdge !== undefined)
+            setStyleEdge(mockupData.styleEdge);
+          if (mockupData.borderType) setBorderType(mockupData.borderType);
+          if (mockupData.borderRadius !== undefined)
+            setBorderRadius(mockupData.borderRadius);
+          if (mockupData.shadowType) setShadowType(mockupData.shadowType);
+          if (mockupData.shadowOpacity !== undefined)
+            setShadowOpacity(mockupData.shadowOpacity);
+          if (mockupData.shadowPosition)
+            setShadowPosition(mockupData.shadowPosition);
+          if (mockupData.shadowMode) setShadowMode(mockupData.shadowMode);
+          if (mockupData.shadowOffsetX !== undefined)
+            setShadowOffsetX(mockupData.shadowOffsetX);
+          if (mockupData.shadowOffsetY !== undefined)
+            setShadowOffsetY(mockupData.shadowOffsetY);
+          if (mockupData.shadowBlur !== undefined)
+            setShadowBlur(mockupData.shadowBlur);
+          if (mockupData.shadowSpread !== undefined)
+            setShadowSpread(mockupData.shadowSpread);
+          if (mockupData.shadowColor) setShadowColor(mockupData.shadowColor);
+          if (mockupData.sceneType) setSceneType(mockupData.sceneType);
+          if (mockupData.zoom !== undefined) setZoom(mockupData.zoom);
+          if (mockupData.panX !== undefined) setPanX(mockupData.panX);
+          if (mockupData.panY !== undefined) setPanY(mockupData.panY);
+          if (mockupData.layoutMode) setLayoutMode(mockupData.layoutMode);
+          if (mockupData.siteUrl) setSiteUrl(mockupData.siteUrl);
+          if (mockupData.hideMockup !== undefined)
+            setHideMockup(mockupData.hideMockup);
+          if (mockupData.canvasWidth !== undefined)
+            setCanvasWidth(mockupData.canvasWidth);
+          if (mockupData.canvasHeight !== undefined)
+            setCanvasHeight(mockupData.canvasHeight);
+          if (mockupData.selectedResolution)
+            setSelectedResolution(mockupData.selectedResolution);
+          if (mockupData.browserMode) setBrowserMode(mockupData.browserMode);
+          if (mockupData.texts) setTexts(mockupData.texts);
+
+          // Update refs with loaded data
+          if (mockupData.uploadedImages) {
+            lastSavedUploadedImages.current = mockupData.uploadedImages;
+          }
+          if (mockupData.texts) {
+            lastSavedTexts.current = mockupData.texts;
+          }
+
+          // Load mockup name if available
+          if (mockupData.name) setMockupName(mockupData.name);
+
+          // Mark as existing mockup
+          setIsExistingMockup(true);
+
+          // Clear the loaded mockup from localStorage
+          localStorage.removeItem("loadedMockup");
+        } catch (error) {
+          console.error("Error loading saved mockup:", error);
+        }
+      }
+    };
+
+    loadSavedMockup();
+  }, []);
 
   // ---- History
   const [history, setHistory] = useState<AppState[]>([]);
@@ -166,7 +318,24 @@ export default function MockupEditorPage() {
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const [selectedResolution, setSelectedResolution] = useState("hd-720p");
-  const [browserMode, setBrowserMode] = useState<string>("light");
+  // Selección por defecto: 'display' si el dispositivo es iphone-17-pro o iphone-17-pro-max
+  const [browserMode, setBrowserMode] = useState<string>(
+    ["iphone-17-pro", "iphone-17-pro-max"].includes(selectedDevice)
+      ? "display"
+      : "light"
+  );
+
+  // ---- NEW: text overlays
+  const [texts, setTexts] = useState<TextOverlay[]>([]);
+
+  // Actualiza automáticamente el modo al cambiar el dispositivo
+  useEffect(() => {
+    if (["iphone-17-pro", "iphone-17-pro-max"].includes(selectedDevice)) {
+      setBrowserMode("display");
+    } else if (["safari", "browser", "chrome"].includes(selectedDevice)) {
+      setBrowserMode("light");
+    }
+  }, [selectedDevice]);
 
   /** Map preset id -> width/height */
   const RESOLUTIONS = useMemo(
@@ -216,10 +385,48 @@ export default function MockupEditorPage() {
   };
 
   // ---- History helpers
+  // Refs to track last saved state for large data to avoid saving unchanged data
+  const lastSavedUploadedImages = useRef<(string | null)[]>([
+    null,
+    null,
+    null,
+    null,
+  ]);
+  const lastSavedTexts = useRef<TextOverlay[]>([]);
+
   const saveToHistory = useCallback(
     (updates: Partial<AppState> = {}) => {
+      // Check if large data has changed
+      const uploadedImagesChanged =
+        updates.uploadedImages &&
+        JSON.stringify(updates.uploadedImages) !==
+          JSON.stringify(lastSavedUploadedImages.current);
+      const textsChanged =
+        updates.texts &&
+        JSON.stringify(updates.texts) !==
+          JSON.stringify(lastSavedTexts.current);
+
+      // Only include large data in history if it actually changed
+      const historyUpdates: Partial<AppState> = { ...updates };
+
+      if (uploadedImagesChanged) {
+        lastSavedUploadedImages.current = updates.uploadedImages!;
+      } else if (!updates.uploadedImages) {
+        // If not explicitly updating, don't include in history
+        delete historyUpdates.uploadedImages;
+      }
+
+      if (textsChanged) {
+        lastSavedTexts.current = updates.texts!;
+      } else if (!updates.texts) {
+        // If not explicitly updating, don't include in history
+        delete historyUpdates.texts;
+      }
+
       const currentState: AppState = {
-        uploadedImages,
+        uploadedImages: uploadedImagesChanged
+          ? updates.uploadedImages!
+          : lastSavedUploadedImages.current,
         selectedDevice,
         selectedTemplate,
         backgroundType,
@@ -253,18 +460,20 @@ export default function MockupEditorPage() {
         canvasHeight,
         selectedResolution,
         browserMode,
-        ...updates,
+        /** NEW: text overlays */
+        texts: textsChanged ? updates.texts! : lastSavedTexts.current,
+        ...historyUpdates,
       };
       setHistory((prev) => {
         const newHistory = prev.slice(0, historyIndex + 1);
         newHistory.push(currentState);
-        const sliced = newHistory.slice(-50);
+        // Reduced from 50 to 20 to prevent memory issues
+        const sliced = newHistory.slice(-20);
         setHistoryIndex(sliced.length - 1);
         return sliced;
       });
     },
     [
-      uploadedImages,
       selectedDevice,
       selectedTemplate,
       backgroundType,
@@ -298,8 +507,53 @@ export default function MockupEditorPage() {
       canvasHeight,
       selectedResolution,
       browserMode,
+      /** NEW: text overlays */
       historyIndex,
     ]
+  );
+
+  // ---- Text overlay functions
+  const addText = useCallback(
+    (text: Omit<TextOverlay, "id">) => {
+      const newText: TextOverlay = {
+        ...text,
+        lineHeight: text.lineHeight ?? 1.2,
+        letterSpacing: text.letterSpacing ?? 0,
+        textAlign: text.textAlign ?? "left",
+        opacity: text.opacity ?? 1,
+        // New text styling defaults
+        textShadowOffsetX: text.textShadowOffsetX ?? 0,
+        textShadowOffsetY: text.textShadowOffsetY ?? 0,
+        textShadowBlur: text.textShadowBlur ?? 0,
+        textShadowColor: text.textShadowColor ?? "#000000",
+        id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      };
+      setTexts((prev) => [...prev, newText]);
+      saveToHistory({ texts: [...texts, newText] });
+    },
+    [texts, saveToHistory]
+  );
+
+  const updateText = useCallback(
+    (id: string, updates: Partial<TextOverlay>) => {
+      setTexts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      );
+      const updatedTexts = texts.map((t) =>
+        t.id === id ? { ...t, ...updates } : t
+      );
+      saveToHistory({ texts: updatedTexts });
+    },
+    [texts, saveToHistory]
+  );
+
+  const removeText = useCallback(
+    (id: string) => {
+      setTexts((prev) => prev.filter((t) => t.id !== id));
+      const filteredTexts = texts.filter((t) => t.id !== id);
+      saveToHistory({ texts: filteredTexts });
+    },
+    [texts, saveToHistory]
   );
 
   const undo = useCallback(() => {
@@ -338,6 +592,9 @@ export default function MockupEditorPage() {
       setCanvasWidth(s.canvasWidth);
       setCanvasHeight(s.canvasHeight);
       setSelectedResolution(s.selectedResolution);
+      setBrowserMode(s.browserMode);
+      /** NEW: text overlays */
+      setTexts(s.texts);
       setHistoryIndex((p) => p - 1);
     }
   }, [history, historyIndex]);
@@ -378,6 +635,9 @@ export default function MockupEditorPage() {
       setCanvasWidth(s.canvasWidth);
       setCanvasHeight(s.canvasHeight);
       setSelectedResolution(s.selectedResolution);
+      setBrowserMode(s.browserMode);
+      /** NEW: text overlays */
+      setTexts(s.texts);
       setHistoryIndex((p) => p + 1);
     }
   }, [history, historyIndex]);
@@ -423,22 +683,73 @@ export default function MockupEditorPage() {
       canvasHeight: CANVAS_HEIGHT,
       selectedResolution: "hd-720p",
       browserMode: "light",
+      /** NEW: text overlays */
+      texts: [],
     };
+    // Initialize refs with initial state
+    lastSavedUploadedImages.current = initialState.uploadedImages;
+    lastSavedTexts.current = initialState.texts;
     setHistory([initialState]);
     setHistoryIndex(0);
+    setIsAppReady(true);
   }, []);
 
-  // ---- Landing Popup: disable body scroll when open
-  useEffect(() => {
-    if (isLandingOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-    return () => {
-      document.body.style.overflow = "auto";
+  // ---- Save Mockup
+  const saveMockup = async (name: string) => {
+    const currentState: AppState = {
+      uploadedImages,
+      selectedDevice,
+      selectedTemplate,
+      backgroundType,
+      backgroundColor,
+      backgroundImage,
+      selectedPreset,
+      backgroundNoise,
+      backgroundBlur,
+      deviceStyle,
+      styleEdge,
+      borderType,
+      borderRadius,
+      shadowType,
+      shadowOpacity,
+      shadowPosition,
+      shadowMode,
+      shadowOffsetX,
+      shadowOffsetY,
+      shadowBlur,
+      shadowSpread,
+      shadowColor,
+      sceneType,
+      zoom,
+      panX,
+      panY,
+      layoutMode,
+      siteUrl,
+      hideMockup,
+      canvasWidth,
+      canvasHeight,
+      selectedResolution,
+      browserMode,
+      texts,
     };
-  }, [isLandingOpen]);
+
+    const response = await fetch("/api/mockups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        ...currentState,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to save mockup");
+    }
+
+    const result = await response.json();
+    return result; // Return the API response with isUpdate flag
+  };
 
   // Setters con history
   const setUploadedImagesWithHistory = useCallback(
@@ -786,6 +1097,8 @@ export default function MockupEditorPage() {
       canvasHeight: CANVAS_HEIGHT,
       selectedResolution: "hd-720p",
       browserMode: "light",
+      /** NEW: text overlays */
+      texts: [],
     };
 
     setUploadedImages(s.uploadedImages);
@@ -821,6 +1134,16 @@ export default function MockupEditorPage() {
     setCanvasHeight(s.canvasHeight);
     setSelectedResolution(s.selectedResolution);
     setBrowserMode(s.browserMode);
+    /** NEW: text overlays */
+    setTexts(s.texts);
+
+    // Reset mockup name and mark as new
+    setMockupName("Untitled");
+    setIsExistingMockup(false);
+
+    // Reset refs
+    lastSavedUploadedImages.current = s.uploadedImages;
+    lastSavedTexts.current = s.texts;
 
     setHistory([s]);
     setHistoryIndex(0);
@@ -839,90 +1162,88 @@ export default function MockupEditorPage() {
 
   return (
     <ExportProvider>
-      {isLandingOpen && (
-        <LandingPopup onClose={() => setIsLandingOpen(false)} />
-      )}
-      <div className="flex h-screen w-full overflow-hidden bg-[#0d0d0d]">
-        {isMobile ? (
-          <>
-            <div className="flex h-screen w-full flex-col">
-              <div className="flex items-center justify-between border-b border-white/10 bg-[#0d0d0d] p-4">
-                <TopBar
-                  onStartOver={resetToDefaults}
-                  onUndo={undo}
-                  onRedo={redo}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  onToggleLeftSidebar={toggleLeftSidebar}
-                  onToggleRightSidebar={toggleRightSidebar}
-                  showLeftSidebar={showLeftSidebar}
-                  showRightSidebar={showRightSidebar}
-                  isMobile={isMobile}
-                />
-              </div>
-
-              {/* ⬇️ Wrapper centrado + overflow-auto (móvil) */}
-              <div className="flex-1 overflow-auto">
-                <div className="h-full w-full flex items-center justify-center">
-                  <MockupCanvas
-                    uploadedImages={uploadedImages}
-                    selectedDevice={selectedDevice}
-                    selectedTemplate={selectedTemplate}
-                    siteUrl={siteUrl}
-                    borderType={borderType}
-                    selectedPreset={selectedPreset}
-                    backgroundType={backgroundType}
-                    backgroundColor={backgroundColor}
-                    backgroundImage={backgroundImage}
-                    backgroundNoise={backgroundNoise}
-                    backgroundBlur={backgroundBlur}
-                    padding={60}
-                    shadowOpacity={shadowOpacity}
-                    borderRadius={borderRadius}
-                    rotation={0}
-                    scale={100}
-                    deviceStyle={deviceStyle}
-                    styleEdge={styleEdge}
-                    shadowType={shadowType}
-                    shadowMode={shadowMode}
-                    shadowOffsetX={shadowOffsetX}
-                    shadowOffsetY={shadowOffsetY}
-                    shadowBlur={shadowBlur}
-                    shadowSpread={shadowSpread}
-                    shadowColor={shadowColor}
-                    sceneType={sceneType}
-                    zoom={zoom}
-                    panX={panX}
-                    panY={panY}
-                    layoutMode={layoutMode}
-                    onImageUpload={handleImageUpload}
-                    hideMockup={hideMockup}
-                    canvasWidth={canvasWidth}
-                    canvasHeight={canvasHeight}
-                    browserMode={browserMode}
+      {!isAppReady ? (
+        <Loading />
+      ) : (
+        <>
+          {isLandingOpen && (
+            <LandingPopup onClose={() => setIsLandingOpen(false)} />
+          )}
+          <div className="flex h-screen w-full overflow-hidden bg-background">
+            {isMobileOrTablet ? (
+              <>
+                <div className="flex h-screen w-full flex-col">
+                  <div className="flex items-center justify-between border-b border-border bg-background p-4">
+                    <TopBar
+                      onStartOver={resetToDefaults}
+                      onUndo={undo}
+                      onRedo={redo}
+                      canUndo={canUndo}
+                      canRedo={canRedo}
+                      onToggleLeftSidebar={toggleLeftSidebar}
+                      onToggleRightSidebar={toggleRightSidebar}
+                      showLeftSidebar={showLeftSidebar}
+                      showRightSidebar={showRightSidebar}
+                      isMobile={isMobile}
+                      showMenu={showMenu}
+                      isMenuClosing={isMenuClosing}
+                      onMenuClick={handleMenuClick}
+                      onCloseMenu={handleCloseMenu}
+                    />
+                  </div>
+                  <MockupBar
+                    onSave={saveMockup}
+                    initialName={mockupName}
+                    onNameChange={setMockupName}
+                    isExisting={isExistingMockup}
                   />
-                </div>
-              </div>
 
-              {(showLeftSidebar || showRightSidebar) && (
-                <div
-                  className="absolute inset-0 top-24 bg-black/50 z-40 transition-opacity duration-300"
-                  onClick={() => {
-                    setShowLeftSidebar(false);
-                    setShowRightSidebar(false);
-                  }}
-                />
-              )}
+                  {/* ⬇️ Wrapper centrado + overflow-auto (móvil) */}
+                  <div className="flex-1 overflow-auto pb-32">
+                    <div className="h-full w-full flex items-center justify-center">
+                      <MockupCanvas
+                        uploadedImages={uploadedImages}
+                        selectedDevice={selectedDevice}
+                        selectedTemplate={selectedTemplate}
+                        siteUrl={siteUrl}
+                        borderType={borderType}
+                        selectedPreset={selectedPreset}
+                        backgroundType={backgroundType}
+                        backgroundColor={backgroundColor}
+                        backgroundImage={backgroundImage}
+                        backgroundNoise={backgroundNoise}
+                        backgroundBlur={backgroundBlur}
+                        padding={60}
+                        shadowOpacity={shadowOpacity}
+                        borderRadius={borderRadius}
+                        rotation={0}
+                        scale={100}
+                        deviceStyle={deviceStyle}
+                        styleEdge={styleEdge}
+                        shadowType={shadowType}
+                        shadowMode={shadowMode}
+                        shadowOffsetX={shadowOffsetX}
+                        shadowOffsetY={shadowOffsetY}
+                        shadowBlur={shadowBlur}
+                        shadowSpread={shadowSpread}
+                        shadowColor={shadowColor}
+                        sceneType={sceneType}
+                        zoom={zoom}
+                        panX={panX}
+                        panY={panY}
+                        layoutMode={layoutMode}
+                        onImageUpload={handleImageUpload}
+                        hideMockup={hideMockup}
+                        canvasWidth={canvasWidth}
+                        canvasHeight={canvasHeight}
+                        browserMode={browserMode}
+                        texts={texts}
+                        updateText={updateText}
+                      />
+                    </div>
+                  </div>
 
-              <div
-                className={`absolute left-0 top-24 z-50 h-[calc(100vh-6rem)] w-full max-w-sm bg-[#0d0d0d] border-r border-white/10 overflow-hidden transition-all duration-300 ease-out ${
-                  showLeftSidebar
-                    ? "translate-x-0 opacity-100"
-                    : "-translate-x-full opacity-0 pointer-events-none"
-                }`}
-              >
-                <div className="h-full overflow-y-auto">
-                  <LeftSidebar
+                  <UnifiedMobileSidebar
                     uploadedImages={uploadedImages}
                     onImageUpload={handleImageUpload}
                     onImageRemove={handleImageRemove}
@@ -973,7 +1294,20 @@ export default function MockupEditorPage() {
                     setShadowColor={setShadowColorWithHistory}
                     sceneType={sceneType}
                     setSceneType={setSceneTypeWithHistory}
+                    zoom={zoom}
+                    setZoom={setZoomWithHistory}
+                    panX={panX}
+                    panY={panY}
+                    setPanX={setPanXWithHistory}
+                    setPanY={setPanYWithHistory}
+                    setPanImmediate={setPanImmediate}
+                    commitPanHistory={commitPanHistory}
+                    selectedTemplate={selectedTemplate}
+                    setSelectedTemplate={setSelectedTemplateWithHistory}
                     layoutMode={layoutMode}
+                    padding={60}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
                     siteUrl={siteUrl}
                     setSiteUrl={setSiteUrlWithHistory}
                     hideMockup={hideMockup}
@@ -983,221 +1317,199 @@ export default function MockupEditorPage() {
                     browserMode={browserMode}
                     setBrowserMode={setBrowserModeWithHistory}
                     onOpenLandingPopup={() => setIsLandingOpen(true)}
+                    texts={texts}
+                    addText={addText}
+                    updateText={updateText}
+                    removeText={removeText}
+                    isOpen={true}
+                    onClose={() => {}}
                   />
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                <LeftSidebar
+                  uploadedImages={uploadedImages}
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  selectedDevice={selectedDevice}
+                  setSelectedDevice={setSelectedDeviceWithHistory}
+                  backgroundType={backgroundType}
+                  setBackgroundType={setBackgroundTypeWithHistory}
+                  backgroundColor={backgroundColor}
+                  setBackgroundColor={setBackgroundColorWithHistory}
+                  backgroundImage={backgroundImage}
+                  setBackgroundImage={setBackgroundImageWithHistory}
+                  selectedPreset={selectedPreset}
+                  setSelectedPreset={setSelectedPresetWithHistory}
+                  backgroundNoise={backgroundNoise}
+                  setBackgroundNoise={setBackgroundNoiseWithHistory}
+                  backgroundBlur={backgroundBlur}
+                  setBackgroundBlur={setBackgroundBlurWithHistory}
+                  deviceStyle={deviceStyle}
+                  setDeviceStyle={setDeviceStyleWithHistory}
+                  styleEdge={styleEdge}
+                  setStyleEdge={setStyleEdgeWithHistory}
+                  setStyleEdgeImmediate={setStyleEdgeImmediate}
+                  borderType={borderType}
+                  setBorderType={setBorderTypeWithHistory}
+                  borderRadius={borderRadius}
+                  setBorderRadius={setBorderRadiusWithHistory}
+                  setBorderRadiusImmediate={setBorderRadiusImmediate}
+                  shadowType={shadowType}
+                  setShadowType={setShadowTypeWithHistory}
+                  shadowOpacity={shadowOpacity}
+                  setShadowOpacity={setShadowOpacityWithHistory}
+                  setShadowOpacityImmediate={setShadowOpacityImmediate}
+                  shadowMode={shadowMode}
+                  setShadowMode={setShadowModeWithHistory}
+                  shadowOffsetX={shadowOffsetX}
+                  setShadowOffsetX={setShadowOffsetXWithHistory}
+                  setShadowOffsetXImmediate={setShadowOffsetXImmediate}
+                  shadowOffsetY={shadowOffsetY}
+                  setShadowOffsetY={setShadowOffsetYWithHistory}
+                  setShadowOffsetYImmediate={setShadowOffsetYImmediate}
+                  shadowBlur={shadowBlur}
+                  setShadowBlur={setShadowBlurWithHistory}
+                  setShadowBlurImmediate={setShadowBlurImmediate}
+                  shadowSpread={shadowSpread}
+                  setShadowSpread={setShadowSpreadWithHistory}
+                  setShadowSpreadImmediate={setShadowSpreadImmediate}
+                  shadowColor={shadowColor}
+                  setShadowColor={setShadowColorWithHistory}
+                  sceneType={sceneType}
+                  setSceneType={setSceneTypeWithHistory}
+                  layoutMode={layoutMode}
+                  siteUrl={siteUrl}
+                  setSiteUrl={setSiteUrlWithHistory}
+                  hideMockup={hideMockup}
+                  onToggleHideMockup={onToggleHideMockup}
+                  selectedResolution={selectedResolution}
+                  setSelectedResolution={setSelectedResolutionWithHistory}
+                  browserMode={browserMode}
+                  setBrowserMode={setBrowserModeWithHistory}
+                  onOpenLandingPopup={() => setIsLandingOpen(true)}
+                  /** NEW: text overlays */
+                  texts={texts}
+                  addText={addText}
+                  updateText={updateText}
+                  removeText={removeText}
+                  onOpenSideMenu={handleMenuClick}
+                />
 
-              <div
-                className={`absolute right-0 top-24 z-50 h-[calc(100vh-6rem)] w-full max-w-sm bg-[#0d0d0d] border-l border-white/10 overflow-hidden transition-all duration-300 ease-out ${
-                  showRightSidebar
-                    ? "translate-x-0 opacity-100"
-                    : "translate-x-full opacity-0 pointer-events-none"
-                }`}
-              >
-                <div className="h-full overflow-y-auto">
-                  <RightSidebar
-                    uploadedImages={uploadedImages}
-                    selectedDevice={selectedDevice}
-                    zoom={zoom}
-                    setZoom={setZoomWithHistory}
-                    siteUrl={siteUrl}
-                    setSiteUrl={setSiteUrlWithHistory}
-                    selectedTemplate={selectedTemplate}
-                    setSelectedTemplate={setSelectedTemplateWithHistory}
-                    layoutMode={layoutMode}
-                    setLayoutMode={setLayoutModeWithHistory}
-                    padding={60}
-                    shadowOpacity={shadowOpacity}
-                    borderRadius={borderRadius}
-                    borderType={borderType}
-                    rotation={0}
-                    scale={100}
-                    deviceStyle={deviceStyle}
-                    styleEdge={styleEdge}
-                    shadowType={shadowType}
-                    backgroundType={backgroundType}
-                    backgroundColor={backgroundColor}
-                    selectedPreset={selectedPreset}
-                    panX={panX}
-                    panY={panY}
-                    setPanX={setPanXWithHistory}
-                    setPanY={setPanYWithHistory}
-                    /* NUEVO: drag con historial */
-                    setPanImmediate={setPanImmediate}
-                    commitPanHistory={commitPanHistory}
-                    sceneType={sceneType}
-                    canvasWidth={canvasWidth}
-                    canvasHeight={canvasHeight}
-                    browserMode={browserMode}
+                <div className="flex flex-1 flex-col min-w-0 gap-1">
+                  <TopBar
+                    onStartOver={resetToDefaults}
+                    onUndo={undo}
+                    onRedo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    onToggleLeftSidebar={toggleLeftSidebar}
+                    onToggleRightSidebar={toggleRightSidebar}
+                    showLeftSidebar={showLeftSidebar}
+                    showRightSidebar={showRightSidebar}
+                    isMobile={isMobile}
+                    showMenu={showMenu}
+                    isMenuClosing={isMenuClosing}
+                    onMenuClick={handleMenuClick}
+                    onCloseMenu={handleCloseMenu}
                   />
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <LeftSidebar
-              uploadedImages={uploadedImages}
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              selectedDevice={selectedDevice}
-              setSelectedDevice={setSelectedDeviceWithHistory}
-              backgroundType={backgroundType}
-              setBackgroundType={setBackgroundTypeWithHistory}
-              backgroundColor={backgroundColor}
-              setBackgroundColor={setBackgroundColorWithHistory}
-              backgroundImage={backgroundImage}
-              setBackgroundImage={setBackgroundImageWithHistory}
-              selectedPreset={selectedPreset}
-              setSelectedPreset={setSelectedPresetWithHistory}
-              backgroundNoise={backgroundNoise}
-              setBackgroundNoise={setBackgroundNoiseWithHistory}
-              backgroundBlur={backgroundBlur}
-              setBackgroundBlur={setBackgroundBlurWithHistory}
-              deviceStyle={deviceStyle}
-              setDeviceStyle={setDeviceStyleWithHistory}
-              styleEdge={styleEdge}
-              setStyleEdge={setStyleEdgeWithHistory}
-              setStyleEdgeImmediate={setStyleEdgeImmediate}
-              borderType={borderType}
-              setBorderType={setBorderTypeWithHistory}
-              borderRadius={borderRadius}
-              setBorderRadius={setBorderRadiusWithHistory}
-              setBorderRadiusImmediate={setBorderRadiusImmediate}
-              shadowType={shadowType}
-              setShadowType={setShadowTypeWithHistory}
-              shadowOpacity={shadowOpacity}
-              setShadowOpacity={setShadowOpacityWithHistory}
-              setShadowOpacityImmediate={setShadowOpacityImmediate}
-              shadowMode={shadowMode}
-              setShadowMode={setShadowModeWithHistory}
-              shadowOffsetX={shadowOffsetX}
-              setShadowOffsetX={setShadowOffsetXWithHistory}
-              setShadowOffsetXImmediate={setShadowOffsetXImmediate}
-              shadowOffsetY={shadowOffsetY}
-              setShadowOffsetY={setShadowOffsetYWithHistory}
-              setShadowOffsetYImmediate={setShadowOffsetYImmediate}
-              shadowBlur={shadowBlur}
-              setShadowBlur={setShadowBlurWithHistory}
-              setShadowBlurImmediate={setShadowBlurImmediate}
-              shadowSpread={shadowSpread}
-              setShadowSpread={setShadowSpreadWithHistory}
-              setShadowSpreadImmediate={setShadowSpreadImmediate}
-              shadowColor={shadowColor}
-              setShadowColor={setShadowColorWithHistory}
-              sceneType={sceneType}
-              setSceneType={setSceneTypeWithHistory}
-              layoutMode={layoutMode}
-              siteUrl={siteUrl}
-              setSiteUrl={setSiteUrlWithHistory}
-              hideMockup={hideMockup}
-              onToggleHideMockup={onToggleHideMockup}
-              selectedResolution={selectedResolution}
-              setSelectedResolution={setSelectedResolutionWithHistory}
-              browserMode={browserMode}
-              setBrowserMode={setBrowserModeWithHistory}
-              onOpenLandingPopup={() => setIsLandingOpen(true)}
-            />
-
-            <div className="flex flex-1 flex-col min-w-0 gap-8">
-              <TopBar
-                onStartOver={resetToDefaults}
-                onUndo={undo}
-                onRedo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onToggleLeftSidebar={toggleLeftSidebar}
-                onToggleRightSidebar={toggleRightSidebar}
-                showLeftSidebar={showLeftSidebar}
-                showRightSidebar={showRightSidebar}
-                isMobile={isMobile}
-              />
-
-              {/* ⬇️ Wrapper centrado + overflow-auto (desktop) */}
-              <div className="flex-1 overflow-auto">
-                <div className="h-full w-full flex items-center justify-center">
-                  <MockupCanvas
-                    uploadedImages={uploadedImages}
-                    selectedDevice={selectedDevice}
-                    selectedTemplate={selectedTemplate}
-                    siteUrl={siteUrl}
-                    borderType={borderType}
-                    selectedPreset={selectedPreset}
-                    backgroundType={backgroundType}
-                    backgroundColor={backgroundColor}
-                    backgroundImage={backgroundImage}
-                    backgroundNoise={backgroundNoise}
-                    backgroundBlur={backgroundBlur}
-                    padding={60}
-                    shadowOpacity={shadowOpacity}
-                    borderRadius={borderRadius}
-                    rotation={0}
-                    scale={100}
-                    deviceStyle={deviceStyle}
-                    styleEdge={styleEdge}
-                    shadowType={shadowType}
-                    shadowMode={shadowMode}
-                    shadowOffsetX={shadowOffsetX}
-                    shadowOffsetY={shadowOffsetY}
-                    shadowBlur={shadowBlur}
-                    shadowSpread={shadowSpread}
-                    shadowColor={shadowColor}
-                    sceneType={sceneType}
-                    zoom={zoom}
-                    panX={panX}
-                    panY={panY}
-                    layoutMode={layoutMode}
-                    onImageUpload={handleImageUpload}
-                    hideMockup={hideMockup}
-                    canvasWidth={canvasWidth}
-                    canvasHeight={canvasHeight}
-                    browserMode={browserMode}
+                  <MockupBar
+                    onSave={saveMockup}
+                    initialName={mockupName}
+                    onNameChange={setMockupName}
+                    isExisting={isExistingMockup}
                   />
-                </div>
-              </div>
-            </div>
 
-            <RightSidebar
-              uploadedImages={uploadedImages}
-              selectedDevice={selectedDevice}
-              zoom={zoom}
-              setZoom={setZoomWithHistory}
-              siteUrl={siteUrl}
-              setSiteUrl={setSiteUrlWithHistory}
-              selectedTemplate={selectedTemplate}
-              setSelectedTemplate={setSelectedTemplateWithHistory}
-              layoutMode={layoutMode}
-              setLayoutMode={setLayoutModeWithHistory}
-              padding={60}
-              shadowOpacity={shadowOpacity}
-              borderRadius={borderRadius}
-              borderType={borderType}
-              rotation={0}
-              scale={100}
-              deviceStyle={deviceStyle}
-              styleEdge={styleEdge}
-              shadowType={shadowType}
-              backgroundType={backgroundType}
-              backgroundColor={backgroundColor}
-              backgroundImage={backgroundImage}
-              backgroundNoise={backgroundNoise}
-              backgroundBlur={backgroundBlur}
-              selectedPreset={selectedPreset}
-              panX={panX}
-              panY={panY}
-              setPanX={setPanXWithHistory}
-              setPanY={setPanYWithHistory}
-              /* NUEVO: drag con historial */
-              setPanImmediate={setPanImmediate}
-              commitPanHistory={commitPanHistory}
-              sceneType={sceneType}
-              canvasWidth={canvasWidth}
-              canvasHeight={canvasHeight}
-              browserMode={browserMode}
-            />
-          </>
-        )}
-      </div>
+                  {/* ⬇️ Wrapper centrado + overflow-auto (desktop) */}
+                  <div className="flex-1 overflow-auto">
+                    <div className="h-full w-full flex items-center justify-center">
+                      <MockupCanvas
+                        uploadedImages={uploadedImages}
+                        selectedDevice={selectedDevice}
+                        selectedTemplate={selectedTemplate}
+                        siteUrl={siteUrl}
+                        borderType={borderType}
+                        selectedPreset={selectedPreset}
+                        backgroundType={backgroundType}
+                        backgroundColor={backgroundColor}
+                        backgroundImage={backgroundImage}
+                        backgroundNoise={backgroundNoise}
+                        backgroundBlur={backgroundBlur}
+                        padding={60}
+                        shadowOpacity={shadowOpacity}
+                        borderRadius={borderRadius}
+                        rotation={0}
+                        scale={100}
+                        deviceStyle={deviceStyle}
+                        styleEdge={styleEdge}
+                        shadowType={shadowType}
+                        shadowMode={shadowMode}
+                        shadowOffsetX={shadowOffsetX}
+                        shadowOffsetY={shadowOffsetY}
+                        shadowBlur={shadowBlur}
+                        shadowSpread={shadowSpread}
+                        shadowColor={shadowColor}
+                        sceneType={sceneType}
+                        zoom={zoom}
+                        panX={panX}
+                        panY={panY}
+                        layoutMode={layoutMode}
+                        onImageUpload={handleImageUpload}
+                        hideMockup={hideMockup}
+                        canvasWidth={canvasWidth}
+                        canvasHeight={canvasHeight}
+                        browserMode={browserMode}
+                        texts={texts}
+                        updateText={updateText}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <RightSidebar
+                  uploadedImages={uploadedImages}
+                  selectedDevice={selectedDevice}
+                  zoom={zoom}
+                  setZoom={setZoomWithHistory}
+                  siteUrl={siteUrl}
+                  setSiteUrl={setSiteUrlWithHistory}
+                  selectedTemplate={selectedTemplate}
+                  setSelectedTemplate={setSelectedTemplateWithHistory}
+                  layoutMode={layoutMode}
+                  setLayoutMode={setLayoutModeWithHistory}
+                  padding={60}
+                  shadowOpacity={shadowOpacity}
+                  borderRadius={borderRadius}
+                  borderType={borderType}
+                  rotation={0}
+                  scale={100}
+                  deviceStyle={deviceStyle}
+                  styleEdge={styleEdge}
+                  shadowType={shadowType}
+                  backgroundType={backgroundType}
+                  backgroundColor={backgroundColor}
+                  backgroundImage={backgroundImage}
+                  backgroundNoise={backgroundNoise}
+                  backgroundBlur={backgroundBlur}
+                  selectedPreset={selectedPreset}
+                  panX={panX}
+                  panY={panY}
+                  setPanX={setPanXWithHistory}
+                  setPanY={setPanYWithHistory}
+                  /* NUEVO: drag con historial */
+                  setPanImmediate={setPanImmediate}
+                  commitPanHistory={commitPanHistory}
+                  sceneType={sceneType}
+                  canvasWidth={canvasWidth}
+                  canvasHeight={canvasHeight}
+                  browserMode={browserMode}
+                />
+              </>
+            )}
+          </div>
+        </>
+      )}
     </ExportProvider>
   );
 }
