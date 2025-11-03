@@ -39,7 +39,7 @@ export function FAQSection() {
   };
 
   return (
-    <section className="relative px-8 py-20 bg-linear-to-br from-purple-900/20 via-blue-900/10 to-indigo-900/20 overflow-hidden">
+    <section className="relative px-4 sm:px-8 py-12 sm:py-20 bg-linear-to-br from-purple-900/20 via-blue-900/10 to-indigo-900/20 overflow-hidden">
       {/* Elementos decorativos de fondo */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-32 h-32 bg-purple-500/3 rounded-full blur-3xl animate-pulse"></div>

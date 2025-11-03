@@ -12,7 +12,7 @@ import {
 
 export function FeaturesSection() {
   return (
-    <section className="relative px-4 py-16 overflow-hidden">
+    <section className="relative px-4 sm:px-8 py-12 sm:py-16 overflow-hidden">
       {/* Background visual animado y gradiente */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         {/* Gradiente principal apagado */}

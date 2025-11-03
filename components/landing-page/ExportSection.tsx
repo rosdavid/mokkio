@@ -26,7 +26,7 @@ const exportOptions = [
 export function ExportSection() {
   return (
     <section
-      className="relative px-8 py-20 overflow-hidden"
+      className="relative px-4 sm:px-8 py-12 sm:py-20 overflow-hidden"
       style={{
         background:
           "radial-gradient(ellipse at 80% 20%, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)",

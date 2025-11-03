@@ -54,7 +54,7 @@ const styles = [
 
 export function StylesEffectsSection() {
   return (
-    <section className="relative px-8 py-20 bg-linear-to-br from-indigo-900/20 via-purple-900/10 to-blue-900/20 overflow-hidden">
+    <section className="relative px-4 sm:px-8 py-12 sm:py-20 bg-linear-to-br from-indigo-900/20 via-purple-900/10 to-blue-900/20 overflow-hidden">
       {/* Elementos decorativos de fondo */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 right-10 w-40 h-40 bg-indigo-500/3 rounded-full blur-3xl animate-pulse"></div>
