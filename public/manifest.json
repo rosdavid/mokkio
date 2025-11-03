@@ -1,0 +1,25 @@
+{
+  "name": "Mokkio - Create Stunning Mockups",
+  "short_name": "Mokkio",
+  "description": "Transform your designs into professional device mockups with Mokkio. Perfect for presentations, portfolios, and marketing materials.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/mokkio-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/mokkio-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
