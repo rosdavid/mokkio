@@ -6,6 +6,7 @@ import { MobileLandingPage } from "./mobile-landing-page/MobileLandingPage";
 
 export function MobileBlocker({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -17,6 +18,14 @@ export function MobileBlocker({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    const pwa =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true;
+    setIsPWA(pwa);
+  }, []);
+
   // Excluir rutas específicas del bloqueo móvil
   const excludedPaths = [
     "/privacy-policy",
@@ -25,7 +34,7 @@ export function MobileBlocker({ children }: { children: React.ReactNode }) {
   ];
   const shouldBlockMobile = !excludedPaths.includes(pathname);
 
-  if (isMobile && shouldBlockMobile) {
+  if (isMobile && shouldBlockMobile && !isPWA) {
     return <MobileLandingPage />;
   }
   return <>{children}</>;
