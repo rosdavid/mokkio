@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { CookieBanner } from "@/components/CookieBanner";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "./ui/sonner";
+import { MobileBlocker } from "@/components/MobileBlocker";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -18,12 +19,12 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   }, []);
 
   return (
-    <>
+    <MobileBlocker>
       {children}
       <Toaster />
       {isClient && showBanner && (
         <CookieBanner onAccept={acceptCookies} onReject={rejectCookies} />
       )}
-    </>
+    </MobileBlocker>
   );
 }
