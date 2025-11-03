@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
+import { Button } from "./ui/button";
+import { Slider } from "./ui/slider";
+import { Label } from "./ui/label";
 import { getEffectiveZoom as getEffectiveZoomUtil } from "@/lib/mockup-utils"; // <- remove CANVAS_WIDTH import
 import { MockupCanvas } from "@/components/mockup-canvas";
-import { AdSenseBlock } from "@/components/AdSenseBlock";
 
 interface RightSidebarProps {
   uploadedImages: (string | null)[];
@@ -47,6 +46,7 @@ interface RightSidebarProps {
     | "earth"
     | "radiant"
     | "texture"
+    | "textures"
     | "transparent"
     | "image";
   backgroundColor?: string;
@@ -182,8 +182,8 @@ function PresetThumb(props: {
       onClick={onClick}
       className={`w-full rounded-lg overflow-hidden border transition-colors cursor-pointer ${
         isActive
-          ? "border-purple-500 ring-2 ring-purple-500/50"
-          : "border-white/10 hover:border-white/20"
+          ? "border-primary ring-2 ring-primary/50"
+          : "border-border hover:border-border/80"
       }`}
     >
       <div ref={ref} className="relative aspect-video bg-transparent">
@@ -221,6 +221,7 @@ function PresetThumb(props: {
                   | "earth"
                   | "radiant"
                   | "texture"
+                  | "textures"
                   | "image") || "solid"
               }
               backgroundColor={backgroundColor || "#000"}
@@ -246,6 +247,7 @@ function PresetThumb(props: {
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
               browserMode={browserMode}
+              texts={[]}
             />
           </div>
         </div>
@@ -509,21 +511,21 @@ export function RightSidebar(props: RightSidebarProps) {
 
   return (
     <div
-      className="w-full md:w-[280px] border-l border-white/10 bg-[#0a0a0a] overflow-y-auto space-y-6"
+      className="w-full md:w-[280px] border-l border-border bg-background overflow-y-auto space-y-6"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {/* ZOOM */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <Label className="text-xs font-medium text-white/60 uppercase tracking-wider">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             ZOOM
           </Label>
-          <span className="text-xs text-white/60">{zoom}%</span>
+          <span className="text-xs text-muted-foreground">{zoom}%</span>
         </div>
 
         <div
           ref={previewRef}
-          className="mb-3 rounded-lg aspect-video relative overflow-hidden bg-transparent border border-white/10"
+          className="mb-3 rounded-lg aspect-video relative overflow-hidden bg-transparent border border-border"
           onWheel={onWheel}
           onDoubleClick={onDoubleClick}
           onClick={onClick}
@@ -562,6 +564,7 @@ export function RightSidebar(props: RightSidebarProps) {
                     | "earth"
                     | "radiant"
                     | "texture"
+                    | "textures"
                     | "image") || "solid"
                 }
                 backgroundColor={backgroundColor || "#000"}
@@ -586,6 +589,7 @@ export function RightSidebar(props: RightSidebarProps) {
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}
                 browserMode={browserMode}
+                texts={[]}
               />
             </div>
           </div>
@@ -630,7 +634,7 @@ export function RightSidebar(props: RightSidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white cursor-pointer"
+            className="h-8 w-8 bg-muted hover:bg-muted/80 text-foreground cursor-pointer"
             onClick={() => setZoom(Math.max(75, zoom - 1))}
           >
             <svg
@@ -658,7 +662,7 @@ export function RightSidebar(props: RightSidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white cursor-pointer"
+            className="h-8 w-8 bg-muted hover:bg-muted/80 text-foreground cursor-pointer"
             onClick={() => setZoom(Math.min(564, zoom + 1))}
           >
             <svg
@@ -678,12 +682,9 @@ export function RightSidebar(props: RightSidebarProps) {
         </div>
       </div>
 
-      {/* GOOGLE ADSENSE BLOCK */}
-      <AdSenseBlock />
-
       {/* LAYOUT PRESETS */}
       <div className="p-4">
-        <Label className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3 block">
+        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
           LAYOUT PRESETS
         </Label>
         <div className="space-y-2">
@@ -726,7 +727,8 @@ export function RightSidebar(props: RightSidebarProps) {
       <div
         className="sticky left-0 right-0 bottom-0 h-12 w-full pointer-events-none"
         style={{
-          background: "linear-gradient(to bottom, transparent, #0a0a0a 80%)",
+          background:
+            "linear-gradient(to bottom, transparent, hsl(var(--background)) 80%)",
         }}
       />
     </div>
