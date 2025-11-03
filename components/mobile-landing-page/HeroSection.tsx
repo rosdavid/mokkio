@@ -1,14 +1,130 @@
 "use client";
 
-import {
-  Smartphone,
-  Tablet,
-  AlertTriangle,
-  Heart,
-  Monitor,
-} from "lucide-react";
-import { useEffect } from "react";
-import Image from "next/image";
+import { Smartphone, Heart, Share, EllipsisVertical, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+
+function PWATutorial() {
+  const [deviceInfo, setDeviceInfo] = useState<{
+    os: string;
+    instructions: React.ReactNode[];
+  } | null>(null);
+
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    let os = "unknown";
+    let instructions: React.ReactNode[] = [];
+
+    // Detect OS
+    if (/iPad|iPhone|iPod/.test(ua)) {
+      os = "iOS";
+    } else if (/Android/.test(ua)) {
+      os = "Android";
+    }
+
+    // Set instructions
+    if (os === "iOS") {
+      instructions = [
+        <>
+          Tap the share button{" "}
+          <span className="ml-1 inline-flex items-center justify-center w-8 h-8 bg-foreground rounded-full">
+            <Share className="w-5 h-5 text-accent" />
+          </span>
+        </>,
+        <>
+          Tap
+          <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-md text-sm font-semibold shadow-md">
+            <Plus className="w-5 h-5 text-accent" />
+            Add to Home Screen
+          </span>
+        </>,
+        "Tap 'Add' to confirm",
+        "The Mokkio app will appear on your home screen!",
+      ];
+    } else if (os === "Android") {
+      instructions = [
+        <>
+          Tap the menu button{" "}
+          <span className="ml-1 inline-flex items-center justify-center w-8 h-8 bg-foreground rounded-full">
+            <EllipsisVertical className="w-5 h-5 text-accent" />
+          </span>{" "}
+          in the top-right corner
+        </>,
+        <>
+          Tap
+          <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-xl text-sm font-semibold shadow-md">
+            <Plus className="w-5 h-5 text-accent" />
+            Add to Home screen
+          </span>
+        </>,
+        "Tap 'Add' to confirm",
+        "The Mokkio app will appear on your home screen!",
+      ];
+    } else {
+      instructions = [
+        <>
+          Look for{" "}
+          <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/90 text-gray-900 rounded-full text-sm font-semibold shadow-md">
+            <Plus className="w-3 h-3 text-green-600" />
+            Add to Home Screen
+          </span>{" "}
+          or &apos;Install App&apos; in your browser menu
+        </>,
+        "Follow the prompts to install Mokkio",
+        "The app will be added to your device!",
+      ];
+    }
+
+    setDeviceInfo({ os, instructions });
+  }, []);
+
+  if (!deviceInfo) return null;
+
+  return (
+    <div className="bg-linear-to-br from-white/15 via-white/8 to-white/15 backdrop-blur-xl border border-white/30 rounded-3xl p-8 sm:p-10 max-w-lg mx-auto shadow-2xl shadow-black/30 ring-1 ring-white/10">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-3 bg-linear-to-br from-blue-500/20 to-purple-500/20 rounded-2xl border border-white/20 shadow-lg">
+          <Smartphone className="w-7 h-7 text-white" />
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold text-white mb-1">
+            Install Mokkio PWA
+          </h3>
+          <p className="text-sm text-white/70 font-medium">
+            Quick setup for {deviceInfo.os} devices • 30 seconds
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {deviceInfo.instructions.map((step, index) => (
+          <div key={index} className="flex items-start gap-4 group">
+            <div className="shrink-0">
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500/20 to-purple-500/20 border border-white/20 flex items-center justify-center text-white font-bold text-sm shadow-lg backdrop-blur-sm group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-blue-500/20 transition-all duration-300">
+                {index + 1}
+              </div>
+            </div>
+            <div className="flex-1 pt-1.5 text-left">
+              <div className="text-white/90 leading-relaxed group-hover:text-white transition-all duration-300 text-base">
+                {step}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-white/20">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-yellow-500/20 border border-yellow-400/30 flex items-center justify-center">
+            <span className="text-yellow-300 text-lg">💡</span>
+          </div>
+          <p className="text-sm text-white/80 font-medium">
+            Pro tip: The app works offline once installed!
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function HeroSection() {
   useEffect(() => {
@@ -58,7 +174,7 @@ export function HeroSection() {
     };
   }, []);
   return (
-    <section className="relative text-center overflow-hidden min-h-dvh flex items-center">
+    <section className="relative text-center overflow-hidden min-h-screen">
       {/* Video de fondo y overlay degradado */}
       <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
         <video
@@ -67,7 +183,7 @@ export function HeroSection() {
           muted
           playsInline
           className="absolute top-0 left-0 w-full h-full object-cover"
-          style={{ pointerEvents: "none", height: "100dvh" }}
+          style={{ pointerEvents: "none", height: "100vh" }}
         >
           <source src="/demo-video.mp4" type="video/mp4" />
         </video>
@@ -75,7 +191,7 @@ export function HeroSection() {
         <div className="absolute inset-0 w-full h-full bg-linear-to-b from-blue-900/70 via-purple-900/60 to-transparent backdrop-blur-sm"></div>
       </div>
 
-      <div className="relative w-full z-10 px-4 sm:px-6 lg:px-8 sm:max-w-7xl sm:mx-auto">
+      <div className="relative w-full z-10 px-4 sm:px-6 lg:px-8 sm:max-w-7xl sm:mx-auto pt-16 sm:pt-20 md:pt-24">
         {/* Logo y título centrado */}
         <div className="flex justify-center mb-6 sm:mb-8 md:mb-10 animate-in fade-in duration-1000 delay-50">
           <div className="shrink-0 flex items-center gap-2">
@@ -96,10 +212,9 @@ export function HeroSection() {
           </div>
         </div>
 
-        <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-10 mt-4 sm:mt-6 md:mt-8 animate-in fade-in duration-1000 delay-100">
-          <span className="inline-flex items-center gap-2 bg-orange-500/60 text-orange-100 border border-orange-400 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-full text-sm sm:text-base font-medium mb-4 animate-in fade-in duration-1000 delay-200">
-            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
-            Coming Soon for Mobile & Tablet!
+        <div className="mb-8 mt-8 animate-in fade-in duration-1000 delay-100">
+          <span className="inline-block bg-purple-500/60 text-purple-100 border border-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-4 animate-in fade-in duration-1000 delay-200">
+            ✨ Currently in v1.0.0-beta.3 - Free to Use! 🚀
           </span>
         </div>
 
@@ -114,44 +229,25 @@ export function HeroSection() {
         </h1>
 
         <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-white/80 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto leading-relaxed animate-in fade-in duration-1000 delay-600">
-          I&apos;m working hard to bring Mokkio to your mobile and tablet
-          devices. For now, please access from a desktop computer for the best
-          experience.
+          To use Mokkio on mobile or tablet devices, please install the PWA
+          version. Remember that this is still in beta and some features may not
+          be available yet or not working as expected.
         </p>
-
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8 md:mb-10 lg:mb-12 animate-in fade-in duration-1000 delay-700">
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-800 flex items-center gap-1.5 sm:gap-2">
-            <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 mr-0.5"></span>
-            <Smartphone className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Mobile Support </span>Soon
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-900 flex items-center gap-1.5 sm:gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full shrink-0 mr-0.5"></span>
-            <Tablet className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Tablet Support </span>Soon
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 text-sm sm:text-base text-white/90 font-medium hover:bg-white/20 transition-all animate-in fade-in duration-1000 delay-1000 flex items-center gap-1.5 sm:gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full shrink-0 mr-0.5"></span>
-            <Monitor className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Desktop Only </span>for Now
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 animate-in fade-in duration-1000 delay-1100 flex flex-col items-center gap-4">
+        <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 animate-in fade-in duration-1000 delay-1100 flex flex-col items-center gap-4 mb-8">
           <a
-            href="https://ko-fi.com/R5R31NC8IM"
+            href="https://buymeacoffee.com/mokkio"
             target="_blank"
-            className="hover:opacity-100 opacity-80"
+            rel="noopener noreferrer"
+            className="transform hover:scale-105 transition-transform duration-200"
           >
-            <Image
-              width={180}
-              height={0}
-              style={{ border: "0px", height: "36px" }}
-              src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_beige.png?_gl=1*jzb8ds*_gcl_au*ODc1MTI4ODI0LjE3NjEzNjc4OTA.*_ga*MjEwMjUwMjk4MS4xNzYxMzY3ODkw*_ga_M13FZ7VQ2C*czE3NjEzNjc4ODkkbzEkZzEkdDE3NjEzNjk0MzUkajUzJGwwJGgw"
-              alt="Buy Me a Coffee at ko-fi.com"
-            />
+            <button className="relative overflow-hidden text-white px-6 py-3 rounded-full font-semibold text-lg shadow-lg animate-in fade-in group transform hover:scale-105 will-change-transform cursor-pointer bg-linear-to-r from-purple-800 via-pink-800 to-blue-800 animate-gradientMove transition-all duration-300 border-white/20 hover:bg-white/20 hover:border-white/30 hover:shadow-xl hover:shadow-white/10">
+              <span className="relative z-10 flex items-center gap-2 text-sm md:text-md">
+                <Heart className="w-4 h-4 animate-heartbeat text-pink-400" />
+                Support Mokkio
+              </span>
+            </button>
           </a>
+
           <div className="text-sm flex flex-row items-center justify-center gap-4">
             <span className="text-white flex items-center gap-1">
               Made with
@@ -167,11 +263,10 @@ export function HeroSection() {
               Visit my website
             </a>
           </div>
-          <div className="text-sm flex flex-row items-center justify-center gap-4">
-            <span className="text-white flex items-center gap-1">
-              Currently in v1.0.0-beta.2
-            </span>
-          </div>
+        </div>
+
+        <div className="flex flex-col gap-6 mb-6 sm:mb-8 md:mb-10 lg:mb-12 animate-in fade-in duration-1000 delay-700">
+          <PWATutorial />
         </div>
       </div>
     </section>
