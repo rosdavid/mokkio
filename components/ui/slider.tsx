@@ -35,46 +35,35 @@ function Slider({
       )}
       {...props}
     >
-      {/* TRACK – píldora alta con brillo y sombras inset */}
       <SliderPrimitive.Track
         data-slot="slider-track"
         className={cn(
-          // base
-          "relative grow overflow-hidden rounded-md border border-white/10 bg-neutral-900/80",
-          // tamaño tipo “Opacity” del screenshot
+          "relative grow overflow-hidden rounded-md border border-border bg-muted",
           "data-[orientation=horizontal]:h-9 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-11",
-          // sombras/relieves
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.06),inset_0_-6px_14px_rgba(0,0,0,0.6)]",
-          // hover
-          "transition-all duration-300 ease-out group-hover:border-white/20"
+          "transition-all duration-300 ease-out group-hover:border-border/80"
         )}
       >
-        {/* RANGE – relleno suave y discreto */}
         <SliderPrimitive.Range
           data-slot="slider-range"
           className={cn(
             "absolute rounded-md data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full",
-            "bg-linear-to-r from-white/15 to-white/5",
-            "after:absolute after:inset-x-0 after:top-0 after:h-px after:bg-white/10"
+            "bg-linear-to-r from-muted-foreground/45 to-muted-foreground/5",
+            "after:absolute after:inset-x-0 after:top-0 after:h-px after:bg-muted-foreground/10"
           )}
         />
       </SliderPrimitive.Track>
 
-      {/* THUMB – barrita blanca con relieve (no círculo) */}
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
           className={cn(
-            // forma/tamaño del “knob” tipo iOS/macOS
             "h-1 w-2.5 -translate-y-px rounded-md",
-            // material
-            "bg-linear-to-b from-white to-neutral-200",
-            "border border-black/30",
-            // relieve/gloss
+            "bg-muted-foreground",
+            "border-2 border-border",
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.25),0_8px_20px_-8px_rgba(0,0,0,0.8)]",
-            // estados
-            "transition-transform duration-200 ease-out scale-105 outline-hidden ring-4 ring-white/50",
+            "transition-transform duration-200 ease-out scale-105 outline-hidden",
             "disabled:pointer-events-none disabled:opacity-50"
           )}
         />
