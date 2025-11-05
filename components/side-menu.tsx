@@ -362,6 +362,8 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
 
               <a
                 href="https://davidros.vercel.app/blog/mokkio-devlog-03"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-4 rounded-xl bg-card border border-border hover:bg-accent/50 transition-all duration-200 group text-left"
               >
                 <div className="flex items-center gap-3 mb-2">
