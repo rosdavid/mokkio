@@ -15,6 +15,9 @@ import {
   Share,
   Plus,
   EllipsisVertical,
+  SquarePlus,
+  Instagram,
+  Twitter,
 } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks";
@@ -358,7 +361,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               </a>
 
               <a
-                href="https://davidros.vercel.app/blog/mokkio-devlog-02"
+                href="https://davidros.vercel.app/blog/mokkio-devlog-03"
                 className="p-4 rounded-xl bg-card border border-border hover:bg-accent/50 transition-all duration-200 group text-left"
               >
                 <div className="flex items-center gap-3 mb-2">
@@ -485,14 +488,14 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                         {[
                           <>
                             Tap the share button{" "}
-                            <span className="ml-2 inline-flex items-center justify-center w-8 h-8 bg-foreground rounded-full">
-                              <Share className="w-5 h-5 text-accent" />
+                            <span className="ml-2 inline-flex items-center justify-center w-6 h-6 bg-foreground rounded-full">
+                              <Share className="w-4 h-4 text-accent" />
                             </span>
                           </>,
                           <>
                             Tap
                             <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-md text-sm font-semibold shadow-md">
-                              <Plus className="w-5 h-5 text-accent" />
+                              <SquarePlus className="w-5 h-5 text-accent" />
                               Add to Home Screen
                             </span>
                           </>,
@@ -537,14 +540,14 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                         {[
                           <>
                             Tap the menu button
-                            <span className="mx-2 inline-flex items-center justify-center w-8 h-8 bg-foreground rounded-full">
-                              <EllipsisVertical className="w-5 h-5 text-accent" />
+                            <span className="mx-2 inline-flex items-center justify-center w-6 h-6 bg-foreground rounded-full">
+                              <EllipsisVertical className="w-4 h-4 text-accent" />
                             </span>
                           </>,
                           <>
                             Tap
                             <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-md text-sm font-semibold shadow-md">
-                              <Plus className="w-5 h-5 text-accent" />
+                              <SquarePlus className="w-5 h-5 text-accent" />
                               Add to Home screen
                             </span>
                           </>,
@@ -604,6 +607,29 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 </a>
               </div>
             </div>
+
+            {/* Social Media Links */}
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <a
+                href="https://instagram.com/mokkio.me"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-lg bg-card border border-border hover:bg-accent/50 transition-all duration-200 text-muted-foreground hover:text-foreground"
+                aria-label="Follow us on Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a
+                href="https://x.com/mokkioapp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-lg bg-card border border-border hover:bg-accent/50 transition-all duration-200 text-muted-foreground hover:text-foreground"
+                aria-label="Follow us on X (Twitter)"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+            </div>
+
             <div className="flex items-center justify-center gap-3 mt-10">
               <div className="p-2 rounded-lg">
                 <svg
