@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,15 +20,16 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Check for existing username (case-insensitive)
+    // Check for existing username (case-insensitive), excluding the current user's profile
     const { data: existing, error: checkError } = await supabaseAdmin
       .from("profiles")
       .select("id")
       .ilike("username", username)
+      .neq("id", id)
       .limit(1);
 
     if (checkError) {
-      console.error("Username check error:", checkError);
+      logger.error("Username check error:", checkError);
       return NextResponse.json({ error: "Internal" }, { status: 500 });
     }
 
@@ -35,16 +37,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "username_taken" }, { status: 409 });
     }
 
-    const { data, error } = await supabaseAdmin.from("profiles").insert([
-      {
-        id,
-        username,
-        full_name: full_name ?? null,
-      },
-    ]);
+    // Check if profile already exists
+    const { data: existingProfile, error: selectError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", id)
+      .single();
+
+    if (selectError && selectError.code !== "PGRST116") {
+      // PGRST116 is "not found"
+      logger.error("Profile select error:", selectError);
+      return NextResponse.json({ error: "Internal" }, { status: 500 });
+    }
+
+    let data, error;
+    if (existingProfile) {
+      // Update existing profile
+      const { data: updateData, error: updateError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          username,
+          full_name: full_name ?? null,
+        })
+        .eq("id", id);
+      data = updateData;
+      error = updateError;
+    } else {
+      // Insert new profile
+      const { data: insertData, error: insertError } = await supabaseAdmin
+        .from("profiles")
+        .insert([
+          {
+            id,
+            username,
+            full_name: full_name ?? null,
+          },
+        ]);
+      data = insertData;
+      error = insertError;
+    }
 
     if (error) {
-      console.error("Insert profile error:", error);
+      logger.error("Insert profile error:", error);
       return NextResponse.json(
         { error: "Failed to create profile" },
         { status: 500 }
@@ -53,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ profile: data?.[0] ?? null }, { status: 201 });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return NextResponse.json({ error: "Unexpected" }, { status: 500 });
   }
 }
