@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 interface CookiePreferences {
   necessary: boolean;
+  functional: boolean;
   analytics: boolean;
   marketing: boolean;
 }
@@ -15,6 +16,7 @@ export function useCookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
     necessary: true,
+    functional: false,
     analytics: false,
     marketing: false,
   });
@@ -47,6 +49,7 @@ export function useCookieConsent() {
   const rejectCookies = () => {
     const minimalPrefs = {
       necessary: true,
+      functional: false,
       analytics: false,
       marketing: false,
     };
@@ -67,6 +70,7 @@ export function useCookieConsent() {
     setShowBanner(true);
     setPreferences({
       necessary: true,
+      functional: false,
       analytics: false,
       marketing: false,
     });
