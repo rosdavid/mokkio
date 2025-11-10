@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Label } from "./ui/label";
+import { Layers, EyeOff } from "lucide-react";
 import { getEffectiveZoom as getEffectiveZoomUtil } from "@/lib/mockup-utils"; // <- remove CANVAS_WIDTH import
 import { MockupCanvas } from "@/components/mockup-canvas";
 
@@ -20,8 +21,8 @@ interface RightSidebarProps {
   selectedTemplate: string | null;
   setSelectedTemplate: (template: string | null) => void;
 
-  layoutMode: "single" | "double" | "triple";
-  setLayoutMode: (m: "single" | "double" | "triple") => void;
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
+  setLayoutMode: (m: "single" | "double" | "triple" | "scene-builder") => void;
 
   padding: number;
   shadowOpacity: number;
@@ -30,7 +31,7 @@ interface RightSidebarProps {
   rotation: number;
   scale: number;
 
-  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
+  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
   /** grosor del borde */
   styleEdge: number;
 
@@ -48,7 +49,8 @@ interface RightSidebarProps {
     | "texture"
     | "textures"
     | "transparent"
-    | "image";
+    | "image"
+    | "magical";
   backgroundColor?: string;
   backgroundImage?: string;
   backgroundNoise?: number;
@@ -74,9 +76,22 @@ interface RightSidebarProps {
 
   /** NEW: browser mode for theme switching */
   browserMode?: string;
+
+  /** NEW: magical gradients */
+  magicalGradients?: string[];
+
+  /** NEW: Scene FX */
+  sceneFxMode?: "default" | "shadows";
+  setSceneFxMode?: (mode: "default" | "shadows") => void;
+  sceneFxShadow?: string | null;
+  setSceneFxShadow?: (shadow: string | null) => void;
+  sceneFxOpacity?: number;
+  setSceneFxOpacity?: (opacity: number) => void;
+  sceneFxLayer?: "overlay" | "underlay";
+  setSceneFxLayer?: (layer: "overlay" | "underlay") => void;
 }
 
-const LAYOUT_PRESETS = [
+const SINGLE_LAYOUT_PRESETS = [
   { id: "centered", name: "Centered" },
   { id: "perspective-left", name: "Perspective Left" },
   { id: "perspective-right", name: "Perspective Right" },
@@ -89,6 +104,17 @@ const LAYOUT_PRESETS = [
   { id: "flat-topright", name: "Flat Top Right" },
 ];
 
+const DOUBLE_LAYOUT_PRESETS = [
+  { id: "double-side-by-side", name: "Side by Side" },
+  { id: "double-stacked", name: "Stacked" },
+  { id: "double-angled", name: "Angled" },
+  { id: "double-perspective", name: "Perspective" },
+  { id: "double-overlap", name: "Overlap" },
+  { id: "double-depth", name: "Depth" },
+  { id: "double-asymmetric", name: "Asymmetric" },
+  { id: "double-mirror", name: "Mirror" },
+];
+
 /** Mini clon 1:1 del canvas para una tarjeta de preset. */
 function PresetThumb(props: {
   presetId: string;
@@ -96,7 +122,7 @@ function PresetThumb(props: {
   onClick: () => void;
   uploadedImages: (string | null)[];
   selectedDevice: string;
-  layoutMode: "single" | "double" | "triple";
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
   backgroundType?: string;
   backgroundColor?: string;
   backgroundImage?: string;
@@ -109,7 +135,7 @@ function PresetThumb(props: {
   borderType: string;
   rotation: number;
   scale: number;
-  deviceStyle: RightSidebarProps["deviceStyle"];
+  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
   styleEdge: number;
   shadowType: string;
   siteUrl: string;
@@ -118,6 +144,8 @@ function PresetThumb(props: {
   canvasWidth: number;
   canvasHeight: number;
   browserMode?: string;
+  /** NEW: magical gradients */
+  magicalGradients?: string[];
 }) {
   const {
     presetId,
@@ -147,6 +175,8 @@ function PresetThumb(props: {
     canvasWidth,
     canvasHeight,
     browserMode = "light",
+    /** NEW: magical gradients */
+    magicalGradients,
   } = props;
 
   const ref = useRef<HTMLDivElement>(null);
@@ -222,7 +252,8 @@ function PresetThumb(props: {
                   | "radiant"
                   | "texture"
                   | "textures"
-                  | "image") || "solid"
+                  | "image"
+                  | "magical") || "solid"
               }
               backgroundColor={backgroundColor || "#000"}
               backgroundImage={backgroundImage}
@@ -247,7 +278,11 @@ function PresetThumb(props: {
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
               browserMode={browserMode}
+              /** NEW: magical gradients */
+              magicalGradients={magicalGradients}
               texts={[]}
+              mockupGap={0}
+              hideGuides={true}
             />
           </div>
         </div>
@@ -291,7 +326,12 @@ export function RightSidebar(props: RightSidebarProps) {
     canvasWidth,
     canvasHeight,
     browserMode = "light",
+    /** NEW: magical gradients */
+    magicalGradients,
   } = props;
+
+  const LAYOUT_PRESETS =
+    layoutMode === "double" ? DOUBLE_LAYOUT_PRESETS : SINGLE_LAYOUT_PRESETS;
 
   // ---------- Preview de ZOOM ----------
   const previewRef = useRef<HTMLDivElement>(null);
@@ -511,11 +551,80 @@ export function RightSidebar(props: RightSidebarProps) {
 
   return (
     <div
-      className="w-full md:w-[280px] border-l border-border bg-background overflow-y-auto space-y-6"
+      className="w-full md:w-[280px] bg-background overflow-y-auto"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
-      {/* ZOOM */}
+      {/* LAYOUT MODE */}
       <div className="p-4">
+        <div className="relative grid grid-cols-3 bg-muted overflow-hidden px-1 py-1 rounded-xl gap-1">
+          {/* Active tab indicator */}
+          <span
+            className="absolute top-1 h-[calc(100%-0.5rem)] bg-muted-foreground/20 rounded-lg transition-all duration-300 pointer-events-none"
+            style={{
+              width: "calc(33.333% - 0.375rem)",
+              left:
+                layoutMode === "double"
+                  ? "calc(33.333% + 0.25rem)"
+                  : layoutMode === "scene-builder"
+                    ? "calc(66.666% + 0.10rem)"
+                    : "0.25rem",
+            }}
+          />
+          <button
+            onClick={() => props.setLayoutMode("single")}
+            className="text-xs text-foreground bg-transparent cursor-pointer z-10 h-8 flex items-center justify-center"
+            title="Single Mockup"
+          >
+            <div
+              className={`w-3 h-5 rounded-[3px] transition-opacity ${
+                layoutMode === "single"
+                  ? "bg-foreground/70"
+                  : "bg-foreground/40"
+              }`}
+            ></div>
+          </button>
+          <button
+            onClick={() => props.setLayoutMode("double")}
+            className="text-xs text-foreground bg-transparent cursor-pointer z-10 h-8 flex items-center justify-center gap-1"
+            title="Double Mockup"
+          >
+            <div
+              className={`w-3 h-5 rounded-[3px] transition-opacity ${
+                layoutMode === "double"
+                  ? "bg-foreground/70"
+                  : "bg-foreground/40"
+              }`}
+            ></div>
+            <div
+              className={`w-3 h-5 rounded-[3px] transition-opacity ${
+                layoutMode === "double"
+                  ? "bg-foreground/70"
+                  : "bg-foreground/40"
+              }`}
+            ></div>
+          </button>
+          <button
+            onClick={() => props.setLayoutMode("scene-builder")}
+            className="text-xs text-foreground bg-transparent cursor-pointer z-10 h-8 flex items-center justify-center"
+            title="Scene Builder - Multi-Device Layouts"
+          >
+            <Layers
+              className={`w-5 h-5 transition-opacity ${
+                layoutMode === "scene-builder"
+                  ? "text-foreground/70"
+                  : "text-foreground/40"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* ZOOM */}
+      <div className="p-4 relative">
+        {/* Scene Builder Overlay */}
+        {layoutMode === "scene-builder" && (
+          <div className="absolute top-0 left-0 right-0 bottom-0 bg-background/95 backdrop-blur-sm rounded-lg z-10 flex flex-col items-center justify-start pt-8 gap-3 p-4"></div>
+        )}
         <div className="flex items-center justify-between mb-2">
           <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             ZOOM
@@ -565,7 +674,8 @@ export function RightSidebar(props: RightSidebarProps) {
                     | "radiant"
                     | "texture"
                     | "textures"
-                    | "image") || "solid"
+                    | "image"
+                    | "magical") || "solid"
                 }
                 backgroundColor={backgroundColor || "#000"}
                 backgroundNoise={backgroundNoise || 0}
@@ -589,7 +699,11 @@ export function RightSidebar(props: RightSidebarProps) {
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}
                 browserMode={browserMode}
+                /** NEW: magical gradients */
+                magicalGradients={magicalGradients}
                 texts={[]}
+                mockupGap={0}
+                hideGuides={true}
               />
             </div>
           </div>
@@ -683,10 +797,26 @@ export function RightSidebar(props: RightSidebarProps) {
       </div>
 
       {/* LAYOUT PRESETS */}
-      <div className="p-4">
+      <div className="p-4 relative">
+        {/* Scene Builder Overlay */}
+        {layoutMode === "scene-builder" && (
+          <div className="absolute top-0 left-0 right-0 bottom-0 bg-background/95 backdrop-blur-sm rounded-lg z-10 flex flex-col items-center justify-start pt-24 gap-3 p-4">
+            <EyeOff className="w-8 h-8 text-muted-foreground" />
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                Scene Builder Active
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Layout presets are not available in Scene Builder mode
+              </p>
+            </div>
+          </div>
+        )}
+
         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
           LAYOUT PRESETS
         </Label>
+
         <div className="space-y-2">
           {LAYOUT_PRESETS.map((p) => (
             <PresetThumb
@@ -718,6 +848,8 @@ export function RightSidebar(props: RightSidebarProps) {
               canvasWidth={canvasWidth}
               canvasHeight={canvasHeight}
               browserMode={browserMode}
+              /** NEW: magical gradients */
+              magicalGradients={magicalGradients}
             />
           ))}
         </div>
