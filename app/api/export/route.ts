@@ -1,8 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import { logger } from "@/lib/logger";
+import { exportLimiter, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check (export is resource-intensive, so stricter limit)
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await exportLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      logger.warn(`Export rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(
+        {
+          error: "Too many export requests. Please wait before trying again.",
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "3",
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(rateLimitResult.reset).toISOString(),
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
+        }
+      );
+    }
+
     const {
       html,
       width,
@@ -18,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Starting Puppeteer browser...");
+    logger.info("Starting Puppeteer browser...");
 
     // Launch browser
     const browser = await puppeteer.launch({
@@ -48,7 +73,7 @@ export async function POST(request: NextRequest) {
         deviceScaleFactor: 1,
       });
 
-      console.log(`Setting viewport to ${viewportWidth}x${viewportHeight}`);
+      logger.log(`Setting viewport to ${viewportWidth}x${viewportHeight}`);
 
       // Create a minimal HTML document with the canvas content
       const fullHtml = `
@@ -84,7 +109,7 @@ export async function POST(request: NextRequest) {
       // Wait a bit for images to load
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      console.log("Taking screenshot...");
+      logger.log("Taking screenshot...");
 
       // Take screenshot
       const screenshot = await page.screenshot({
@@ -99,14 +124,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      console.log("Screenshot taken successfully");
+      logger.log("Screenshot taken successfully");
 
       const mimeType =
         format === "png"
           ? "image/png"
           : format === "jpg" || format === "jpeg"
-          ? "image/jpeg"
-          : "image/webp";
+            ? "image/jpeg"
+            : "image/webp";
 
       return new NextResponse(Buffer.from(screenshot), {
         headers: {
@@ -118,7 +143,7 @@ export async function POST(request: NextRequest) {
       await browser.close();
     }
   } catch (error) {
-    console.error("Export error:", error);
+    logger.error("Export error:", error);
     return NextResponse.json(
       { error: "Failed to generate image" },
       { status: 500 }
