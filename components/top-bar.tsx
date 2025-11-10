@@ -17,9 +17,12 @@ import {
   Download,
   Heart,
   ChevronLeft,
+  Save,
+  Ruler,
 } from "lucide-react";
 import { ExportButton } from "@/components/export-button";
 import { SideMenu } from "@/components/side-menu";
+import { Input } from "./ui/input";
 import { useState, useEffect, useRef } from "react";
 
 interface TopBarProps {
@@ -39,6 +42,16 @@ interface TopBarProps {
   isMenuClosing?: boolean;
   onMenuClick?: () => void;
   onCloseMenu: () => void;
+  // Save menu props
+  onSave?: (name: string) => Promise<{ isUpdate?: boolean; message?: string }>;
+  initialName?: string;
+  onNameChange?: (name: string) => void;
+  isExisting?: boolean;
+  // PWA detection
+  isPWA?: boolean;
+  // Guides and rulers (Smart guides integrated)
+  showRulers?: boolean;
+  onToggleRulers?: () => void;
 }
 
 export function TopBar({
@@ -52,9 +65,21 @@ export function TopBar({
   isMenuClosing = false,
   onMenuClick,
   onCloseMenu,
+  onSave,
+  initialName,
+  onNameChange,
+  isExisting,
+  isPWA = false,
+  showRulers = false,
+  onToggleRulers,
 }: TopBarProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [editableName, setEditableName] = useState(initialName || "Untitled");
+
+  useEffect(() => {
+    setEditableName(initialName || "Untitled");
+  }, [initialName]);
   const exportButtonRef = useRef<{ openMenu: () => void }>(null);
   const isMac =
     typeof window !== "undefined" &&
@@ -128,7 +153,7 @@ export function TopBar({
 
   return (
     <>
-      <div className="flex items-center justify-between w-full md:px-4 md:py-3">
+      <div className="flex items-center justify-between w-full md:px-4 md:py-4">
         {/* Left Section */}
         <div className="items-center justify-center flex gap-2">
           <ChevronLeft
@@ -145,7 +170,7 @@ export function TopBar({
             >
               <path
                 d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
-                fill="#fff"
+                fill="currentColor"
               />
             </svg>
           </div>
@@ -165,8 +190,26 @@ export function TopBar({
               </span>
             </Button>
           </a>
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={
+                showRulers
+                  ? "Hide Rulers & Smart Guides"
+                  : "Show Rulers & Smart Guides"
+              }
+              className={`transition-all h-8 w-8 duration-200 flex items-center p-2 rounded-lg border cursor-pointer ${
+                showRulers
+                  ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                  : "text-muted-foreground hover:text-foreground/80 hover:bg-accent/50 border-border/50 hover:border-border"
+              }`}
+              onClick={onToggleRulers}
+            >
+              <Ruler className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-
         {/* Center Section */}
         <div className="flex items-center md:gap-2">
           <Button
@@ -238,14 +281,53 @@ export function TopBar({
                       {isMac ? "⌘ E" : "Ctrl E"}
                     </kbd>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4" />
+                      <span>Toggle Rulers</span>
+                    </div>
+                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-sans">
+                      {isMac ? "⌘ '" : "Ctrl '"}
+                    </kbd>
+                  </div>
                 </div>
               </div>
             </PopoverContent>
           </Popover>
         </div>
-
         {/* Right Section */}
         <div className="flex items-center gap-3">
+          {/* Desktop Mockup Info */}
+          {!isMobile && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">
+                {isExisting ? "Editing" : "New"}
+              </span>
+              <Input
+                value={editableName}
+                onChange={(e) => {
+                  setEditableName(e.target.value);
+                  onNameChange?.(e.target.value);
+                }}
+                className="w-full h-8 text-sm border-border bg-background! px-2"
+                placeholder="Enter mockup name..."
+              />
+            </div>
+          )}
+          {!isPWA && (
+            <Button
+              onClick={async () => {
+                if (onSave) {
+                  await onSave(editableName);
+                }
+              }}
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-muted-foreground hover:text-foreground/80 hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 cursor-pointer rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-border/50 hover:border-border"
+            >
+              <Save className="h-5 w-5" />
+            </Button>
+          )}
           <ExportButton ref={exportButtonRef} isMobile={isMobile} />
         </div>
       </div>
