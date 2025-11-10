@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import {
-  MessageSquare,
+  MessageSquareWarning,
   Sparkles,
   Heart,
   X,
@@ -18,15 +18,23 @@ import {
   SquarePlus,
   Instagram,
   Twitter,
+  ImageUp,
+  Sun,
+  Moon,
+  Monitor,
+  Brush,
 } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "next-themes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
 
 interface SideMenuProps {
@@ -46,7 +54,16 @@ function AccountManagementModal({
 }: AccountManagementModalProps) {
   const [newUsername, setNewUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { user } = useAuth();
+
+  // Helper function to get user initials
+  const getUserInitials = (
+    user: { user_metadata?: { username?: string }; email?: string } | null
+  ) => {
+    const name = user?.user_metadata?.username || user?.email || "";
+    return name.charAt(0).toUpperCase();
+  };
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,10 +96,78 @@ function AccountManagementModal({
       toast.success("Username updated successfully");
       setNewUsername("");
     } catch (error: unknown) {
-      console.error("Error updating username:", error);
+      logger.error("Error updating username:", error);
       toast.error("Failed to update username");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      const avatarUrl = data.publicUrl;
+
+      // Update user metadata
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: avatarUrl },
+      });
+
+      if (updateError) throw updateError;
+
+      // Also update the profile in the database
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("id", user?.id);
+
+      if (profileError) throw profileError;
+
+      toast.success("Profile picture updated successfully");
+    } catch (error: unknown) {
+      logger.error("Error uploading avatar:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      if (errorMessage.includes("Bucket not found")) {
+        toast.error(
+          "Storage bucket not configured. Please contact support or create an 'avatars' bucket in Supabase Storage."
+        );
+      } else {
+        toast.error("Failed to upload profile picture");
+      }
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -90,23 +175,60 @@ function AccountManagementModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-popover border-border max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Manage Account</DialogTitle>
+          <DialogTitle className="text-foreground">Account</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Current Account Info */}
           <div className="p-4 bg-card rounded-lg border border-border">
-            <h3 className="font-medium text-foreground mb-2">
+            <h3 className="font-medium text-foreground mb-4">
               Current Account
             </h3>
-            <div className="space-y-1 text-sm">
-              <p className="text-muted-foreground">
-                <span className="font-medium">Email:</span> {user?.email}
-              </p>
-              <p className="text-muted-foreground">
-                <span className="font-medium">Username:</span>{" "}
-                {user?.user_metadata?.username || "Not set"}
-              </p>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage
+                    src={user?.user_metadata?.avatar_url}
+                    alt={user?.user_metadata?.username || user?.email || "User"}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                    {getUserInitials(user)}
+                  </AvatarFallback>
+                </Avatar>
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors"
+                >
+                  <ImageUp className="h-4 w-4" />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              <div className="flex-1">
+                <div className="space-y-1">
+                  <p className="text-sm">
+                    <span className="font-medium text-foreground">Email:</span>{" "}
+                    <span className="text-muted-foreground">{user?.email}</span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium text-foreground">
+                      Username:
+                    </span>{" "}
+                    <span className="text-muted-foreground">
+                      {user?.user_metadata?.username || "Not set"}
+                    </span>
+                  </p>
+                </div>
+                {uploadingAvatar && (
+                  <p className="text-xs text-primary mt-2">Uploading...</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -195,6 +317,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
+  const { theme, setTheme } = useTheme();
   const isAdmin = user?.user_metadata?.role === "admin";
   const goToAdmin = () => {
     window.location.href = "/admin";
@@ -205,6 +328,14 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = (
+    user: { user_metadata?: { username?: string }; email?: string } | null
+  ) => {
+    const name = user?.user_metadata?.username || user?.email || "";
+    return name.charAt(0).toUpperCase();
   };
 
   if (!isOpen && !isClosing) return null;
@@ -243,7 +374,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 >
                   <path
                     d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
-                    fill="#fff"
+                    fill="currentColor"
                   />
                 </svg>
               </div>
@@ -270,7 +401,17 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               <div className="w-full p-4 rounded-xl bg-card border border-border hover:bg-accent/50 transition-all duration-200 group text-left">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-primary" />
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage
+                        src={user.user_metadata?.avatar_url}
+                        alt={
+                          user.user_metadata?.username || user.email || "User"
+                        }
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getUserInitials(user)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <span className="font-medium text-foreground block">
                         {user.user_metadata.username || user.email}
@@ -311,7 +452,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                       onClick={() => setShowAccountModal(true)}
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      Manage Account
+                      Account
                     </Button>
                     <Button
                       variant="outline"
@@ -320,7 +461,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                       onClick={goToMyMockups}
                     >
                       <ImageIcon className="h-4 w-4 mr-2" />
-                      My Mockups
+                      Mockups
                     </Button>
                   </div>
                 )}
@@ -331,7 +472,11 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 className="w-full p-4 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all duration-200 group text-left cursor-pointer"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <User className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="font-medium text-foreground">
                     Sign In / Sign Up
                   </span>
@@ -343,6 +488,142 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               </button>
             )}
 
+            {/* Appearance Section */}
+            <div className="relative w-full p-4 rounded-xl bg-card border border-border overflow-hidden group/appearance">
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brush className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-medium text-foreground">
+                    Appearance
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Choose the theme mode that works best for you
+                </p>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Light Mode */}
+                  <button
+                    onClick={() => setTheme("light")}
+                    className={`relative group/button overflow-hidden rounded-lg border transition-all duration-200 cursor-pointer ${
+                      theme === "light"
+                        ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                        : "border-border hover:border-primary/50 bg-background hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="p-4 flex items-center justify-center">
+                      <div
+                        className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          theme === "light"
+                            ? "bg-linear-to-br from-yellow-400 to-orange-500 shadow-sm shadow-yellow-500/30"
+                            : "bg-linear-to-br from-yellow-400/20 to-orange-500/20"
+                        }`}
+                      >
+                        <Sun
+                          className={`h-5 w-5 transition-all duration-200 ${
+                            theme === "light"
+                              ? "text-white scale-110"
+                              : "text-yellow-600 group-hover/button:text-yellow-500 group-hover/button:scale-110"
+                          }`}
+                        />
+                        {/* Animated rays */}
+                        {theme === "light" && (
+                          <div
+                            className="absolute inset-0 animate-spin"
+                            style={{ animationDuration: "4s" }}
+                          >
+                            {[...Array(8)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="absolute w-0.5 h-1 bg-yellow-300/60 left-1/2 top-0 origin-bottom"
+                                style={{
+                                  transform: `rotate(${i * 45}deg) translateY(-16px)`,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Dark Mode */}
+                  <button
+                    onClick={() => setTheme("dark")}
+                    className={`relative group/button overflow-hidden rounded-lg border transition-all duration-200 cursor-pointer ${
+                      theme === "dark"
+                        ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                        : "border-border hover:border-primary/50 bg-background hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="p-4 flex items-center justify-center">
+                      <div
+                        className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          theme === "dark"
+                            ? "bg-linear-to-br from-indigo-500 to-purple-600 shadow-sm shadow-purple-500/30"
+                            : "bg-linear-to-br from-indigo-500/20 to-purple-600/20"
+                        }`}
+                      >
+                        <Moon
+                          className={`h-5 w-5 transition-all duration-200 ${
+                            theme === "dark"
+                              ? "text-white scale-110"
+                              : "text-indigo-600 group-hover/button:text-indigo-500 group-hover/button:scale-110"
+                          }`}
+                        />
+                        {/* Stars effect */}
+                        {theme === "dark" && (
+                          <>
+                            <div className="absolute top-2 right-2.5 w-0.5 h-0.5 bg-white rounded-full animate-pulse"></div>
+                            <div
+                              className="absolute top-3 right-1.5 w-0.5 h-0.5 bg-white/70 rounded-full animate-pulse"
+                              style={{ animationDelay: "0.5s" }}
+                            ></div>
+                            <div
+                              className="absolute bottom-2.5 left-2 w-0.5 h-0.5 bg-white/70 rounded-full animate-pulse"
+                              style={{ animationDelay: "1s" }}
+                            ></div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* System Mode */}
+                  <button
+                    onClick={() => setTheme("system")}
+                    className={`relative group/button overflow-hidden rounded-lg border transition-all duration-200 cursor-pointer ${
+                      theme === "system"
+                        ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                        : "border-border hover:border-primary/50 bg-background hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="p-4 flex items-center justify-center">
+                      <div
+                        className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          theme === "system"
+                            ? "bg-linear-to-br from-blue-500 to-cyan-500 shadow-sm shadow-blue-500/30"
+                            : "bg-linear-to-br from-blue-500/20 to-cyan-500/20"
+                        }`}
+                      >
+                        <Monitor
+                          className={`h-5 w-5 transition-all duration-200 ${
+                            theme === "system"
+                              ? "text-white scale-110"
+                              : "text-blue-600 group-hover/button:text-blue-500 group-hover/button:scale-110"
+                          }`}
+                        />
+                        {/* Pulse ring effect */}
+                        {theme === "system" && (
+                          <div className="absolute inset-0 rounded-full border border-white/30 animate-ping"></div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Top Row - Two Columns */}
             <div className="grid grid-cols-2 gap-4">
               <a
@@ -350,7 +631,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 className="p-4 rounded-xl bg-card border border-border hover:bg-accent/50 transition-all duration-200 group text-left"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <MessageSquare className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                  <MessageSquareWarning className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
                   <span className="font-medium text-foreground">
                     Send Feedback
                   </span>
@@ -361,7 +642,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               </a>
 
               <a
-                href="https://davidros.vercel.app/blog/mokkio-devlog-03"
+                href="https://davidros.vercel.app/blog/mokkio-devlog-04"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-4 rounded-xl bg-card border border-border hover:bg-accent/50 transition-all duration-200 group text-left"
@@ -399,7 +680,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               {/* Content */}
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-3">
-                  <span className="text-lg font-semibold text-foreground">
+                  <span className="text-lg font-semibold text-white">
                     Create Beautiful Mockups
                   </span>
                 </div>
@@ -431,7 +712,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
               {/* Content */}
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-3">
-                  <span className="text-lg font-semibold text-foreground">
+                  <span className="text-lg font-semibold text-white">
                     {isMobile ? "Available in Desktop" : "Available in Mobile"}
                   </span>
                 </div>
@@ -643,7 +924,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 >
                   <path
                     d="M6 99.9V147l2.8-.1c5.3-.1 15.9-3.5 21.6-6.9 10-6 16.8-14.9 20.7-27l1.8-5.5v19.7L53 147h2.3c4.4 0 15.1-3.1 20.1-5.8 10.8-5.8 21.6-19.9 23.2-30.4.8-4.9 2-4.9 2.8 0 1 6.3 6.6 16.3 12.5 22.3 10.5 10.5 26 15.5 40.3 13.1 12.9-2.2 25.5-10.4 32-20.8 5.2-8.1 7.1-15.2 7.1-25.4s-1.9-17.3-7.1-25.4c-6.5-10.4-19.1-18.6-32-20.8-14.3-2.4-29.8 2.6-40.3 13.1-5.9 6-11.5 16-12.5 22.3-.8 4.9-2 4.9-2.8 0C97 79.2 87.5 66.1 77.4 60c-5.7-3.4-16.3-6.8-21.6-6.9L53 53l-.1 19.7v19.8L51.1 87C45 68.2 30.5 55.8 11.8 53.5L6 52.8z"
-                    fill="#fff"
+                    fill="currentColor"
                   />
                 </svg>
               </div>
@@ -651,7 +932,7 @@ export function SideMenu({ isOpen, isClosing, onClose }: SideMenuProps) {
                 <h2 className="text-lg font-semibold text-foreground">
                   Mokkio
                 </h2>
-                <p className="text-sm text-muted-foreground">v1.0.0-beta.3</p>
+                <p className="text-sm text-muted-foreground">v1.0.0-beta.4</p>
               </div>
             </div>
           </div>
