@@ -1,6 +1,12 @@
 "use client";
 
-import { Smartphone, Heart, Share, EllipsisVertical, Plus } from "lucide-react";
+import {
+  Smartphone,
+  Heart,
+  Share,
+  EllipsisVertical,
+  SquarePlus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 function PWATutorial() {
@@ -33,7 +39,7 @@ function PWATutorial() {
         <>
           Tap
           <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-md text-sm font-semibold shadow-md">
-            <Plus className="w-5 h-5 text-accent" />
+            <SquarePlus className="w-5 h-5 text-accent" />
             Add to Home Screen
           </span>
         </>,
@@ -52,7 +58,7 @@ function PWATutorial() {
         <>
           Tap
           <span className="inline-flex items-center ml-2 gap-2 px-3 py-1 bg-foreground text-accent rounded-xl text-sm font-semibold shadow-md">
-            <Plus className="w-5 h-5 text-accent" />
+            <SquarePlus className="w-5 h-5 text-accent" />
             Add to Home screen
           </span>
         </>,
@@ -64,7 +70,7 @@ function PWATutorial() {
         <>
           Look for{" "}
           <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/90 text-gray-900 rounded-full text-sm font-semibold shadow-md">
-            <Plus className="w-3 h-3 text-green-600" />
+            <SquarePlus className="w-3 h-3 text-green-600" />
             Add to Home Screen
           </span>{" "}
           or &apos;Install App&apos; in your browser menu
@@ -214,7 +220,7 @@ export function HeroSection() {
 
         <div className="mb-8 mt-8 animate-in fade-in duration-1000 delay-100">
           <span className="inline-block bg-purple-500/60 text-purple-100 border border-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-4 animate-in fade-in duration-1000 delay-200">
-            ✨ Currently in v1.0.0-beta.3 - Free to Use! 🚀
+            ✨ Currently in v1.0.0-beta.4 - Free to Use! 🚀
           </span>
         </div>
 
