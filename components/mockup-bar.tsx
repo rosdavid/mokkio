@@ -3,17 +3,20 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Ruler } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { toast } from "sonner";
+import { sanitizeMockupName, validateMockupName } from "@/lib/validation";
 
 interface MockupBarProps {
   onSave?: (name: string) => Promise<{ isUpdate?: boolean; message?: string }>;
   initialName?: string;
   onNameChange?: (name: string) => void;
   isExisting?: boolean;
+  showRulers?: boolean;
+  onToggleRulers?: () => void;
 }
 
 export function MockupBar({
@@ -21,6 +24,8 @@ export function MockupBar({
   initialName = "Untitled",
   onNameChange,
   isExisting = false,
+  showRulers,
+  onToggleRulers,
 }: MockupBarProps) {
   const [mockupName, setMockupName] = useState(initialName);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +38,14 @@ export function MockupBar({
   }, [initialName]);
 
   const handleSave = async () => {
-    if (!mockupName.trim()) return;
+    const trimmedName = mockupName.trim();
+
+    // Validate mockup name
+    const validationError = validateMockupName(trimmedName);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
 
     // Check if user is authenticated
     if (!user) {
@@ -44,20 +56,26 @@ export function MockupBar({
     setIsSaving(true);
 
     try {
+      // Sanitize the mockup name before saving
+      const sanitizedName = sanitizeMockupName(trimmedName);
+
       if (onSave) {
-        const result = await onSave(mockupName.trim());
+        const result = await onSave(sanitizedName);
         toast.success(
           result.message ||
             (result.isUpdate ? "Mockup updated!" : "Mockup saved!")
         );
+
+        // Update the display name with the sanitized version
+        setMockupName(sanitizedName);
+        onNameChange?.(sanitizedName);
       }
 
       // Redirect to my mockups page after a short delay
       setTimeout(() => {
         router.push("/my-mockups");
       }, 1000);
-    } catch (error) {
-      console.error("Error saving mockup:", error);
+    } catch {
       toast.error("Failed to save mockup. Please try again.");
     } finally {
       setIsSaving(false);
@@ -66,10 +84,26 @@ export function MockupBar({
 
   return (
     <>
-      <div className="flex items-center justify-center border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 py-3 gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">
-            {isExisting ? "Editing" : "New"}
+      <div className="flex items-center justify-between px-4 py-2 gap-3">
+        {/* Left section: Rulers toggle (mobile only) */}
+        {onToggleRulers && (
+          <Button
+            onClick={onToggleRulers}
+            variant="ghost"
+            size="sm"
+            className="h-8 md:hidden"
+            title={showRulers ? "Hide guides" : "Show guides"}
+          >
+            <Ruler
+              className={`h-4 w-4 ${showRulers ? "text-primary" : "text-muted-foreground"}`}
+            />
+          </Button>
+        )}
+
+        {/* Right section: Save button */}
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <span className="text-muted-foreground md:hidden text-xs">
+            {isExisting ? "Edit" : "New"}
           </span>
           <Input
             value={mockupName}
@@ -77,17 +111,14 @@ export function MockupBar({
               setMockupName(e.target.value);
               onNameChange?.(e.target.value);
             }}
-            className="max-w-xs h-8 text-sm"
-            placeholder="Enter mockup name..."
+            className="max-w-[200px] h-8 text-sm"
+            placeholder="Mockup name..."
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSave();
               }
             }}
           />
-        </div>
-
-        <div className="flex items-center gap-2">
           <Button
             onClick={handleSave}
             disabled={isSaving || !mockupName.trim()}
@@ -95,11 +126,13 @@ export function MockupBar({
             className="h-8 cursor-pointer"
           >
             {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {isSaving ? "Saving..." : "Save"}
+            <span className="hidden sm:inline">
+              {isSaving ? "Saving..." : "Save"}
+            </span>
           </Button>
         </div>
       </div>
