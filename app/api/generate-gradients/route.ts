@@ -31,105 +31,182 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.log("Converting image to base64...");
-    // Convert image to base64 (not used with DeepSeek, but kept for compatibility)
-    const response = await fetch(imageSrc);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
+    // Convert image to base64 for potential future vision model support
+    // Note: Current free models don't reliably support vision, so we use text-based generation
+    logger.log("Preparing for gradient generation...");
+    let imageBase64: string | null = null;
+    const imageMetadata = {
+      hasImage: !!imageSrc,
+      type: "unknown" as string,
+    };
+
+    if (imageSrc) {
+      try {
+        // Extract image type and metadata for context
+        if (imageSrc.startsWith("data:image/")) {
+          const match = imageSrc.match(/data:image\/(\w+);/);
+          imageMetadata.type = match ? match[1] : "unknown";
+          imageBase64 = imageSrc.split(",")[1];
+          logger.log(
+            `Data URL detected, type: ${imageMetadata.type}, size: ${imageBase64?.length || 0} bytes`
+          );
+        } else {
+          // It's a URL - extract hints from filename/path
+          const url = new URL(imageSrc);
+          const pathLower = url.pathname.toLowerCase();
+          if (pathLower.includes(".png")) imageMetadata.type = "png";
+          else if (pathLower.includes(".jpg") || pathLower.includes(".jpeg"))
+            imageMetadata.type = "jpeg";
+          else if (pathLower.includes(".webp")) imageMetadata.type = "webp";
+
+          logger.log(`Image URL provided: ${imageSrc.substring(0, 100)}...`);
+        }
+      } catch (error) {
+        logger.warn("Could not process image metadata:", error);
+      }
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const base64Image = `data:${
-      response.headers.get("content-type") || "image/png"
-    };base64,${Buffer.from(arrayBuffer).toString("base64")}`;
-    logger.log("Image converted to base64, length:", base64Image.length);
+    const prompt = `You are an expert CSS gradient designer creating backgrounds for mockup presentations.
 
-    const prompt = `You are a CSS gradient design expert. Create 12 stunning, professional-grade CSS gradients that would complement mockup backgrounds.
+**YOUR TASK:**
+Create 12 stunning, professional-grade CSS gradients perfect for modern mockup backgrounds.
+The user has uploaded an image${imageMetadata.hasImage ? ` (${imageMetadata.type} format)` : ""} for their mockup.
 
-**REQUIREMENTS:**
-- Generate EXACTLY 12 unique gradients
-- Each gradient must be a valid CSS gradient (linear-gradient, radial-gradient, or conic-gradient)
-- Use modern, trending color combinations suitable for design mockups
-- Create visually striking, contemporary gradients
-- Include a mix of gradient types: linear, radial, and conic gradients
-- Vary the complexity: some simple 2-color, some complex multi-stop gradients
+**GRADIENT REQUIREMENTS:**
+- Generate EXACTLY 12 unique, visually striking gradients
+- Use modern, trending color palettes suitable for 2025 design aesthetics
+- Each must be valid CSS (linear-gradient, radial-gradient, or conic-gradient)
+- Mix of styles: 4 linear, 4 radial, 4 conic gradients
+- Variety in complexity: simple 2-color and rich multi-stop gradients
+- Professional quality suitable for product presentations, app mockups, web design
 
-**GRADIENT QUALITY CRITERIA:**
-- **Modern**: Use contemporary gradient techniques and trending color palettes
-- **Impact**: Create gradients that are visually bold, dynamic, and attention-grabbing
-- **Versatility**: Suitable for modern design contexts (apps, websites, presentations, social media)
-- **CSS Compatibility**: Must work in all modern browsers (Chrome, Firefox, Safari, Edge)
+**COLOR PALETTE THEMES** (use diverse modern combinations):
+1. **Tech/Modern**: Deep blues, purples, cyans (#667eea, #764ba2, #4facfe, #00f2fe)
+2. **Warm/Energetic**: Oranges, reds, yellows (#ff6b6b, #ffa500, #f97316, #dc2626)
+3. **Cool/Professional**: Blues, teals, greens (#0ea5e9, #22c55e, #14b8a6)
+4. **Vibrant/Bold**: Magentas, pinks, purples (#ff0080, #f093fb, #f5576c, #7928ca)
+5. **Natural/Organic**: Greens, earth tones (#15803d, #84cc16, #a8edea, #fed6e3)
+6. **Dark/Elegant**: Deep colors with rich contrast (#1e293b, #7c3aed, #c026d3)
 
-**COLOR PALETTE TRENDS:**
-Use these modern color combinations:
-- Purple to pink gradients (#667eea, #764ba2, #f093fb, #f5576c)
-- Blue to cyan gradients (#4facfe, #00f2fe, #43e97b, #38f9d7)
-- Warm sunset gradients (#ff6b6b, #ffa500, #ffff00, #90ee90)
-- Cool ocean gradients (#667eea, #764ba2, #f093fb)
-- Neon cyberpunk gradients (#ff0080, #7928ca, #4facfe)
-- Earthy natural gradients (#a8edea, #fed6e3, #d299c2, #fef9d7)
+**DESIGN PRINCIPLES:**
+- Gradients should not overpower the mockup content
+- Balance between subtle and eye-catching
+- Contemporary, Instagram/Dribbble-worthy aesthetics
+- Smooth color transitions, avoid harsh stops
+- Consider different use cases: light apps, dark apps, colorful products
 
 **NAMING CONVENTION:**
-- Use creative, evocative names that suggest the gradient's character
-- Themes: cosmic, ethereal, vibrant, mystical, geometric, fluid, energetic
-- Examples: "Cosmic Nebula", "Aurora Borealis", "Crystal Prism", "Neon Pulse"
+- Creative, memorable names that evoke the gradient's character
+- Examples: "Cosmic Horizon", "Digital Sunset", "Ocean Depth", "Neon Dreams", "Velvet Night"
+- Avoid generic names like "Gradient 1" or "Blue Purple"
+- Names should inspire and match the visual aesthetic
 
 **GRADIENT VARIETY:**
-- 4 linear gradients (different angles and directions)
-- 4 radial gradients (circles, ellipses, complex shapes)
-- 4 conic gradients (different start angles and positions)
+- 4 linear gradients (varied angles: 135deg, 90deg, 180deg, 45deg)
+- 4 radial gradients (different positions and shapes)
+- 4 conic gradients (varied starting angles)
 
 **OUTPUT FORMAT:**
-Respond with ONLY a valid JSON array. No explanations, no markdown, no code blocks, no additional text.
+Respond with ONLY a valid JSON array. No markdown, no code blocks, no explanations.
 
-[{"name": "Cosmic Nebula", "gradient": "radial-gradient(circle at 30% 40%, #667eea 0%, #764ba2 50%, #f093fb 100%)"},
-{"name": "Aurora Borealis", "gradient": "conic-gradient(from 45deg at 50% 50%, #ff0080, #7928ca, #4facfe, #00f2fe)"},
-{"name": "Crystal Prism", "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)"}]
+EXAMPLE FORMAT:
+[{"name": "Cosmic Horizon", "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"},
+{"name": "Ocean Depth", "gradient": "radial-gradient(circle at 30% 40%, #0ea5e9 0%, #1e3a8a 100%)"},
+{"name": "Neon Pulse", "gradient": "conic-gradient(from 45deg, #ff0080, #7928ca, #4facfe)"}]
 
-**IMPORTANT:**
-- JSON must be parseable without any modifications
-- Each gradient must be syntactically correct CSS
-- Names should be unique and creative
-- Focus on gradients that would make stunning mockup backgrounds
-- DO NOT wrap the JSON in markdown code blocks or backticks`;
+**CRITICAL:**
+- JSON must be parseable (no trailing commas, valid syntax)
+- Each gradient must be valid CSS
+- EXACTLY 12 gradients
+- NO markdown code blocks or backticks
+- Names should be unique and creative`;
 
-    logger.log("Making API call to OpenRouter...");
-    // Make direct API call to OpenRouter
-    const apiResponse = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://mokkio.vercel.app",
-          "X-Title": "Mokkio Mockup Generator",
-        },
-        body: JSON.stringify({
-          model: "deepseek/deepseek-chat-v3.1:free",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
+    logger.log("Generating gradients with professional AI models...");
+
+    // Use reliable text-based models (vision models in free tier are unstable)
+    const models = [
+      "openrouter/polaris-alpha", // Primary: Excellent for creative tasks
+      "meta-llama/llama-4-maverick:free", // Backup: Good free alternative
+    ];
+    let lastError: Error | null = null;
+    let completion: {
+      choices: Array<{ message: { content: string } }>;
+    } | null = null;
+    let successfulModel: string | null = null;
+
+    for (const model of models) {
+      try {
+        logger.log(`Trying model: ${model}`);
+
+        // Use text-only prompts (vision not reliable in free tier)
+        const messages = [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ];
+
+        logger.log(`Requesting gradients from ${model}...`);
+
+        // Make direct API call to OpenRouter
+        const apiResponse = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": "https://mokkio.vercel.app",
+              "X-Title": "Mokkio Mockup Generator",
             },
-          ],
-          max_tokens: 2000,
-          temperature: 0.7,
-        }),
+            body: JSON.stringify({
+              model,
+              messages,
+              max_tokens: 2000,
+              temperature: 0.7,
+            }),
+          }
+        );
+
+        logger.log(`${model} response status:`, apiResponse.status);
+
+        if (!apiResponse.ok) {
+          const errorText = await apiResponse.text();
+          logger.error(`${model} error response:`, errorText);
+          logger.error(
+            "Response headers:",
+            Object.fromEntries(apiResponse.headers.entries())
+          );
+
+          // Try to parse error as JSON
+          try {
+            const errorJson = JSON.parse(errorText);
+            logger.error("Parsed error:", errorJson);
+          } catch {
+            logger.error("Could not parse error as JSON");
+          }
+
+          lastError = new Error(
+            `OpenRouter API error for ${model}: ${apiResponse.status} ${apiResponse.statusText} - ${errorText}`
+          );
+          continue; // Try next model
+        }
+
+        completion = await apiResponse.json();
+        successfulModel = model;
+        logger.log(`Successfully got response from ${model}`);
+        break; // Success, exit loop
+      } catch (error) {
+        logger.error(`Error with model ${model}:`, error);
+        lastError = error as Error;
+        continue; // Try next model
       }
-    );
-
-    logger.log("OpenRouter response status:", apiResponse.status);
-
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      logger.error("OpenRouter error response:", errorText);
-      throw new Error(
-        `OpenRouter API error: ${apiResponse.status} ${apiResponse.statusText}`
-      );
     }
 
-    const completion = await apiResponse.json();
+    // If all models failed, throw the last error
+    if (!completion) {
+      throw lastError || new Error("All models failed");
+    }
     logger.log("OpenRouter response received");
     const content = completion.choices[0]?.message?.content;
 
@@ -139,7 +216,9 @@ Respond with ONLY a valid JSON array. No explanations, no markdown, no code bloc
     }
 
     logger.log("Parsing JSON response...");
-    // Parse the JSON response - handle markdown formatting from DeepSeek
+    logger.log("Raw content:", content.substring(0, 200) + "...");
+
+    // Parse the JSON response - handle markdown formatting and malformed JSON
     let jsonContent = content.trim();
 
     // Check if response is wrapped in markdown code blocks
@@ -154,7 +233,23 @@ Respond with ONLY a valid JSON array. No explanations, no markdown, no code bloc
       jsonContent = jsonContent.substring(startIndex, endIndex).trim();
     }
 
-    const gradients = JSON.parse(jsonContent);
+    let gradients;
+    try {
+      gradients = JSON.parse(jsonContent);
+    } catch (parseError) {
+      logger.error("JSON parse error:", parseError);
+      logger.error("Attempted to parse:", jsonContent.substring(0, 500));
+
+      // Try to fix common JSON issues
+      // Remove trailing commas
+      const fixedJson = jsonContent.replace(/,(\s*[}\]])/g, "$1");
+      try {
+        gradients = JSON.parse(fixedJson);
+        logger.log("Successfully parsed after fixing trailing commas");
+      } catch {
+        throw new Error("Could not parse AI response as valid JSON");
+      }
+    }
 
     // Validate and format the response
     if (!Array.isArray(gradients)) {
@@ -171,15 +266,90 @@ Respond with ONLY a valid JSON array. No explanations, no markdown, no code bloc
         name: grad.name || `Magical Gradient ${index + 1}`,
       }));
 
-    return NextResponse.json({ gradients: formattedGradients });
+    return NextResponse.json({
+      gradients: formattedGradients,
+      model: successfulModel, // Include which model was used
+    });
   } catch (error) {
     logger.error("Error generating AI magical gradients:", error);
-    return NextResponse.json(
+
+    // Return fallback gradients instead of error
+    const fallbackGradients = [
       {
-        error: "Failed to generate gradients",
-        details: error instanceof Error ? error.message : "Unknown error",
+        id: "fallback-1",
+        gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        name: "Purple Dream",
       },
-      { status: 500 }
-    );
+      {
+        id: "fallback-2",
+        gradient:
+          "radial-gradient(circle at 30% 40%, #f093fb 0%, #f5576c 100%)",
+        name: "Pink Nebula",
+      },
+      {
+        id: "fallback-3",
+        gradient:
+          "conic-gradient(from 45deg, #4facfe, #00f2fe, #43e97b, #38f9d7)",
+        name: "Ocean Breeze",
+      },
+      {
+        id: "fallback-4",
+        gradient: "linear-gradient(to right, #ff6b6b, #ffa500, #ffff00)",
+        name: "Sunset Glow",
+      },
+      {
+        id: "fallback-5",
+        gradient:
+          "radial-gradient(ellipse at 50% 50%, #667eea, #764ba2, #f093fb)",
+        name: "Cosmic Void",
+      },
+      {
+        id: "fallback-6",
+        gradient: "linear-gradient(45deg, #ff0080, #7928ca, #4facfe)",
+        name: "Neon Pulse",
+      },
+      {
+        id: "fallback-7",
+        gradient:
+          "conic-gradient(from 90deg at 40% 50%, #a8edea, #fed6e3, #d299c2, #fef9d7)",
+        name: "Pastel Aurora",
+      },
+      {
+        id: "fallback-8",
+        gradient:
+          "linear-gradient(to bottom right, #4facfe 0%, #00f2fe 50%, #43e97b 100%)",
+        name: "Azure Sky",
+      },
+      {
+        id: "fallback-9",
+        gradient:
+          "radial-gradient(circle at 70% 30%, #ff6b6b, #ee5a6f, #c44569)",
+        name: "Ruby Fire",
+      },
+      {
+        id: "fallback-10",
+        gradient: "linear-gradient(120deg, #667eea, #764ba2, #f5576c)",
+        name: "Twilight Blend",
+      },
+      {
+        id: "fallback-11",
+        gradient: "conic-gradient(from 180deg, #43e97b, #38f9d7, #667eea)",
+        name: "Emerald Wave",
+      },
+      {
+        id: "fallback-12",
+        gradient:
+          "radial-gradient(ellipse at 20% 80%, #ffa500, #ff6b6b, #ee5a6f)",
+        name: "Golden Ember",
+      },
+    ];
+
+    logger.log("Returning fallback gradients due to API error");
+    return NextResponse.json({
+      gradients: fallbackGradients,
+      warning:
+        "Using fallback gradients. API error: " +
+        (error instanceof Error ? error.message : "Unknown error"),
+    });
   }
 }

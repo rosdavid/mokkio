@@ -624,7 +624,7 @@ export function SceneBuilderMobile({
                     handleUpdateScene(scene.id, { scale: vals[0] })
                   }
                   min={10}
-                  max={200}
+                  max={400}
                   step={5}
                   className="mt-2"
                 />

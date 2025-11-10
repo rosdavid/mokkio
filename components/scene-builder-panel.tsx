@@ -817,7 +817,7 @@ export function SceneBuilderPanel({
                           handleUpdateScene(scene.id, { scale: value })
                         }
                         min={30}
-                        max={150}
+                        max={400}
                         step={5}
                         className="w-full"
                       />
