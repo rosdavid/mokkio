@@ -9,7 +9,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
-const bricolageGrotesque = Bricolage_Grotesque({ subsets: ["latin"] });
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage-grotesque",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mokkio.vercel.app"),
@@ -91,7 +94,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body
+        className={`${inter.className} ${bricolageGrotesque.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
