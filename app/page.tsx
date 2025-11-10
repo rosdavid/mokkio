@@ -3,17 +3,35 @@
 
 import type React from "react";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { MockupCanvas } from "@/components/mockup-canvas";
+import dynamic from "next/dynamic";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { UnifiedMobileSidebar } from "@/components/unified-mobile-sidebar";
 import { TopBar } from "@/components/top-bar";
 import { MockupBar } from "@/components/mockup-bar";
-import { ExportProvider } from "@/lib/export-context";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ExportProvider, useExport } from "@/lib/export-context";
 import { useIsMobile, useIsMobileOrTablet } from "@/hooks/use-mobile";
 import { LandingPopup } from "../components/landing-page/LandingPopup";
 import { Loading } from "@/components/Loading";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "@/lib/mockup-utils";
+import { isValidUrl } from "@/lib/validation";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
+import type { DeviceScene } from "@/types/scene-builder";
+import { createDeviceScene } from "@/types/scene-builder";
+
+// Dynamic import for MockupCanvas with loading state
+const MockupCanvas = dynamic(
+  () =>
+    import("@/components/mockup-canvas").then((mod) => ({
+      default: mod.MockupCanvas,
+    })),
+  {
+    loading: () => <Loading />,
+    ssr: false, // Canvas rendering doesn't benefit from SSR
+  }
+);
 
 interface TextOverlay {
   id: string;
@@ -35,6 +53,33 @@ interface TextOverlay {
   textShadowColor: string;
 }
 
+interface Guide {
+  id: string;
+  type: "horizontal" | "vertical";
+  position: number; // pixels from top (horizontal) or left (vertical)
+  color: string;
+}
+
+interface BrandingImage {
+  id: string;
+  url?: string; // Image URL (optional if only text)
+  text?: string; // Text content (optional if only image)
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  rotation: number;
+  layout: "vertical" | "horizontal"; // Photo top/text bottom OR photo left/text right
+  background: "default" | "shadow" | "glass" | "badge"; // Background style
+  // Badge configuration
+  badgeMode?: "light" | "dark"; // Light or dark mode for badge
+  badgeRadius?: number; // Border radius for badge
+  // Glass configuration
+  glassMode?: "light" | "dark"; // Light or dark mode for glass
+  glassRadius?: number; // Border radius for glass
+}
+
 interface AppState {
   uploadedImages: (string | null)[];
   selectedDevice: string;
@@ -51,14 +96,18 @@ interface AppState {
     | "texture"
     | "textures"
     | "transparent"
-    | "image";
+    | "image"
+    | "magical";
   backgroundColor: string;
   backgroundImage?: string;
+  magicalImage?: string;
   selectedPreset: string;
   backgroundNoise: number;
   backgroundBlur: number;
+  /** NEW: magical gradients */
+  magicalGradients?: string[];
 
-  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
+  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
   /** NUEVO: grosor del borde (px) */
   styleEdge: number;
 
@@ -78,7 +127,8 @@ interface AppState {
   zoom: number;
   panX: number;
   panY: number;
-  layoutMode: "single" | "double" | "triple";
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
+  mockupGap: number;
   siteUrl: string;
   hideMockup: boolean;
 
@@ -90,13 +140,62 @@ interface AppState {
 
   /** NEW: text overlays */
   texts: TextOverlay[];
+
+  /** NEW: guides and rulers */
+  showRulers: boolean;
+  guides: Guide[];
+  snapToGuides: boolean;
+
+  /** NEW: branding/logo */
+  branding?: BrandingImage;
+
+  /** NEW: Scene Builder - multi-device layouts */
+  deviceScenes?: DeviceScene[];
 }
 
-export default function MockupEditorPage() {
+function MockupEditorContent() {
   const isMobile = useIsMobile();
   const isMobileOrTablet = useIsMobileOrTablet();
+  const { isExporting } = useExport();
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
+
+  // ---- Hover state for media slots
+  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
+
+  // ---- Double click handlers for opening popovers
+  const [editingTextIdFromCanvas, setEditingTextIdFromCanvas] = useState<
+    string | null
+  >(null);
+  const [editingBrandingFromCanvas, setEditingBrandingFromCanvas] =
+    useState(false);
+  const [activeLeftTab, setActiveLeftTab] = useState<"mockup" | "frame" | null>(
+    null
+  );
+
+  const handleTextDoubleClick = (textId: string) => {
+    setEditingTextIdFromCanvas(textId);
+    setActiveLeftTab("frame"); // Cambiar al tab Frame que contiene los controles de texto
+    if (isMobileOrTablet) {
+      setShowRightSidebar(true);
+      setShowLeftSidebar(false);
+    } else {
+      // En desktop, abre el LeftSidebar (donde están los controles de texto)
+      setShowLeftSidebar(true);
+    }
+  };
+
+  const handleBrandingDoubleClick = () => {
+    setEditingBrandingFromCanvas(true);
+    setActiveLeftTab("frame");
+    if (isMobileOrTablet) {
+      setShowLeftSidebar(true);
+      setShowRightSidebar(false);
+    } else {
+      // En desktop, asegúrate de que el LeftSidebar esté visible
+      setShowLeftSidebar(true);
+    }
+  };
 
   const toggleLeftSidebar = () => {
     if (showLeftSidebar) setShowLeftSidebar(false);
@@ -142,6 +241,10 @@ export default function MockupEditorPage() {
   const [selectedPreset, setSelectedPreset] = useState("purple-pink");
   const [backgroundNoise, setBackgroundNoise] = useState(0);
   const [backgroundBlur, setBackgroundBlur] = useState(0);
+  /** NEW: magical gradients */
+  const [magicalGradients, setMagicalGradients] = useState<
+    string[] | undefined
+  >(undefined);
 
   // ---- Style (borde/anillo)
   const [deviceStyle, setDeviceStyle] =
@@ -175,11 +278,17 @@ export default function MockupEditorPage() {
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
 
-  const [layoutMode, setLayoutMode] = useState<"single" | "double" | "triple">(
-    "single"
-  );
+  const [layoutMode, setLayoutMode] = useState<
+    "single" | "double" | "triple" | "scene-builder"
+  >("single");
+  const [mockupGap, setMockupGap] = useState(3);
   const [siteUrl, setSiteUrl] = useState<string>("https://mokkio.me");
   const [hideMockup, setHideMockup] = useState(false);
+
+  // ---- Scene Builder: multi-device layouts
+  const [deviceScenes, setDeviceScenes] = useState<DeviceScene[]>([
+    createDeviceScene("iphone-17-pro", null),
+  ]);
 
   // ---- Landing Popup
   const [isLandingOpen, setIsLandingOpen] = useState(false);
@@ -208,14 +317,16 @@ export default function MockupEditorPage() {
 
   // ---- App loading state
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
 
   // Detect PWA mode and mobile
   useEffect(() => {
-    const isPWA =
+    const pwa =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone ===
         true;
-    const shouldShowLanding = !isPWA && !isMobileOrTablet;
+    setIsPWA(pwa);
+    const shouldShowLanding = !pwa && !isMobileOrTablet;
     setIsLandingOpen(shouldShowLanding);
   }, [isMobileOrTablet]);
 
@@ -282,6 +393,9 @@ export default function MockupEditorPage() {
             setSelectedResolution(mockupData.selectedResolution);
           if (mockupData.browserMode) setBrowserMode(mockupData.browserMode);
           if (mockupData.texts) setTexts(mockupData.texts);
+          if (mockupData.mockupGap !== undefined)
+            setMockupGap(mockupData.mockupGap);
+          if (mockupData.branding) setBranding(mockupData.branding);
 
           // Update refs with loaded data
           if (mockupData.uploadedImages) {
@@ -300,7 +414,7 @@ export default function MockupEditorPage() {
           // Clear the loaded mockup from localStorage
           localStorage.removeItem("loadedMockup");
         } catch (error) {
-          console.error("Error loading saved mockup:", error);
+          logger.error("Error loading saved mockup:", error);
         }
       }
     };
@@ -328,6 +442,46 @@ export default function MockupEditorPage() {
   // ---- NEW: text overlays
   const [texts, setTexts] = useState<TextOverlay[]>([]);
 
+  // ---- NEW: guides and rulers
+  const [showRulers, setShowRulers] = useState(false); // Smart guides disabled by default
+  const [guides, setGuides] = useState<Guide[]>([]);
+  const [snapToGuides, setSnapToGuides] = useState(true);
+
+  // ---- NEW: branding/logo
+  const [branding, setBranding] = useState<BrandingImage | undefined>(
+    undefined
+  );
+
+  // ---- NEW: Scene FX states
+  const [sceneFxMode, setSceneFxMode] = useState<"default" | "shadows">(
+    "default"
+  );
+  const [sceneFxShadow, setSceneFxShadow] = useState<string | null>(null);
+  const [sceneFxOpacity, setSceneFxOpacity] = useState(100);
+  const [sceneFxLayer, setSceneFxLayer] = useState<"overlay" | "underlay">(
+    "underlay"
+  );
+
+  // Keyboard shortcut for toggling rulers (Ctrl/Cmd + ')
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+' (Windows/Linux) or Cmd+' (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === "'") {
+        e.preventDefault();
+        setShowRulers((prev) => {
+          const newValue = !prev;
+          toast.success(newValue ? "Guides enabled" : "Guides disabled", {
+            duration: 1500,
+          });
+          return newValue;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Actualiza automáticamente el modo al cambiar el dispositivo
   useEffect(() => {
     if (["iphone-17-pro", "iphone-17-pro-max"].includes(selectedDevice)) {
@@ -354,10 +508,26 @@ export default function MockupEditorPage() {
     []
   );
 
+  // Track if zoom was manually set by user
+  const userSetZoomRef = useRef(false);
+  const previousLayoutModeRef = useRef<
+    "single" | "double" | "triple" | "scene-builder"
+  >("single");
+
+  // Only auto-adjust zoom when layout mode changes, not when user manually changes zoom
   useEffect(() => {
-    if (layoutMode === "triple") setZoom(60);
-    else if (layoutMode === "double") setZoom(70);
-    else setZoom(100);
+    // If user has manually set zoom, don't auto-adjust
+    if (userSetZoomRef.current) return;
+
+    // Only adjust zoom when layout mode actually changes
+    if (previousLayoutModeRef.current !== layoutMode) {
+      if (layoutMode === "triple") setZoom(60);
+      else if (layoutMode === "double") setZoom(100);
+      else if (layoutMode === "scene-builder") setZoom(50);
+      else setZoom(100);
+
+      previousLayoutModeRef.current = layoutMode;
+    }
   }, [layoutMode]);
 
   const handleImageUpload = (
@@ -374,6 +544,11 @@ export default function MockupEditorPage() {
       const newImages = [...uploadedImages];
       newImages[index] = event.target?.result as string;
       setUploadedImagesWithHistory(newImages);
+
+      // Si es la primera imagen (index 0), generar automáticamente gradientes mágicos
+      if (index === 0 && event.target?.result) {
+        // TODO: Implementar generación automática de gradientes mágicos
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -382,6 +557,27 @@ export default function MockupEditorPage() {
     const newImages = [...uploadedImages];
     newImages[index] = null;
     setUploadedImagesWithHistory(newImages);
+  };
+
+  const handleSceneImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    sceneId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageUrl = event.target?.result as string;
+
+      // Update the specific scene's imageUrl
+      const updatedScenes = deviceScenes.map((scene) =>
+        scene.id === sceneId ? { ...scene, imageUrl } : scene
+      );
+
+      setDeviceScenes(updatedScenes);
+    };
+    reader.readAsDataURL(file);
   };
 
   // ---- History helpers
@@ -435,6 +631,7 @@ export default function MockupEditorPage() {
         selectedPreset,
         backgroundNoise,
         backgroundBlur,
+        magicalGradients,
         deviceStyle,
         styleEdge,
         borderType,
@@ -453,6 +650,7 @@ export default function MockupEditorPage() {
         panX,
         panY,
         layoutMode,
+        mockupGap,
         siteUrl,
         hideMockup,
         /** NEW */
@@ -462,13 +660,20 @@ export default function MockupEditorPage() {
         browserMode,
         /** NEW: text overlays */
         texts: textsChanged ? updates.texts! : lastSavedTexts.current,
+        /** NEW: guides and rulers */
+        showRulers,
+        guides,
+        snapToGuides,
+        /** NEW: branding */
+        branding,
         ...historyUpdates,
       };
       setHistory((prev) => {
         const newHistory = prev.slice(0, historyIndex + 1);
         newHistory.push(currentState);
-        // Reduced from 50 to 20 to prevent memory issues
-        const sliced = newHistory.slice(-20);
+        // Reduced to 10 items to optimize memory usage with large images
+        const MAX_HISTORY_SIZE = 10;
+        const sliced = newHistory.slice(-MAX_HISTORY_SIZE);
         setHistoryIndex(sliced.length - 1);
         return sliced;
       });
@@ -482,6 +687,7 @@ export default function MockupEditorPage() {
       selectedPreset,
       backgroundNoise,
       backgroundBlur,
+      magicalGradients,
       deviceStyle,
       styleEdge,
       borderType,
@@ -500,6 +706,7 @@ export default function MockupEditorPage() {
       panX,
       panY,
       layoutMode,
+      mockupGap,
       siteUrl,
       hideMockup,
       /** NEW */
@@ -509,6 +716,12 @@ export default function MockupEditorPage() {
       browserMode,
       /** NEW: text overlays */
       historyIndex,
+      /** NEW: guides and rulers */
+      showRulers,
+      guides,
+      snapToGuides,
+      /** NEW: branding */
+      branding,
     ]
   );
 
@@ -568,6 +781,7 @@ export default function MockupEditorPage() {
       setSelectedPreset(s.selectedPreset);
       setBackgroundNoise(s.backgroundNoise);
       setBackgroundBlur(s.backgroundBlur);
+      if (s.magicalGradients) setMagicalGradients(s.magicalGradients);
       setDeviceStyle(s.deviceStyle);
       setStyleEdge(s.styleEdge);
       setBorderType(s.borderType);
@@ -586,6 +800,7 @@ export default function MockupEditorPage() {
       setPanX(s.panX);
       setPanY(s.panY);
       setLayoutMode(s.layoutMode);
+      setMockupGap(s.mockupGap);
       setSiteUrl(s.siteUrl);
       setHideMockup(s.hideMockup);
       /** NEW */
@@ -595,6 +810,12 @@ export default function MockupEditorPage() {
       setBrowserMode(s.browserMode);
       /** NEW: text overlays */
       setTexts(s.texts);
+      /** NEW: guides and rulers */
+      setShowRulers(s.showRulers);
+      setGuides(s.guides);
+      setSnapToGuides(s.snapToGuides);
+      /** NEW: branding */
+      setBranding(s.branding);
       setHistoryIndex((p) => p - 1);
     }
   }, [history, historyIndex]);
@@ -611,6 +832,7 @@ export default function MockupEditorPage() {
       setSelectedPreset(s.selectedPreset);
       setBackgroundNoise(s.backgroundNoise);
       setBackgroundBlur(s.backgroundBlur);
+      if (s.magicalGradients) setMagicalGradients(s.magicalGradients);
       setDeviceStyle(s.deviceStyle);
       setStyleEdge(s.styleEdge);
       setBorderType(s.borderType);
@@ -629,6 +851,7 @@ export default function MockupEditorPage() {
       setPanX(s.panX);
       setPanY(s.panY);
       setLayoutMode(s.layoutMode);
+      setMockupGap(s.mockupGap);
       setSiteUrl(s.siteUrl);
       setHideMockup(s.hideMockup);
       /** NEW */
@@ -638,6 +861,12 @@ export default function MockupEditorPage() {
       setBrowserMode(s.browserMode);
       /** NEW: text overlays */
       setTexts(s.texts);
+      /** NEW: guides and rulers */
+      setShowRulers(s.showRulers);
+      setGuides(s.guides);
+      setSnapToGuides(s.snapToGuides);
+      /** NEW: branding */
+      setBranding(s.branding);
       setHistoryIndex((p) => p + 1);
     }
   }, [history, historyIndex]);
@@ -676,6 +905,7 @@ export default function MockupEditorPage() {
       panX: 0,
       panY: 0,
       layoutMode: "single",
+      mockupGap: 3,
       siteUrl: "https://mokkio.me",
       hideMockup: false,
       /** NEW defaults */
@@ -685,6 +915,12 @@ export default function MockupEditorPage() {
       browserMode: "light",
       /** NEW: text overlays */
       texts: [],
+      /** NEW: guides and rulers */
+      showRulers: false,
+      guides: [],
+      snapToGuides: true,
+      /** NEW: branding */
+      branding: undefined,
     };
     // Initialize refs with initial state
     lastSavedUploadedImages.current = initialState.uploadedImages;
@@ -724,6 +960,7 @@ export default function MockupEditorPage() {
       panX,
       panY,
       layoutMode,
+      mockupGap,
       siteUrl,
       hideMockup,
       canvasWidth,
@@ -731,6 +968,10 @@ export default function MockupEditorPage() {
       selectedResolution,
       browserMode,
       texts,
+      showRulers,
+      guides,
+      snapToGuides,
+      branding,
     };
 
     const response = await fetch("/api/mockups", {
@@ -989,6 +1230,8 @@ export default function MockupEditorPage() {
   const setZoomWithHistory = useCallback(
     (v: number | ((p: number) => number)) => {
       const newValue = typeof v === "function" ? v(zoom) : v;
+      // Mark that user has manually set zoom
+      userSetZoomRef.current = true;
       setZoom(newValue);
       saveToHistory({ zoom: newValue });
     },
@@ -1016,9 +1259,10 @@ export default function MockupEditorPage() {
         | "single"
         | "double"
         | "triple"
+        | "scene-builder"
         | ((
-            p: "single" | "double" | "triple"
-          ) => "single" | "double" | "triple")
+            p: "single" | "double" | "triple" | "scene-builder"
+          ) => "single" | "double" | "triple" | "scene-builder")
     ) => {
       const newValue = typeof v === "function" ? v(layoutMode) : v;
       setLayoutMode(newValue);
@@ -1026,9 +1270,26 @@ export default function MockupEditorPage() {
     },
     [saveToHistory, layoutMode]
   );
+  const setMockupGapWithHistory = useCallback(
+    (v: number | ((p: number) => number)) => {
+      const newValue = typeof v === "function" ? v(mockupGap) : v;
+      setMockupGap(newValue);
+      saveToHistory({ mockupGap: newValue });
+    },
+    [saveToHistory, mockupGap]
+  );
   const setSiteUrlWithHistory = useCallback(
     (v: string | ((p: string) => string)) => {
       const newValue = typeof v === "function" ? v(siteUrl) : v;
+
+      // Validate URL format before saving
+      if (newValue && !isValidUrl(newValue)) {
+        toast.error(
+          "Invalid URL format. Please enter a valid URL (e.g., https://example.com)"
+        );
+        return;
+      }
+
       setSiteUrl(newValue);
       saveToHistory({ siteUrl: newValue });
     },
@@ -1062,6 +1323,20 @@ export default function MockupEditorPage() {
     [saveToHistory, browserMode]
   );
 
+  const setBrandingWithHistory = useCallback(
+    (
+      v:
+        | BrandingImage
+        | undefined
+        | ((p: BrandingImage | undefined) => BrandingImage | undefined)
+    ) => {
+      const newValue = typeof v === "function" ? v(branding) : v;
+      setBranding(newValue);
+      saveToHistory({ branding: newValue });
+    },
+    [saveToHistory, branding]
+  );
+
   const resetToDefaults = () => {
     const s: AppState = {
       uploadedImages: [null, null, null, null],
@@ -1091,6 +1366,7 @@ export default function MockupEditorPage() {
       panX: 0,
       panY: 0,
       layoutMode: "single",
+      mockupGap: 3,
       siteUrl: "https://mokkio.me",
       hideMockup: false,
       canvasWidth: CANVAS_WIDTH,
@@ -1099,6 +1375,12 @@ export default function MockupEditorPage() {
       browserMode: "light",
       /** NEW: text overlays */
       texts: [],
+      /** NEW: guides and rulers */
+      showRulers: false,
+      guides: [],
+      snapToGuides: true,
+      /** NEW: branding */
+      branding: undefined,
     };
 
     setUploadedImages(s.uploadedImages);
@@ -1128,6 +1410,7 @@ export default function MockupEditorPage() {
     setPanX(s.panX);
     setPanY(s.panY);
     setLayoutMode(s.layoutMode);
+    setMockupGap(s.mockupGap);
     setSiteUrl(s.siteUrl);
     setHideMockup(s.hideMockup);
     setCanvasWidth(s.canvasWidth);
@@ -1136,6 +1419,12 @@ export default function MockupEditorPage() {
     setBrowserMode(s.browserMode);
     /** NEW: text overlays */
     setTexts(s.texts);
+    /** NEW: guides and rulers */
+    setShowRulers(s.showRulers);
+    setGuides(s.guides);
+    setSnapToGuides(s.snapToGuides);
+    /** NEW: branding */
+    setBranding(s.branding);
 
     // Reset mockup name and mark as new
     setMockupName("Untitled");
@@ -1161,7 +1450,7 @@ export default function MockupEditorPage() {
   // ================================================
 
   return (
-    <ExportProvider>
+    <>
       {!isAppReady ? (
         <Loading />
       ) : (
@@ -1189,6 +1478,13 @@ export default function MockupEditorPage() {
                       isMenuClosing={isMenuClosing}
                       onMenuClick={handleMenuClick}
                       onCloseMenu={handleCloseMenu}
+                      onSave={saveMockup}
+                      initialName={mockupName}
+                      onNameChange={setMockupName}
+                      isExisting={isExistingMockup}
+                      isPWA={isPWA}
+                      showRulers={showRulers}
+                      onToggleRulers={() => setShowRulers(!showRulers)}
                     />
                   </div>
                   <MockupBar
@@ -1196,50 +1492,76 @@ export default function MockupEditorPage() {
                     initialName={mockupName}
                     onNameChange={setMockupName}
                     isExisting={isExistingMockup}
+                    showRulers={showRulers}
+                    onToggleRulers={() => setShowRulers(!showRulers)}
                   />
 
                   {/* ⬇️ Wrapper centrado + overflow-auto (móvil) */}
                   <div className="flex-1 overflow-auto pb-32">
                     <div className="h-full w-full flex items-center justify-center">
-                      <MockupCanvas
-                        uploadedImages={uploadedImages}
-                        selectedDevice={selectedDevice}
-                        selectedTemplate={selectedTemplate}
-                        siteUrl={siteUrl}
-                        borderType={borderType}
-                        selectedPreset={selectedPreset}
-                        backgroundType={backgroundType}
-                        backgroundColor={backgroundColor}
-                        backgroundImage={backgroundImage}
-                        backgroundNoise={backgroundNoise}
-                        backgroundBlur={backgroundBlur}
-                        padding={60}
-                        shadowOpacity={shadowOpacity}
-                        borderRadius={borderRadius}
-                        rotation={0}
-                        scale={100}
-                        deviceStyle={deviceStyle}
-                        styleEdge={styleEdge}
-                        shadowType={shadowType}
-                        shadowMode={shadowMode}
-                        shadowOffsetX={shadowOffsetX}
-                        shadowOffsetY={shadowOffsetY}
-                        shadowBlur={shadowBlur}
-                        shadowSpread={shadowSpread}
-                        shadowColor={shadowColor}
-                        sceneType={sceneType}
-                        zoom={zoom}
-                        panX={panX}
-                        panY={panY}
-                        layoutMode={layoutMode}
-                        onImageUpload={handleImageUpload}
-                        hideMockup={hideMockup}
-                        canvasWidth={canvasWidth}
-                        canvasHeight={canvasHeight}
-                        browserMode={browserMode}
-                        texts={texts}
-                        updateText={updateText}
-                      />
+                      <ErrorBoundary>
+                        <MockupCanvas
+                          uploadedImages={uploadedImages}
+                          selectedDevice={selectedDevice}
+                          selectedTemplate={selectedTemplate}
+                          siteUrl={siteUrl}
+                          borderType={borderType}
+                          selectedPreset={selectedPreset}
+                          backgroundType={backgroundType}
+                          backgroundColor={backgroundColor}
+                          backgroundImage={backgroundImage}
+                          backgroundNoise={backgroundNoise}
+                          backgroundBlur={backgroundBlur}
+                          padding={60}
+                          shadowOpacity={shadowOpacity}
+                          borderRadius={borderRadius}
+                          rotation={0}
+                          scale={100}
+                          deviceStyle={deviceStyle}
+                          styleEdge={styleEdge}
+                          shadowType={shadowType}
+                          shadowMode={shadowMode}
+                          shadowOffsetX={shadowOffsetX}
+                          shadowOffsetY={shadowOffsetY}
+                          shadowBlur={shadowBlur}
+                          shadowSpread={shadowSpread}
+                          shadowColor={shadowColor}
+                          sceneType={sceneType}
+                          zoom={zoom}
+                          panX={panX}
+                          panY={panY}
+                          layoutMode={layoutMode}
+                          onImageUpload={handleImageUpload}
+                          hideMockup={hideMockup}
+                          canvasWidth={canvasWidth}
+                          canvasHeight={canvasHeight}
+                          browserMode={browserMode}
+                          texts={texts}
+                          updateText={updateText}
+                          mockupGap={mockupGap}
+                          hoveredSlot={hoveredSlot}
+                          /** NEW: magical gradients */
+                          magicalGradients={magicalGradients}
+                          /** NEW: scene builder */
+                          deviceScenes={deviceScenes}
+                          onDeviceScenesChange={setDeviceScenes}
+                          /** NEW: guides and rulers */
+                          showRulers={showRulers}
+                          hideGuides={isExporting}
+                          guides={guides}
+                          onGuidesChange={setGuides}
+                          /** NEW: branding/logo */
+                          branding={branding}
+                          setBranding={setBrandingWithHistory}
+                          /** NEW: double click handlers */
+                          onTextDoubleClick={handleTextDoubleClick}
+                          onBrandingDoubleClick={handleBrandingDoubleClick}
+                          /** NEW: Scene FX */
+                          sceneFxShadow={sceneFxShadow}
+                          sceneFxOpacity={sceneFxOpacity}
+                          sceneFxLayer={sceneFxLayer}
+                        />
+                      </ErrorBoundary>
                     </div>
                   </div>
 
@@ -1261,6 +1583,8 @@ export default function MockupEditorPage() {
                     setBackgroundNoise={setBackgroundNoiseWithHistory}
                     backgroundBlur={backgroundBlur}
                     setBackgroundBlur={setBackgroundBlurWithHistory}
+                    magicalGradients={magicalGradients}
+                    setMagicalGradients={setMagicalGradients}
                     deviceStyle={deviceStyle}
                     setDeviceStyle={setDeviceStyleWithHistory}
                     styleEdge={styleEdge}
@@ -1305,6 +1629,9 @@ export default function MockupEditorPage() {
                     selectedTemplate={selectedTemplate}
                     setSelectedTemplate={setSelectedTemplateWithHistory}
                     layoutMode={layoutMode}
+                    setLayoutMode={setLayoutModeWithHistory}
+                    mockupGap={mockupGap}
+                    setMockupGap={setMockupGapWithHistory}
                     padding={60}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
@@ -1321,6 +1648,23 @@ export default function MockupEditorPage() {
                     addText={addText}
                     updateText={updateText}
                     removeText={removeText}
+                    branding={branding}
+                    setBranding={setBrandingWithHistory}
+                    sceneFxMode={sceneFxMode}
+                    setSceneFxMode={setSceneFxMode}
+                    sceneFxShadow={sceneFxShadow}
+                    setSceneFxShadow={setSceneFxShadow}
+                    sceneFxOpacity={sceneFxOpacity}
+                    setSceneFxOpacity={setSceneFxOpacity}
+                    sceneFxLayer={sceneFxLayer}
+                    setSceneFxLayer={setSceneFxLayer}
+                    editingTextIdFromCanvas={editingTextIdFromCanvas}
+                    setEditingTextIdFromCanvas={setEditingTextIdFromCanvas}
+                    editingBrandingFromCanvas={editingBrandingFromCanvas}
+                    setEditingBrandingFromCanvas={setEditingBrandingFromCanvas}
+                    deviceScenes={deviceScenes}
+                    onDeviceScenesChange={setDeviceScenes}
+                    onImageUploadForScene={handleSceneImageUpload}
                     isOpen={true}
                     onClose={() => {}}
                   />
@@ -1380,6 +1724,7 @@ export default function MockupEditorPage() {
                   sceneType={sceneType}
                   setSceneType={setSceneTypeWithHistory}
                   layoutMode={layoutMode}
+                  setLayoutMode={setLayoutModeWithHistory}
                   siteUrl={siteUrl}
                   setSiteUrl={setSiteUrlWithHistory}
                   hideMockup={hideMockup}
@@ -1394,7 +1739,40 @@ export default function MockupEditorPage() {
                   addText={addText}
                   updateText={updateText}
                   removeText={removeText}
+                  mockupGap={mockupGap}
+                  setMockupGap={setMockupGapWithHistory}
                   onOpenSideMenu={handleMenuClick}
+                  /** NEW: hover state for media slots */
+                  hoveredSlot={hoveredSlot}
+                  setHoveredSlot={setHoveredSlot}
+                  /** NEW: magical gradients */
+                  magicalGradients={magicalGradients}
+                  setMagicalGradients={setMagicalGradients}
+                  /** NEW: branding */
+                  branding={branding}
+                  setBranding={setBranding}
+                  /** NEW: tab control for double click */
+                  activeTabFromParent={activeLeftTab}
+                  setActiveTabFromParent={setActiveLeftTab}
+                  /** NEW: text editing from canvas double click */
+                  editingTextIdFromCanvas={editingTextIdFromCanvas}
+                  setEditingTextIdFromCanvas={setEditingTextIdFromCanvas}
+                  /** NEW: branding editing from canvas double click */
+                  editingBrandingFromCanvas={editingBrandingFromCanvas}
+                  setEditingBrandingFromCanvas={setEditingBrandingFromCanvas}
+                  /** NEW: Scene FX */
+                  sceneFxMode={sceneFxMode}
+                  setSceneFxMode={setSceneFxMode}
+                  sceneFxShadow={sceneFxShadow}
+                  setSceneFxShadow={setSceneFxShadow}
+                  sceneFxOpacity={sceneFxOpacity}
+                  setSceneFxOpacity={setSceneFxOpacity}
+                  sceneFxLayer={sceneFxLayer}
+                  setSceneFxLayer={setSceneFxLayer}
+                  /** NEW: scene builder */
+                  deviceScenes={deviceScenes}
+                  setDeviceScenes={setDeviceScenes}
+                  onSceneImageUpload={handleSceneImageUpload}
                 />
 
                 <div className="flex flex-1 flex-col min-w-0 gap-1">
@@ -1413,56 +1791,80 @@ export default function MockupEditorPage() {
                     isMenuClosing={isMenuClosing}
                     onMenuClick={handleMenuClick}
                     onCloseMenu={handleCloseMenu}
-                  />
-                  <MockupBar
                     onSave={saveMockup}
                     initialName={mockupName}
                     onNameChange={setMockupName}
                     isExisting={isExistingMockup}
+                    isPWA={isPWA}
+                    showRulers={showRulers}
+                    onToggleRulers={() => setShowRulers(!showRulers)}
                   />
-
                   {/* ⬇️ Wrapper centrado + overflow-auto (desktop) */}
                   <div className="flex-1 overflow-auto">
                     <div className="h-full w-full flex items-center justify-center">
-                      <MockupCanvas
-                        uploadedImages={uploadedImages}
-                        selectedDevice={selectedDevice}
-                        selectedTemplate={selectedTemplate}
-                        siteUrl={siteUrl}
-                        borderType={borderType}
-                        selectedPreset={selectedPreset}
-                        backgroundType={backgroundType}
-                        backgroundColor={backgroundColor}
-                        backgroundImage={backgroundImage}
-                        backgroundNoise={backgroundNoise}
-                        backgroundBlur={backgroundBlur}
-                        padding={60}
-                        shadowOpacity={shadowOpacity}
-                        borderRadius={borderRadius}
-                        rotation={0}
-                        scale={100}
-                        deviceStyle={deviceStyle}
-                        styleEdge={styleEdge}
-                        shadowType={shadowType}
-                        shadowMode={shadowMode}
-                        shadowOffsetX={shadowOffsetX}
-                        shadowOffsetY={shadowOffsetY}
-                        shadowBlur={shadowBlur}
-                        shadowSpread={shadowSpread}
-                        shadowColor={shadowColor}
-                        sceneType={sceneType}
-                        zoom={zoom}
-                        panX={panX}
-                        panY={panY}
-                        layoutMode={layoutMode}
-                        onImageUpload={handleImageUpload}
-                        hideMockup={hideMockup}
-                        canvasWidth={canvasWidth}
-                        canvasHeight={canvasHeight}
-                        browserMode={browserMode}
-                        texts={texts}
-                        updateText={updateText}
-                      />
+                      <ErrorBoundary>
+                        <MockupCanvas
+                          uploadedImages={uploadedImages}
+                          selectedDevice={selectedDevice}
+                          selectedTemplate={selectedTemplate}
+                          siteUrl={siteUrl}
+                          borderType={borderType}
+                          selectedPreset={selectedPreset}
+                          backgroundType={backgroundType}
+                          backgroundColor={backgroundColor}
+                          backgroundImage={backgroundImage}
+                          backgroundNoise={backgroundNoise}
+                          backgroundBlur={backgroundBlur}
+                          padding={60}
+                          shadowOpacity={shadowOpacity}
+                          borderRadius={borderRadius}
+                          rotation={0}
+                          scale={100}
+                          deviceStyle={deviceStyle}
+                          styleEdge={styleEdge}
+                          shadowType={shadowType}
+                          shadowMode={shadowMode}
+                          shadowOffsetX={shadowOffsetX}
+                          shadowOffsetY={shadowOffsetY}
+                          shadowBlur={shadowBlur}
+                          shadowSpread={shadowSpread}
+                          shadowColor={shadowColor}
+                          sceneType={sceneType}
+                          zoom={zoom}
+                          panX={panX}
+                          panY={panY}
+                          layoutMode={layoutMode}
+                          onImageUpload={handleImageUpload}
+                          hideMockup={hideMockup}
+                          canvasWidth={canvasWidth}
+                          canvasHeight={canvasHeight}
+                          browserMode={browserMode}
+                          texts={texts}
+                          updateText={updateText}
+                          mockupGap={mockupGap}
+                          hoveredSlot={hoveredSlot}
+                          /** NEW: magical gradients */
+                          magicalGradients={magicalGradients}
+                          /** NEW: scene builder */
+                          deviceScenes={deviceScenes}
+                          onDeviceScenesChange={setDeviceScenes}
+                          /** NEW: guides and rulers */
+                          showRulers={showRulers}
+                          hideGuides={isExporting}
+                          guides={guides}
+                          onGuidesChange={setGuides}
+                          /** NEW: branding/logo */
+                          branding={branding}
+                          setBranding={setBrandingWithHistory}
+                          /** NEW: double click handlers */
+                          onTextDoubleClick={handleTextDoubleClick}
+                          onBrandingDoubleClick={handleBrandingDoubleClick}
+                          /** NEW: Scene FX */
+                          sceneFxShadow={sceneFxShadow}
+                          sceneFxOpacity={sceneFxOpacity}
+                          sceneFxLayer={sceneFxLayer}
+                        />
+                      </ErrorBoundary>
                     </div>
                   </div>
                 </div>
@@ -1504,12 +1906,22 @@ export default function MockupEditorPage() {
                   canvasWidth={canvasWidth}
                   canvasHeight={canvasHeight}
                   browserMode={browserMode}
+                  /** NEW: magical gradients */
+                  magicalGradients={magicalGradients}
                 />
               </>
             )}
           </div>
         </>
       )}
+    </>
+  );
+}
+
+export default function MockupEditorPage() {
+  return (
+    <ExportProvider>
+      <MockupEditorContent />
     </ExportProvider>
   );
 }
