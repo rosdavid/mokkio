@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Label } from "../ui/label";
 import { X } from "lucide-react";
 
-type MainSection = "mockup" | "frame" | "layout";
+type MainSection = "mockup" | "frame" | "layout" | "scene";
 
 interface BrowserStyleSelectorProps {
   activeSection: MainSection | null;
@@ -34,8 +34,40 @@ export function BrowserStyleSelector({
   const isIPhoneDevice = ["iphone-17-pro", "iphone-17-pro-max"].includes(
     selectedDevice
   );
+  const isIPadDevice = selectedDevice === "ipad-pro";
+  const isMacBookDevice = selectedDevice === "macbook-pro";
 
-  if (!isBrowserDevice && !isIPhoneDevice) {
+  // Track if default mode has been set for current device
+  const defaultModeSetRef = useRef<string | null>(null);
+
+  // Set default mode to "display" for iPad Pro and MacBook Pro when device changes
+  useEffect(() => {
+    if (
+      selectedDevice === "ipad-pro" &&
+      defaultModeSetRef.current !== selectedDevice
+    ) {
+      onBrowserModeChange("display");
+      defaultModeSetRef.current = selectedDevice;
+    } else if (
+      selectedDevice === "macbook-pro" &&
+      defaultModeSetRef.current !== selectedDevice
+    ) {
+      onBrowserModeChange("display");
+      defaultModeSetRef.current = selectedDevice;
+    } else if (
+      selectedDevice !== "ipad-pro" &&
+      selectedDevice !== "macbook-pro"
+    ) {
+      defaultModeSetRef.current = null;
+    }
+  }, [selectedDevice, onBrowserModeChange]);
+
+  if (
+    !isBrowserDevice &&
+    !isIPhoneDevice &&
+    !isIPadDevice &&
+    !isMacBookDevice
+  ) {
     return (
       <div className="space-y-4 p-2">
         <div className="flex items-center justify-between">
@@ -43,16 +75,17 @@ export function BrowserStyleSelector({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
         <div className="text-center py-4">
           <div className="text-xs text-muted-foreground">
-            Select a browser or phone device to access style options
+            Select a mobile device, tablet, laptop, or browser to use this
+            section.
           </div>
         </div>
       </div>
@@ -66,10 +99,10 @@ export function BrowserStyleSelector({
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-1 rounded-lg hover:bg-accent transition-colors"
             title="Close"
           >
-            <X className="h-4 w-4 text-white/60 hover:text-white" />
+            <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
           </button>
         )}
       </div>
@@ -82,7 +115,7 @@ export function BrowserStyleSelector({
               className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                 browserMode === "light"
                   ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                  : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
               }`}
             >
               <div className="flex items-center gap-4">
@@ -104,7 +137,7 @@ export function BrowserStyleSelector({
               className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                 browserMode === "dark"
                   ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                  : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
               }`}
             >
               <div className="flex items-center gap-4">
@@ -149,7 +182,7 @@ export function BrowserStyleSelector({
               className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                 browserMode === "display"
                   ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                  : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
               }`}
             >
               <div className="flex items-center gap-4">
@@ -160,7 +193,8 @@ export function BrowserStyleSelector({
                     width={32}
                     height={32}
                     className="rounded-lg object-cover"
-                    unoptimized
+                    quality={80}
+                    loading="lazy"
                   />
                 </div>
                 <div className="flex-1">
@@ -182,7 +216,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "blue"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -193,7 +227,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -211,7 +246,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "silver"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -222,7 +257,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -240,7 +276,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "orange"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -251,7 +287,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -272,7 +309,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "blue"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -283,7 +320,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -301,7 +339,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "silver"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -312,7 +350,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -330,7 +369,7 @@ export function BrowserStyleSelector({
                   className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
                     browserMode === "orange"
                       ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/10"
+                      : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -341,7 +380,8 @@ export function BrowserStyleSelector({
                         width={32}
                         height={32}
                         className="rounded-lg object-cover"
-                        unoptimized
+                        quality={80}
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex-1">
@@ -356,6 +396,171 @@ export function BrowserStyleSelector({
                 </button>
               </>
             )}
+          </>
+        )}
+
+        {/* iPad Pro: Display/Device Frame */}
+        {isIPadDevice && (
+          <>
+            <button
+              onClick={() => onBrowserModeChange("display")}
+              className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
+                browserMode === "display"
+                  ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Image
+                    src="/ipad-pro-13-display-thumbnail.png"
+                    alt="Display"
+                    width={32}
+                    height={32}
+                    className="rounded-lg object-cover"
+                    quality={80}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    Display Only
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Screen without frame
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => onBrowserModeChange("gray")}
+              className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
+                browserMode === "gray"
+                  ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Image
+                    src="/ipad-pro-13-thumbnail.png"
+                    alt="Gray"
+                    width={32}
+                    height={32}
+                    className="rounded-lg object-cover"
+                    quality={80}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    Space Gray
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Complete device frame
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => onBrowserModeChange("silver")}
+              className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
+                browserMode === "silver"
+                  ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Image
+                    src="/ipad-pro-13-thumbnail.png"
+                    alt="Silver"
+                    width={32}
+                    height={32}
+                    className="rounded-lg object-cover"
+                    quality={80}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    Silver
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Complete device frame
+                  </div>
+                </div>
+              </div>
+            </button>
+          </>
+        )}
+
+        {/* MacBook Pro: Display/Device Frame */}
+        {isMacBookDevice && (
+          <>
+            <button
+              onClick={() => onBrowserModeChange("display")}
+              className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
+                browserMode === "display"
+                  ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Image
+                    src="/macbook-pro-16-thumbnail.png"
+                    alt="Display"
+                    width={32}
+                    height={32}
+                    className="rounded-lg object-cover"
+                    quality={80}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    Display Only
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Screen without frame
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => onBrowserModeChange("silver")}
+              className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm ${
+                browserMode === "silver"
+                  ? "border-blue-400/50 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                  : "border-border bg-muted hover:bg-accent hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Image
+                    src="/macbook-pro-16-thumbnail.png"
+                    alt="Silver"
+                    width={32}
+                    height={32}
+                    className="rounded-lg object-cover"
+                    quality={80}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    Silver
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Complete device frame
+                  </div>
+                </div>
+              </div>
+            </button>
           </>
         )}
       </div>

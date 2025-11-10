@@ -15,6 +15,7 @@ interface MediaUploaderProps {
   hideMockup?: boolean;
   onToggleHideMockup?: () => void;
   onClose?: () => void;
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
 }
 
 export function MediaUploader({
@@ -24,23 +25,38 @@ export function MediaUploader({
   hideMockup,
   onToggleHideMockup,
   onClose,
+  layoutMode,
 }: MediaUploaderProps) {
+  const getImageSlotCount = () => {
+    switch (layoutMode) {
+      case "single":
+        return 1;
+      case "double":
+        return 2;
+      case "triple":
+        return 3;
+      case "scene-builder":
+        return 1; // Scene builder manages images differently
+      default:
+        return 1;
+    }
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-sm">Media Upload</h4>
+        <h4 className="font-semibold text-sm text-foreground">Media Upload</h4>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-1 rounded-lg hover:bg-accent transition-colors"
             title="Close"
           >
-            <X className="h-4 w-4 text-white/60 hover:text-white" />
+            <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
           </button>
         )}
       </div>
       <div className="space-y-3">
-        {Array.from({ length: 1 }).map((_, index) => (
+        {Array.from({ length: getImageSlotCount() }).map((_, index) => (
           <div key={index} className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-medium">

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import ColorThief from "colorthief";
 import {
   Upload,
   RefreshCw,
@@ -15,6 +16,8 @@ import {
   RotateCcw,
   X,
   Eye,
+  WandSparkles,
+  BetweenVerticalStart,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -28,12 +31,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { logger } from "@/lib/logger";
 import {
   MainNavigationBar,
   SecondaryNavigationBar,
   MediaUploader,
   BrowserStyleSelector,
+  LayoutModeSelector,
+  SceneBuilderMobile,
 } from "./unified-mobile-sidebar/index";
+import { createDeviceScene } from "@/types/scene-builder";
+import { generateMagicalGradientsWithAI } from "../lib/magical-utils";
+
+// Layout presets constants
+const SINGLE_LAYOUT_PRESETS = [
+  { id: "centered", name: "Centered" },
+  { id: "perspective-left", name: "Perspective Left" },
+  { id: "perspective-right", name: "Perspective Right" },
+  { id: "tilt-3d-left", name: "Tilt 3D Left" },
+  { id: "tilt-3d-right", name: "Tilt 3D Right" },
+  { id: "isometric-left", name: "Isometric Left" },
+  { id: "isometric-right", name: "Isometric Right" },
+  { id: "flat-plate", name: "Flat Plate" },
+  { id: "flat-topleft", name: "Flat Top Left" },
+  { id: "flat-topright", name: "Flat Top Right" },
+];
+
+const DOUBLE_LAYOUT_PRESETS = [
+  { id: "double-side-by-side", name: "Side by Side" },
+  { id: "double-stacked", name: "Stacked" },
+  { id: "double-angled", name: "Angled" },
+  { id: "double-perspective", name: "Perspective" },
+  { id: "double-overlap", name: "Overlap" },
+  { id: "double-depth", name: "Depth" },
+  { id: "double-asymmetric", name: "Asymmetric" },
+  { id: "double-mirror", name: "Mirror" },
+];
 
 // Device display names and info
 const deviceDisplayNames: Record<string, string> = {
@@ -41,7 +74,9 @@ const deviceDisplayNames: Record<string, string> = {
   "iphone-17-pro": "iPhone 17 Pro - 1206×2622px",
   "iphone-17-pro-max": "iPhone 17 Pro Max - 1320×2868px",
   "ipad-pro": "iPad Pro 13 - 2048×2732px",
+  "ipad-pro-13": "iPad Pro 13 - 2048×2732px",
   "macbook-pro": "MacBook Pro 16 - 2560×1600px",
+  "macbook-pro-16": "MacBook Pro 16 - 2560×1600px",
   safari: "Safari - Adapts to media",
   browser: "Browser - Adapts to media",
   chrome: "Chrome - Adapts to media",
@@ -89,7 +124,7 @@ const DeviceButton = React.memo(
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
@@ -101,7 +136,7 @@ const DeviceButton = React.memo(
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
@@ -113,7 +148,7 @@ const DeviceButton = React.memo(
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
@@ -125,7 +160,7 @@ const DeviceButton = React.memo(
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
@@ -137,31 +172,32 @@ const DeviceButton = React.memo(
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
                 )}
-                {deviceKey === "ipad-pro" && (
+                {(deviceKey === "ipad-pro" || deviceKey === "ipad-pro-13") && (
                   <Image
                     src="/ipad-pro-13-thumbnail.png"
                     alt="iPad Pro thumbnail"
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
                 )}
-                {deviceKey === "macbook-pro" && (
+                {(deviceKey === "macbook-pro" ||
+                  deviceKey === "macbook-pro-16") && (
                   <Image
                     src="/macbook-pro-16-thumbnail.png"
                     alt="MacBook Pro 16 thumbnail"
                     width={96}
                     height={96}
                     className="rounded-md object-contain"
-                    unoptimized
+                    quality={80}
                     loading="lazy"
                     priority={false}
                   />
@@ -207,7 +243,8 @@ interface UnifiedMobileSidebarProps {
     | "texture"
     | "textures"
     | "transparent"
-    | "image";
+    | "image"
+    | "magical";
   setBackgroundType: (
     type: UnifiedMobileSidebarProps["backgroundType"]
   ) => void;
@@ -215,9 +252,12 @@ interface UnifiedMobileSidebarProps {
   setBackgroundColor: (color: string) => void;
   backgroundImage?: string | undefined;
   setBackgroundImage: (img: string | undefined) => void;
+  magicalGradients?: string[];
+  setMagicalGradients: (gradients: string[]) => void;
+  onGenerateMagicalGradients?: () => void;
   selectedPreset: string;
   setSelectedPreset: (preset: string) => void;
-  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
+  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
   setDeviceStyle: (style: UnifiedMobileSidebarProps["deviceStyle"]) => void;
   styleEdge: number;
   setStyleEdge: (px: number) => void;
@@ -250,7 +290,12 @@ interface UnifiedMobileSidebarProps {
   setShadowColor?: (c: string) => void;
   sceneType: "none" | "shadow" | "shapes";
   setSceneType: (type: "none" | "shadow" | "shapes") => void;
-  layoutMode: "single" | "double" | "triple";
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
+  setLayoutMode: (
+    mode: "single" | "double" | "triple" | "scene-builder"
+  ) => void;
+  mockupGap: number;
+  setMockupGap: (gap: number) => void;
   siteUrl?: string;
   setSiteUrl?: (url: string) => void;
   hideMockup?: boolean;
@@ -335,12 +380,70 @@ interface UnifiedMobileSidebarProps {
   canvasWidth: number;
   canvasHeight: number;
 
+  // Branding props
+  branding?: {
+    id: string;
+    url?: string;
+    text?: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    opacity: number;
+    rotation: number;
+    layout: "vertical" | "horizontal";
+    background: "default" | "shadow" | "glass" | "badge";
+    badgeMode?: "light" | "dark";
+    badgeRadius?: number;
+    glassMode?: "light" | "dark";
+    glassRadius?: number;
+  };
+  setBranding: (branding: UnifiedMobileSidebarProps["branding"]) => void;
+
+  // Scene Builder props
+  deviceScenes?: Array<{
+    id: string;
+    device: string;
+    imageUrl: string | null;
+    position: { x: number; y: number };
+    scale: number;
+    rotation: number;
+    zIndex: number;
+    browserMode?: string;
+    deviceStyle?: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
+    styleEdge?: number;
+    siteUrl?: string;
+  }>;
+  onDeviceScenesChange?: (
+    scenes: NonNullable<UnifiedMobileSidebarProps["deviceScenes"]>
+  ) => void;
+  onImageUploadForScene?: (
+    e: React.ChangeEvent<HTMLInputElement>,
+    sceneId: string
+  ) => void;
+
+  // Scene FX props
+  sceneFxMode?: "default" | "shadows";
+  setSceneFxMode?: (mode: "default" | "shadows") => void;
+  sceneFxShadow?: string | null;
+  setSceneFxShadow?: (shadow: string | null) => void;
+  sceneFxOpacity?: number;
+  setSceneFxOpacity?: (opacity: number) => void;
+  sceneFxLayer?: "overlay" | "underlay";
+  setSceneFxLayer?: (layer: "overlay" | "underlay") => void;
+
+  // Double click handlers - control from parent
+  editingTextIdFromCanvas?: string | null;
+  setEditingTextIdFromCanvas?: (id: string | null) => void;
+  editingBrandingFromCanvas?: boolean;
+  setEditingBrandingFromCanvas?: (value: boolean) => void;
+
   // Control props
   isOpen: boolean;
   onClose: () => void;
 }
 
-type MainSection = "mockup" | "frame" | "layout";
+type MainSection = "mockup" | "frame" | "layout" | "scene";
 
 export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
   const [activeMainSection, setActiveMainSection] =
@@ -363,6 +466,43 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     textures: false,
   });
   const [shadowPreviewMode, setShadowPreviewMode] = useState(false);
+  const [sceneFxExpandedShadows, setSceneFxExpandedShadows] = useState(false);
+
+  // Handle double click from canvas
+  useEffect(() => {
+    if (props.editingTextIdFromCanvas) {
+      setEditingTextId(props.editingTextIdFromCanvas);
+      setActiveMainSection("layout");
+      setActiveSecondarySection("text");
+      // Clear the flag after opening
+      if (props.setEditingTextIdFromCanvas) {
+        props.setEditingTextIdFromCanvas(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editingTextIdFromCanvas]);
+
+  useEffect(() => {
+    if (props.editingBrandingFromCanvas) {
+      setActiveMainSection("frame");
+      setActiveSecondarySection("frame");
+      // Clear the flag after opening
+      if (props.setEditingBrandingFromCanvas) {
+        props.setEditingBrandingFromCanvas(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editingBrandingFromCanvas]);
+
+  // Estado local para gradientes mágicos generados
+  const [localMagicalGradients, setLocalMagicalGradients] = useState<string[]>(
+    []
+  );
+  // Estado para controlar el loading del botón de generar
+  const [isGeneratingMagical, setIsGeneratingMagical] = useState(false);
+
+  // Desestructurar props para el useEffect
+  const { uploadedImages, setMagicalGradients } = props;
 
   // Handle hydration
   useEffect(() => {
@@ -371,7 +511,10 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
 
   // Device menu state management
   useEffect(() => {
-    if (activeSecondarySection === "device") {
+    if (
+      activeSecondarySection === "device" ||
+      activeSecondarySection === "devices"
+    ) {
       const timer = setTimeout(() => {
         setImagesLoaded(true);
       }, 100);
@@ -381,6 +524,111 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     }
   }, [activeSecondarySection]);
 
+  // Reiniciar gradientes mágicos cuando cambia la imagen subida
+  useEffect(() => {
+    if (uploadedImages && uploadedImages[0]) {
+      // Si hay una nueva imagen, reiniciar los gradientes
+      setLocalMagicalGradients([]);
+      if (setMagicalGradients) {
+        setMagicalGradients([]);
+      }
+    }
+  }, [uploadedImages, setMagicalGradients]);
+
+  // Función para generar gradientes mágicos desde colores
+  const generateMagicalGradients = (colors: string[]): string[] => {
+    const gradients: string[] = [];
+
+    for (let i = 0; i < 12; i++) {
+      const color1 = colors[i % colors.length];
+      const color2 = colors[(i + 1) % colors.length];
+      const color3 = colors[(i + 2) % colors.length];
+
+      // Crear diferentes tipos de gradientes
+      if (i < 4) {
+        // Gradientes lineales
+        gradients.push(`linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`);
+      } else if (i < 8) {
+        // Gradientes radiales
+        gradients.push(
+          `radial-gradient(circle at 50% 50%, ${color1} 0%, ${color2} 100%)`
+        );
+      } else {
+        // Gradientes con 3 colores
+        gradients.push(
+          `linear-gradient(45deg, ${color1} 0%, ${color2} 50%, ${color3} 100%)`
+        );
+      }
+    }
+
+    return gradients;
+  };
+
+  // Función para generar gradientes mágicos desde la imagen subida
+  const handleGenerateMagicalGradients = async () => {
+    if (!props.uploadedImages[0]) return;
+
+    setIsGeneratingMagical(true);
+    try {
+      // Usar la nueva función de AI para generar gradientes
+      const aiGradients = await generateMagicalGradientsWithAI(
+        props.uploadedImages[0]
+      );
+      const gradients = aiGradients.map((g) => g.gradient);
+
+      setLocalMagicalGradients(gradients);
+
+      // Actualizar el estado global también
+      if (props.setMagicalGradients) {
+        props.setMagicalGradients(gradients);
+      }
+
+      // Llamar al callback si existe
+      if (props.onGenerateMagicalGradients) {
+        props.onGenerateMagicalGradients();
+      }
+    } catch (error) {
+      logger.error("Error generating AI magical gradients:", error);
+      // Fallback a la función original si la AI falla
+      try {
+        const img = document.createElement("img") as HTMLImageElement;
+        img.crossOrigin = "anonymous";
+        img.src = props.uploadedImages[0];
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        const colorThief = new ColorThief();
+        const colors = colorThief.getPalette(img, 8); // Obtener 8 colores dominantes
+
+        // Convertir colores RGB a hex
+        const hexColors = colors.map(
+          (color) =>
+            `#${color.map((c) => c.toString(16).padStart(2, "0")).join("")}`
+        );
+
+        const gradients = generateMagicalGradients(hexColors);
+        setLocalMagicalGradients(gradients);
+
+        // Actualizar el estado global también
+        if (props.setMagicalGradients) {
+          props.setMagicalGradients(gradients);
+        }
+
+        // Llamar al callback si existe
+        if (props.onGenerateMagicalGradients) {
+          props.onGenerateMagicalGradients();
+        }
+      } catch (fallbackError) {
+        logger.error("Fallback generation also failed:", fallbackError);
+      }
+    } finally {
+      setIsGeneratingMagical(false);
+    }
+  };
+
   if (!props.isOpen) return null;
 
   const renderSecondaryContent = (buttonId: string) => {
@@ -389,13 +637,15 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-sm">Device Selection</h4>
+              <h4 className="font-semibold text-sm text-foreground">
+                Device Selection
+              </h4>
               <button
                 onClick={() => setActiveSecondarySection(null)}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1 rounded-lg hover:bg-accent transition-colors"
                 title="Close"
               >
-                <X className="h-4 w-4 text-white/60 hover:text-white" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
             {renderDevicePopover()}
@@ -410,6 +660,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
             hideMockup={props.hideMockup}
             onToggleHideMockup={props.onToggleHideMockup}
             onClose={() => setActiveSecondarySection(null)}
+            layoutMode={props.layoutMode}
           />
         );
       case "browser":
@@ -430,6 +681,8 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
         return renderBackgroundPopover(() => setActiveSecondarySection(null));
       case "shadow":
         return renderShadowPopover(() => setActiveSecondarySection(null));
+      case "scene-fx":
+        return renderSceneFxPopover(() => setActiveSecondarySection(null));
       case "effects":
         return renderEffectsPopover(() => setActiveSecondarySection(null));
       case "text":
@@ -440,6 +693,424 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
         return renderZoomPopover(() => setActiveSecondarySection(null));
       case "presets":
         return renderPresetsPopover(() => setActiveSecondarySection(null));
+      case "spacing":
+        return renderSpacingPopover(() => setActiveSecondarySection(null));
+      case "branding":
+        return renderBrandingPopover(() => setActiveSecondarySection(null));
+      case "mockups":
+        return (
+          <div className="space-y-4">
+            {/* Layout Mode Selector */}
+            <LayoutModeSelector
+              layoutMode={props.layoutMode}
+              setLayoutMode={props.setLayoutMode}
+              onClose={() => setActiveSecondarySection(null)}
+            />
+
+            {/* Mockup Spacing */}
+            {props.layoutMode === "double" ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Mockup Spacing</Label>
+                  <span className="text-sm text-muted-foreground">
+                    {props.mockupGap}px
+                  </span>
+                </div>
+                <Slider
+                  value={[props.mockupGap]}
+                  onValueChange={([v]) => props.setMockupGap(v)}
+                  min={-500}
+                  max={500}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="text-xs text-muted-foreground text-center">
+                  Negative values bring mockups closer, positive values separate
+                  them
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="text-xs text-muted-foreground">
+                  Select two mockups to use spacing feature
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case "devices":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-sm text-foreground">
+                Add Device to Scene
+              </h4>
+              <button
+                onClick={() => setActiveSecondarySection(null)}
+                className="p-1 rounded-lg hover:bg-accent transition-colors"
+                title="Close"
+              >
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+            <div
+              className="w-full max-h-[80vh] overflow-y-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
+              <div className="p-2">
+                <Tabs
+                  value={deviceTab}
+                  onValueChange={setDeviceTab}
+                  className="w-full"
+                >
+                  <TabsList className="grid w-full grid-cols-6 bg-muted overflow-hidden px-1 py-1 mb-3">
+                    <TabsTrigger
+                      value="all"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "all"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="phone"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "phone"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      Phone
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="tablet"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "tablet"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      Tablet
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="laptop"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "laptop"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      Laptop
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="desktop"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "desktop"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      Desktop
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="browser"
+                      className={`text-xs text-foreground cursor-pointer z-10 transition-colors ${
+                        deviceTab === "browser"
+                          ? "bg-primary/20 border-primary"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      Browser
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* All Tab */}
+                  <TabsContent value="all" className="mt-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <DeviceButton
+                        deviceKey="screenshot"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "screenshot",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="iphone-17-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "iphone-17-pro",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="iphone-17-pro-max"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "iphone-17-pro-max",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="ipad-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "ipad-pro-13",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="macbook-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "macbook-pro-16",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="safari"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "safari",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="chrome"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "chrome",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Phone Tab */}
+                  <TabsContent value="phone" className="mt-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <DeviceButton
+                        deviceKey="iphone-17-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "iphone-17-pro",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="iphone-17-pro-max"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "iphone-17-pro-max",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Tablet Tab */}
+                  <TabsContent value="tablet" className="mt-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <DeviceButton
+                        deviceKey="ipad-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "ipad-pro-13",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Laptop Tab */}
+                  <TabsContent value="laptop" className="mt-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <DeviceButton
+                        deviceKey="macbook-pro"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "macbook-pro-16",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Desktop Tab */}
+                  <TabsContent value="desktop" className="mt-2">
+                    <div className="text-xs text-muted-foreground text-center py-4">
+                      No desktop devices available yet
+                    </div>
+                  </TabsContent>
+
+                  {/* Browser Tab */}
+                  <TabsContent value="browser" className="mt-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <DeviceButton
+                        deviceKey="safari"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "safari",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                      <DeviceButton
+                        deviceKey="chrome"
+                        isSelected={false}
+                        onClick={() => {
+                          const newScene = createDeviceScene(
+                            "chrome",
+                            props.uploadedImages[0] || null
+                          );
+                          props.onDeviceScenesChange?.([
+                            ...(props.deviceScenes || []),
+                            newScene,
+                          ]);
+                          setActiveSecondarySection(null);
+                        }}
+                        shouldLoadImages={imagesLoaded}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+          </div>
+        );
+      case "scene-builder":
+        return (
+          <SceneBuilderMobile
+            scenes={props.deviceScenes || []}
+            onScenesChange={props.onDeviceScenesChange || (() => {})}
+            availableImages={props.uploadedImages}
+            onImageUpload={props.onImageUploadForScene}
+            onClose={() => setActiveSecondarySection(null)}
+            shadowType={props.shadowType}
+            setShadowType={props.setShadowType}
+            shadowOpacity={props.shadowOpacity}
+            setShadowOpacity={props.setShadowOpacity}
+            setShadowOpacityImmediate={props.setShadowOpacityImmediate}
+            shadowMode={props.shadowMode}
+            setShadowMode={props.setShadowMode}
+            shadowOffsetX={props.shadowOffsetX}
+            setShadowOffsetX={props.setShadowOffsetX}
+            setShadowOffsetXImmediate={props.setShadowOffsetXImmediate}
+            shadowOffsetY={props.shadowOffsetY}
+            setShadowOffsetY={props.setShadowOffsetY}
+            setShadowOffsetYImmediate={props.setShadowOffsetYImmediate}
+            shadowBlur={props.shadowBlur}
+            setShadowBlur={props.setShadowBlur}
+            setShadowBlurImmediate={props.setShadowBlurImmediate}
+            shadowSpread={props.shadowSpread}
+            setShadowSpread={props.setShadowSpread}
+            setShadowSpreadImmediate={props.setShadowSpreadImmediate}
+            shadowColor={props.shadowColor}
+            setShadowColor={props.setShadowColor}
+            borderRadius={props.borderRadius}
+            setBorderRadius={props.setBorderRadius}
+            setBorderRadiusImmediate={props.setBorderRadiusImmediate}
+            siteUrl={props.siteUrl}
+            setSiteUrl={props.setSiteUrl}
+          />
+        );
       default:
         return <div>Content not available</div>;
     }
@@ -449,14 +1120,16 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Border Configuration</h4>
+          <h4 className="font-semibold text-sm text-foreground">
+            Border Configuration
+          </h4>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
@@ -465,21 +1138,27 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
         <div className="space-y-2">
           <Label className="text-xs font-medium">Border Style</Label>
           <div className="grid grid-cols-2 gap-2">
-            {(["default", "glass-light", "glass-dark", "liquid"] as const).map(
-              (style) => (
-                <button
-                  key={style}
-                  onClick={() => props.setDeviceStyle(style)}
-                  className={`h-8 rounded border text-xs capitalize text-foreground cursor-pointer ${
-                    props.deviceStyle === style
-                      ? "border-primary bg-primary/20"
-                      : "border-border bg-muted hover:bg-muted/80"
-                  }`}
-                >
-                  {style.replace("-", " ")}
-                </button>
-              )
-            )}
+            {(
+              [
+                "default",
+                "glass-light",
+                "glass-dark",
+                "liquid",
+                "retro",
+              ] as const
+            ).map((style) => (
+              <button
+                key={style}
+                onClick={() => props.setDeviceStyle(style)}
+                className={`h-8 rounded border text-xs capitalize text-foreground cursor-pointer ${
+                  props.deviceStyle === style
+                    ? "border-primary bg-primary/20"
+                    : "border-border bg-muted hover:bg-muted/80"
+                }`}
+              >
+                {style.replace("-", " ")}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -532,16 +1211,97 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
       >
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Background Settings</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              Background Settings
+            </h3>
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1 rounded-lg hover:bg-accent transition-colors"
                 title="Close"
               >
-                <X className="h-4 w-4 text-white/60 hover:text-white" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </button>
             )}
+          </div>
+
+          {/* Magical Backgrounds Section - always visible */}
+          <div className="mb-4 p-3 bg-linear-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-center">
+                <h3 className="text-sm font-medium text-foreground mb-1 gap-2 flex justify-center items-center">
+                  <WandSparkles className="inline-block w-4 h-4 mr-1 text-purple-500" />
+                  Magic Backgrounds AI
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Generate the perfect backgrounds for your mockups
+                </p>
+              </div>
+              <button
+                onClick={handleGenerateMagicalGradients}
+                disabled={
+                  isGeneratingMagical ||
+                  !props.uploadedImages ||
+                  !props.uploadedImages[0]
+                }
+                className="w-full h-10 rounded-lg bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200"
+              >
+                {isGeneratingMagical ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary/50 border-t-white rounded-full animate-spin"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>Generate</>
+                )}
+              </button>
+              {!props.uploadedImages || !props.uploadedImages[0] ? (
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Upload a mockup image to generate magical backgrounds
+                  </p>
+                </div>
+              ) : (props.magicalGradients &&
+                  props.magicalGradients.length > 0) ||
+                (localMagicalGradients && localMagicalGradients.length > 0) ? (
+                <div className="w-full">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    Generated Backgrounds
+                  </h4>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(props.magicalGradients &&
+                    props.magicalGradients.length > 0
+                      ? props.magicalGradients
+                      : localMagicalGradients
+                    ).map((gradient, i) => (
+                      <button
+                        key={`magical-${i}`}
+                        onClick={() => {
+                          props.setBackgroundType("magical");
+                          props.setSelectedPreset(`magical-${i}`);
+                          const gradientsToUse =
+                            props.magicalGradients &&
+                            props.magicalGradients.length > 0
+                              ? props.magicalGradients
+                              : localMagicalGradients;
+                          if (props.setMagicalGradients) {
+                            props.setMagicalGradients(gradientsToUse);
+                          }
+                        }}
+                        className={`h-8 rounded border cursor-pointer ${
+                          props.selectedPreset === `magical-${i}` &&
+                          props.backgroundType === "magical"
+                            ? "border-purple-500 ring-2 ring-purple-500/50"
+                            : "border-white/10"
+                        }`}
+                        style={{ background: gradient }}
+                        title={`Gradiente Mágico ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {/* Background Type Tabs */}
@@ -626,7 +1386,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.solid ? "rotate-180" : ""
                       }`}
                     />
@@ -795,7 +1555,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.linear ? "rotate-180" : ""
                       }`}
                     />
@@ -903,7 +1663,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.radial ? "rotate-180" : ""
                       }`}
                     />
@@ -968,12 +1728,13 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                       }`}
                     >
                       <Image
-                        src={`/cosmic-gradient-${num}.png`}
+                        src={`/thumbnails/cosmic/cosmic-gradient-thumbnail-${num}.webp`}
                         alt={`Cosmic ${num}`}
-                        width={32}
-                        height={32}
+                        width={120}
+                        height={64}
                         className="w-full h-full object-cover"
-                        unoptimized
+                        quality={75}
+                        loading="lazy"
                       />
                     </button>
                   ))}
@@ -984,21 +1745,17 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                         cosmic: !prev.cosmic,
                       }))
                     }
-                    className={`h-8 rounded border-2 cursor-pointer flex items-center justify-center transition-all duration-200 ${
-                      backgroundExpandedSections.cosmic
-                        ? "bg-primary hover:bg-primary/80"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className="h-8 rounded border-2 cursor-pointer flex items-center justify-center transition-all duration-200 bg-muted hover:bg-muted/80"
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.cosmic ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                 </div>
                 {backgroundExpandedSections.cosmic && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].slice(3).map((num) => (
                       <button
                         key={num}
@@ -1014,12 +1771,13 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                         }`}
                       >
                         <Image
-                          src={`/cosmic-gradient-${num}.png`}
+                          src={`/thumbnails/cosmic/cosmic-gradient-thumbnail-${num}.webp`}
                           alt={`Cosmic ${num}`}
-                          width={32}
-                          height={32}
+                          width={120}
+                          height={64}
                           className="w-full h-full object-cover"
-                          unoptimized
+                          quality={75}
+                          loading="lazy"
                         />
                       </button>
                     ))}
@@ -1050,12 +1808,13 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                         }`}
                       >
                         <Image
-                          src={`/textures-${num}.jpg`}
+                          src={`/thumbnails/textures/textures-thumbnail-${num}.webp`}
                           alt={`Texture ${num}`}
-                          width={32}
-                          height={32}
+                          width={120}
+                          height={64}
                           className="w-full h-full object-cover"
-                          unoptimized
+                          quality={75}
+                          loading="lazy"
                         />
                       </button>
                     ))}
@@ -1066,21 +1825,17 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                         textures: !prev.textures,
                       }))
                     }
-                    className={`h-8 rounded border-2 cursor-pointer flex items-center justify-center transition-all duration-200 ${
-                      backgroundExpandedSections.textures
-                        ? "bg-primary hover:bg-primary/80"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className="h-8 rounded border-2 cursor-pointer flex items-center justify-center transition-all duration-200 bg-muted hover:bg-muted/80"
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.textures ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                 </div>
                 {backgroundExpandedSections.textures && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
                       .slice(3)
                       .map((num) => (
@@ -1098,12 +1853,13 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                           }`}
                         >
                           <Image
-                            src={`/textures-${num}.jpg`}
+                            src={`/thumbnails/textures/textures-thumbnail-${num}.webp`}
                             alt={`Texture ${num}`}
-                            width={32}
-                            height={32}
+                            width={120}
+                            height={64}
                             className="w-full h-full object-cover"
-                            unoptimized
+                            quality={75}
+                            loading="lazy"
                           />
                         </button>
                       ))}
@@ -1120,10 +1876,10 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                     <Image
                       src={props.backgroundImage}
                       alt="Background image"
-                      width={200}
-                      height={150}
+                      width={400}
+                      height={300}
                       className="rounded-lg object-cover"
-                      unoptimized
+                      quality={85}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                       {isClient && (
@@ -1207,14 +1963,14 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Effects</h4>
+          <h4 className="font-semibold text-sm text-foreground">Effects</h4>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
@@ -1259,11 +2015,175 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     );
   };
 
+  const renderSceneFxPopover = (onClose?: () => void) => {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="font-semibold text-sm text-foreground">Scene FX</h4>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
+              title="Close"
+            >
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Mode Toggle: Default / Shadows */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              props.setSceneFxMode?.("default");
+              props.setSceneFxShadow?.(null);
+            }}
+            className={`flex-1 h-8 rounded-lg border text-xs text-foreground cursor-pointer ${
+              props.sceneFxMode === "default"
+                ? "border-primary bg-primary/20"
+                : "border-border bg-muted hover:bg-muted/80"
+            }`}
+          >
+            Default
+          </button>
+          <button
+            onClick={() => props.setSceneFxMode?.("shadows")}
+            className={`flex-1 h-8 rounded-lg border text-xs text-foreground cursor-pointer ${
+              props.sceneFxMode === "shadows"
+                ? "border-primary bg-primary/20"
+                : "border-border bg-muted hover:bg-muted/80"
+            }`}
+          >
+            Shadows
+          </button>
+        </div>
+
+        {/* Shadow Grid - only show when mode is shadows */}
+        {props.sceneFxMode === "shadows" && (
+          <div className="space-y-3">
+            {/* Shadow Thumbnails Grid */}
+            <div className="grid grid-cols-4 gap-2">
+              {/* First 3 shadows */}
+              {[1, 2, 3].map((num) => (
+                <button
+                  key={num}
+                  onClick={() =>
+                    props.setSceneFxShadow?.(`/shadows/shadow-${num}.png`)
+                  }
+                  className={`h-8 rounded border cursor-pointer overflow-hidden transition-all ${
+                    props.sceneFxShadow === `/shadows/shadow-${num}.png`
+                      ? "border-primary ring-2 ring-primary/50"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Image
+                    src={`/thumbnails/shadows/shadow-thumbnail-${num}.webp`}
+                    alt={`Shadow ${num}`}
+                    width={120}
+                    height={64}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                </button>
+              ))}
+
+              {/* Expand Button */}
+              <button
+                onClick={() =>
+                  setSceneFxExpandedShadows(!sceneFxExpandedShadows)
+                }
+                className="h-8 rounded border border-border bg-muted hover:bg-muted/80 cursor-pointer flex items-center justify-center transition-all"
+              >
+                <ChevronDown
+                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+                    sceneFxExpandedShadows ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Expanded Shadows (4-20) */}
+            {sceneFxExpandedShadows && (
+              <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                {Array.from({ length: 17 }, (_, i) => i + 4).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() =>
+                      props.setSceneFxShadow?.(`/shadows/shadow-${num}.png`)
+                    }
+                    className={`h-8 rounded border cursor-pointer overflow-hidden transition-all ${
+                      props.sceneFxShadow === `/shadows/shadow-${num}.png`
+                        ? "border-primary ring-2 ring-primary/50"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Image
+                      src={`/thumbnails/shadows/shadow-thumbnail-${num}.webp`}
+                      alt={`Shadow ${num}`}
+                      width={120}
+                      height={64}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Opacity Slider */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs text-muted-foreground">Opacity</Label>
+                <span className="text-xs text-muted-foreground">
+                  {props.sceneFxOpacity ?? 100}%
+                </span>
+              </div>
+              <Slider
+                value={[props.sceneFxOpacity ?? 100]}
+                onValueChange={([v]) => props.setSceneFxOpacity?.(v)}
+                min={0}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+            </div>
+
+            {/* Layer Mode: Underlay / Overlay */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => props.setSceneFxLayer?.("underlay")}
+                className={`flex-1 h-8 rounded-lg border text-xs text-foreground cursor-pointer ${
+                  props.sceneFxLayer === "underlay"
+                    ? "border-primary bg-primary/20"
+                    : "border-border bg-muted hover:bg-muted/80"
+                }`}
+              >
+                Underlay
+              </button>
+              <button
+                onClick={() => props.setSceneFxLayer?.("overlay")}
+                className={`flex-1 h-8 rounded-lg border text-xs text-foreground cursor-pointer ${
+                  props.sceneFxLayer === "overlay"
+                    ? "border-primary bg-primary/20"
+                    : "border-border bg-muted hover:bg-muted/80"
+                }`}
+              >
+                Overlay
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderShadowPopover = (onClose?: () => void) => {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Shadow Settings</h4>
+          <h4 className="font-semibold text-sm text-foreground">
+            Shadow Settings
+          </h4>
           <div className="flex items-center gap-2">
             {/* Preview Mode Toggle - only show in custom mode */}
             {props.shadowMode === "custom" && (
@@ -1272,7 +2192,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 className={`p-1 rounded-lg transition-colors ${
                   shadowPreviewMode
                     ? "bg-primary/20 text-primary"
-                    : "hover:bg-white/10 text-white/60 hover:text-white"
+                    : "hover:bg-accent text-muted-foreground hover:text-foreground"
                 }`}
                 title={
                   shadowPreviewMode ? "Exit preview mode" : "Enter preview mode"
@@ -1284,10 +2204,10 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1 rounded-lg hover:bg-accent transition-colors"
                 title="Close"
               >
-                <X className="h-4 w-4 text-white/60 hover:text-white" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </button>
             )}
           </div>
@@ -1574,7 +2494,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                     className={`h-6 w-6 rounded border cursor-pointer ${
                       (props.shadowColor || "#000000") === c
                         ? "border-purple-500 ring-1 ring-purple-500/50"
-                        : "border-white/20"
+                        : "border-border"
                     }`}
                     style={{ backgroundColor: c }}
                     title={c}
@@ -1596,14 +2516,16 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
       >
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-sm">Text Overlays</h4>
+            <h4 className="font-semibold text-sm text-foreground">
+              Text Overlays
+            </h4>
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1 rounded-lg hover:bg-accent transition-colors"
                 title="Close"
               >
-                <X className="h-4 w-4 text-white/60 hover:text-white" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </button>
             )}
           </div>
@@ -1629,10 +2551,10 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 textShadowColor: "#000000",
               })
             }
-            className="w-full rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+            className="w-full rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             size="sm"
           >
-            <Plus className="h-4 w-4 mr-2 text-white/80" />
+            <Plus className="h-4 w-4 mr-2 text-foreground/80" />
             Add Text
           </Button>
 
@@ -1665,13 +2587,13 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 hover:bg-white/10 rounded-lg"
+                        className="h-6 w-6 p-0 hover:bg-accent rounded-lg"
                       >
-                        <Settings className="h-3 w-3 text-white/60 hover:text-white transition-colors" />
+                        <Settings className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="max-w-[calc(100vw-2rem)] w-80 max-h-[60vh] overflow-y-auto z-60 bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-black/20 rounded-2xl"
+                      className="max-w-[calc(100vw-2rem)] w-80 max-h-[60vh] overflow-y-auto z-60 bg-card backdrop-blur-xl border border-border shadow-2xl shadow-black/20 rounded-2xl"
                       style={{ scrollbarWidth: "none" }}
                       side="top"
                       align="start"
@@ -1921,7 +2843,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                                 className={`h-6 w-6 rounded border cursor-pointer ${
                                   text.color === c
                                     ? "border-primary ring-1 ring-primary/50"
-                                    : "border-white/20"
+                                    : "border-border"
                                 }`}
                                 style={{ backgroundColor: c }}
                                 title={c}
@@ -2008,14 +2930,16 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Resolution Settings</h4>
+          <h4 className="font-semibold text-sm text-foreground">
+            Resolution Settings
+          </h4>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
@@ -2043,14 +2967,16 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Zoom Controls</h4>
+          <h4 className="font-semibold text-sm text-foreground">
+            Zoom Controls
+          </h4>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
@@ -2066,9 +2992,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
               variant="outline"
               size="sm"
               onClick={() => props.setZoom(Math.max(75, props.zoom - 10))}
-              className="h-8 w-8 p-0 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-8 w-8 p-0 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronDown className="h-4 w-4 text-white/80" />
+              <ChevronDown className="h-4 w-4 text-foreground/80" />
             </Button>
             <Slider
               value={[props.zoom]}
@@ -2082,9 +3008,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
               variant="outline"
               size="sm"
               onClick={() => props.setZoom(Math.min(564, props.zoom + 10))}
-              className="h-8 w-8 p-0 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-8 w-8 p-0 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronUp className="h-4 w-4 text-white/80" />
+              <ChevronUp className="h-4 w-4 text-foreground/80" />
             </Button>
           </div>
         </div>
@@ -2104,9 +3030,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 const newY = Math.min(1000, props.panY + 50);
                 props.setPanY(newY);
               }}
-              className="h-10 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-10 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronUp className="h-4 w-4 text-white/80" />
+              <ChevronUp className="h-4 w-4 text-foreground/80" />
             </Button>
             <div></div>
             <Button
@@ -2116,9 +3042,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 const newX = Math.max(-1000, props.panX - 50);
                 props.setPanX(newX);
               }}
-              className="h-10 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-10 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronLeft className="h-4 w-4 text-white/80" />
+              <ChevronLeft className="h-4 w-4 text-foreground/80" />
             </Button>
             <Button
               variant="outline"
@@ -2127,9 +3053,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 props.setPanX(0);
                 props.setPanY(0);
               }}
-              className="h-10 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-10 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <RotateCcw className="h-4 w-4 text-white/80" />
+              <RotateCcw className="h-4 w-4 text-foreground/80" />
             </Button>
             <Button
               variant="outline"
@@ -2138,9 +3064,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 const newX = Math.min(1000, props.panX + 50);
                 props.setPanX(newX);
               }}
-              className="h-10 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-10 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronRight className="h-4 w-4 text-white/80" />
+              <ChevronRight className="h-4 w-4 text-foreground/80" />
             </Button>
             <div></div>
             <Button
@@ -2150,9 +3076,9 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
                 const newY = Math.max(-1000, props.panY - 50);
                 props.setPanY(newY);
               }}
-              className="h-10 rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+              className="h-10 rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
             >
-              <ChevronDown className="h-4 w-4 text-white/80" />
+              <ChevronDown className="h-4 w-4 text-foreground/80" />
             </Button>
             <div></div>
           </div>
@@ -2162,30 +3088,24 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
   };
 
   const renderPresetsPopover = (onClose?: () => void) => {
-    const layoutPresets = [
-      { id: "centered", name: "Centered" },
-      { id: "perspective-left", name: "Perspective Left" },
-      { id: "perspective-right", name: "Perspective Right" },
-      { id: "tilt-3d-left", name: "Tilt 3D Left" },
-      { id: "tilt-3d-right", name: "Tilt 3D Right" },
-      { id: "isometric-left", name: "Isometric Left" },
-      { id: "isometric-right", name: "Isometric Right" },
-      { id: "flat-plate", name: "Flat Plate" },
-      { id: "flat-topleft", name: "Flat Top Left" },
-      { id: "flat-topright", name: "Flat Top Right" },
-    ];
+    const layoutPresets =
+      props.layoutMode === "double"
+        ? DOUBLE_LAYOUT_PRESETS
+        : SINGLE_LAYOUT_PRESETS;
 
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm">Layout Presets</h4>
+          <h4 className="font-semibold text-sm text-foreground">
+            Layout Presets
+          </h4>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
               title="Close"
             >
-              <X className="h-4 w-4 text-white/60 hover:text-white" />
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
             </button>
           )}
         </div>
@@ -2222,11 +3142,492 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
             props.setPanX(0);
             props.setPanY(0);
           }}
-          className="w-full rounded-lg bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200"
+          className="w-full rounded-lg bg-muted border-border hover:bg-accent hover:border-primary/50 transition-all duration-200"
         >
-          <RotateCcw className="h-4 w-4 mr-2 text-white/80" />
+          <RotateCcw className="h-4 w-4 mr-2 text-foreground/80" />
           Reset to Default
         </Button>
+      </div>
+    );
+  };
+
+  const renderSpacingPopover = (onClose?: () => void) => {
+    return (
+      <div className="space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-2">
+          <h4 className="font-semibold text-sm text-foreground">
+            Canvas Spacing
+          </h4>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
+              title="Close"
+            >
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Canvas Padding Info */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground mb-2 block">
+            Canvas Padding
+          </Label>
+          <div className="p-4 rounded-lg bg-muted border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <BetweenVerticalStart className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                Current: {props.padding}px
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Canvas padding controls the space around your mockup. This setting
+              is currently fixed at 60px.
+            </p>
+          </div>
+        </div>
+
+        {/* Mockup Spacing Reference */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground mb-2 block">
+            Mockup Spacing
+          </Label>
+          <div className="p-4 rounded-lg bg-muted/50 border border-border">
+            <p className="text-xs text-muted-foreground">
+              To adjust spacing between multiple mockups, go to{" "}
+              <span className="font-medium text-foreground">
+                Layout → Mockups
+              </span>{" "}
+              and select two mockups layout mode.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBrandingPopover = (onClose?: () => void) => {
+    return (
+      <div className="space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-2">
+          <h4 className="font-semibold text-sm text-foreground">Branding</h4>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-accent transition-colors"
+              title="Close"
+            >
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Upload Image */}
+        <div>
+          <Label className="text-xs text-muted-foreground mb-2 block">
+            Logo / Image
+          </Label>
+          {props.branding?.url ? (
+            <div className="relative group">
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+                <Image
+                  src={props.branding.url}
+                  alt="Branding"
+                  width={300}
+                  height={169}
+                  className="w-full h-full object-contain"
+                  unoptimized
+                />
+              </div>
+              <button
+                onClick={() => {
+                  if (props.branding) {
+                    props.setBranding({
+                      ...props.branding,
+                      url: undefined,
+                    });
+                  }
+                }}
+                className="absolute top-2 right-2 h-7 w-7 rounded-md bg-destructive hover:bg-destructive/90 text-destructive-foreground cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove image"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <label
+                htmlFor="branding-upload-mobile"
+                className="w-full h-24 rounded-lg border-2 border-dashed border-border bg-muted hover:bg-muted/80 hover:border-primary/50 text-xs text-foreground cursor-pointer flex flex-col items-center justify-center gap-2 transition-colors"
+              >
+                <Upload className="h-5 w-5" />
+                <span>Upload Logo</span>
+              </label>
+              <input
+                id="branding-upload-mobile"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const url = event.target?.result as string;
+                      props.setBranding({
+                        id: `branding-${Date.now()}`,
+                        url,
+                        x: 50,
+                        y: 50,
+                        width: 200,
+                        height: 60,
+                        opacity: 1,
+                        rotation: 0,
+                        layout: "vertical",
+                        background: "default",
+                        badgeMode: "dark",
+                        badgeRadius: 12,
+                        glassMode: "light",
+                        glassRadius: 12,
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Text Field */}
+        <div>
+          <Label className="text-xs text-muted-foreground mb-2 block">
+            Text (optional)
+          </Label>
+          <input
+            type="text"
+            value={props.branding?.text || ""}
+            onChange={(e) => {
+              if (props.branding) {
+                props.setBranding({
+                  ...props.branding,
+                  text: e.target.value,
+                });
+              } else if (e.target.value) {
+                props.setBranding({
+                  id: `branding-${Date.now()}`,
+                  text: e.target.value,
+                  x: 50,
+                  y: 50,
+                  width: 200,
+                  height: 60,
+                  opacity: 1,
+                  rotation: 0,
+                  layout: "vertical",
+                  background: "default",
+                  badgeMode: "dark",
+                  badgeRadius: 12,
+                  glassMode: "light",
+                  glassRadius: 12,
+                });
+              }
+            }}
+            placeholder="Enter text..."
+            className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
+
+        {/* Layout */}
+        {props.branding && (
+          <>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Layout
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() =>
+                    props.setBranding({
+                      ...props.branding!,
+                      layout: "vertical",
+                    })
+                  }
+                  className={`h-16 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors ${
+                    props.branding.layout === "vertical"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  <div className="text-xs font-medium">Vertical</div>
+                  <div className="text-xs text-muted-foreground">
+                    Image on top
+                  </div>
+                </button>
+                <button
+                  onClick={() =>
+                    props.setBranding({
+                      ...props.branding!,
+                      layout: "horizontal",
+                    })
+                  }
+                  className={`h-16 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors ${
+                    props.branding.layout === "horizontal"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  <div className="text-xs font-medium">Horizontal</div>
+                  <div className="text-xs text-muted-foreground">
+                    Image on left
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Background Style */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Background
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "default", name: "Default", desc: "No background" },
+                  { id: "shadow", name: "Shadow", desc: "Subtle shadow" },
+                  { id: "glass", name: "Glass", desc: "Glassmorphism" },
+                  { id: "badge", name: "Badge", desc: "Solid badge" },
+                ].map((bg) => (
+                  <button
+                    key={bg.id}
+                    onClick={() =>
+                      props.setBranding({
+                        ...props.branding!,
+                        background: bg.id as
+                          | "default"
+                          | "shadow"
+                          | "glass"
+                          | "badge",
+                      })
+                    }
+                    className={`h-14 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center transition-colors ${
+                      props.branding && props.branding.background === bg.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-muted hover:bg-muted/80"
+                    }`}
+                  >
+                    <div className="text-xs font-medium">{bg.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {bg.desc}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Badge Configuration */}
+            {props.branding.background === "badge" && (
+              <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <Label className="text-xs text-muted-foreground">
+                  Badge Configuration
+                </Label>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    Mode
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() =>
+                        props.setBranding({
+                          ...props.branding!,
+                          badgeMode: "light",
+                        })
+                      }
+                      className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                        props.branding.badgeMode === "light"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div className="text-xs font-medium">Light</div>
+                    </button>
+                    <button
+                      onClick={() =>
+                        props.setBranding({
+                          ...props.branding!,
+                          badgeMode: "dark",
+                        })
+                      }
+                      className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                        !props.branding.badgeMode ||
+                        props.branding.badgeMode === "dark"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div className="text-xs font-medium">Dark</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    Border Radius
+                  </Label>
+                  <Slider
+                    value={[props.branding.badgeRadius ?? 12]}
+                    onValueChange={([v]) =>
+                      props.setBranding({
+                        ...props.branding!,
+                        badgeRadius: v,
+                      })
+                    }
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {props.branding.badgeRadius ?? 12}px
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Glass Configuration */}
+            {props.branding.background === "glass" && (
+              <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <Label className="text-xs text-muted-foreground">
+                  Glass Configuration
+                </Label>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    Mode
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() =>
+                        props.setBranding({
+                          ...props.branding!,
+                          glassMode: "light",
+                        })
+                      }
+                      className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                        !props.branding.glassMode ||
+                        props.branding.glassMode === "light"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div className="text-xs font-medium">Light</div>
+                    </button>
+                    <button
+                      onClick={() =>
+                        props.setBranding({
+                          ...props.branding!,
+                          glassMode: "dark",
+                        })
+                      }
+                      className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                        props.branding.glassMode === "dark"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div className="text-xs font-medium">Dark</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    Border Radius
+                  </Label>
+                  <Slider
+                    value={[props.branding.glassRadius ?? 12]}
+                    onValueChange={([v]) =>
+                      props.setBranding({
+                        ...props.branding!,
+                        glassRadius: v,
+                      })
+                    }
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {props.branding.glassRadius ?? 12}px
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Opacity */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Opacity
+              </Label>
+              <Slider
+                value={[props.branding.opacity * 100]}
+                onValueChange={([v]) =>
+                  props.setBranding({
+                    ...props.branding!,
+                    opacity: v / 100,
+                  })
+                }
+                min={0}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                {Math.round(props.branding.opacity * 100)}%
+              </div>
+            </div>
+
+            {/* Rotation */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Rotation
+              </Label>
+              <Slider
+                value={[props.branding.rotation]}
+                onValueChange={([v]) =>
+                  props.setBranding({
+                    ...props.branding!,
+                    rotation: v,
+                  })
+                }
+                min={-180}
+                max={180}
+                step={1}
+                className="w-full"
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                {props.branding.rotation}°
+              </div>
+            </div>
+
+            {/* Remove Button */}
+            <button
+              onClick={() => props.setBranding(undefined)}
+              className="w-full h-10 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-2 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="text-sm font-medium">Remove Branding</span>
+            </button>
+          </>
+        )}
+
+        {!props.branding && (
+          <div className="text-center py-8">
+            <div className="text-sm text-muted-foreground">
+              Upload an image or add text to get started
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -2435,6 +3836,7 @@ export function UnifiedMobileSidebar(props: UnifiedMobileSidebarProps) {
       <MainNavigationBar
         activeMainSection={activeMainSection}
         onSectionClick={setActiveMainSection}
+        layoutMode={props.layoutMode}
       />
 
       {/* Secondary Navigation Bar - Above main bar in position */}

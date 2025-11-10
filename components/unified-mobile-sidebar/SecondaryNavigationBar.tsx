@@ -14,9 +14,12 @@ import {
   Type,
   ZoomIn,
   Grid3X3,
+  BetweenVerticalStart,
+  SquarePlus,
+  Layers,
 } from "lucide-react";
 
-type MainSection = "mockup" | "frame" | "layout";
+type MainSection = "mockup" | "frame" | "layout" | "scene";
 
 interface SecondaryNavigationBarProps {
   activeMainSection: MainSection | null;
@@ -35,19 +38,28 @@ const getSecondaryButtons = (section: MainSection) => {
         { id: "media", label: "Media", iconName: "ImageIcon" },
         { id: "browser", label: "Style", iconName: "Monitor" },
         { id: "border", label: "Border", iconName: "Square" },
-        { id: "background", label: "Background", iconName: "Palette" },
         { id: "shadow", label: "Shadow", iconName: "SquaresExclude" },
       ];
     case "frame":
       return [
+        { id: "background", label: "Background", iconName: "Palette" },
+        { id: "spacing", label: "Spacing", iconName: "BetweenVerticalStart" },
+        { id: "branding", label: "Branding", iconName: "SquarePlus" },
+        { id: "scene-fx", label: "Scene FX", iconName: "Sparkles" },
         { id: "resolution", label: "Resolution", iconName: "Maximize" },
-        { id: "effects", label: "Effects", iconName: "Sparkles" },
+        { id: "effects", label: "Effects", iconName: "Layers" },
         { id: "text", label: "Text", iconName: "Type" },
       ];
     case "layout":
       return [
+        { id: "mockups", label: "Mockups", iconName: "SquarePlus" },
         { id: "zoom", label: "Zoom", iconName: "ZoomIn" },
         { id: "presets", label: "Presets", iconName: "Grid3X3" },
+      ];
+    case "scene":
+      return [
+        { id: "devices", label: "Devices", iconName: "SquarePlus" },
+        { id: "scene-builder", label: "Builder", iconName: "Layers" },
       ];
     default:
       return [];
@@ -58,8 +70,12 @@ const getIconComponent = (iconName: string) => {
   switch (iconName) {
     case "Smartphone":
       return MonitorSmartphone;
+    case "BetweenVerticalStart":
+      return BetweenVerticalStart;
     case "ImageIcon":
       return ImageIcon;
+    case "SquarePlus":
+      return SquarePlus;
     case "Monitor":
       return Monitor;
     case "Square":
@@ -78,6 +94,8 @@ const getIconComponent = (iconName: string) => {
       return ZoomIn;
     case "Grid3X3":
       return Grid3X3;
+    case "Layers":
+      return Layers;
     default:
       return MonitorSmartphone;
   }
@@ -107,11 +125,16 @@ export function SecondaryNavigationBar({
   const secondaryButtons = getSecondaryButtons(activeMainSection);
 
   if (activeSecondarySection) {
-    // Full-screen container for mobile device selection
-    if (isMobile && activeSecondarySection === "device") {
+    // Full-screen container for mobile device selection and scene builder
+    if (
+      isMobile &&
+      (activeSecondarySection === "device" ||
+        activeSecondarySection === "devices" ||
+        activeSecondarySection === "scene-builder")
+    ) {
       return (
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-50 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 export-exclude">
-          <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border-t border-white/20 rounded-t-3xl shadow-2xl shadow-black/50 animate-in slide-in-from-bottom duration-300">
+          <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl border-t border-border rounded-t-3xl shadow-2xl shadow-black/50 animate-in slide-in-from-bottom duration-300">
             <div className="p-4">
               {renderSecondaryContent(activeSecondarySection)}
             </div>
@@ -123,7 +146,7 @@ export function SecondaryNavigationBar({
     // Regular popover for other cases
     return (
       <div
-        className={`mx-4 mb-5 p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-black/20 animate-in slide-in-from-bottom-2 duration-300 z-50 ${
+        className={`mx-4 mb-5 p-4 rounded-2xl bg-card backdrop-blur-xl border border-border shadow-2xl shadow-black/20 animate-in slide-in-from-bottom-2 duration-300 z-50 ${
           isShadowPreviewMode ? "opacity-60 pointer-events-auto" : ""
         } export-exclude`}
       >
@@ -148,10 +171,10 @@ export function SecondaryNavigationBar({
                 variant="ghost"
                 size="sm"
                 onClick={() => onSecondaryClick(button.id)}
-                className={`shrink-0 w-24 min-h-12 px-4 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-white/10 backdrop-blur-sm group ${
+                className={`shrink-0 w-24 min-h-12 px-4 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-primary/10 backdrop-blur-sm group ${
                   activeSecondarySection === button.id
                     ? "bg-primary/20 border border-primary shadow-lg shadow-primary/20"
-                    : "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20"
+                    : "bg-muted hover:bg-accent border border-border hover:border-primary/50"
                 }`}
               >
                 <div className="flex flex-col items-center gap-1">
@@ -159,14 +182,14 @@ export function SecondaryNavigationBar({
                     className={`w-5 h-5 transition-colors ${
                       activeSecondarySection === button.id
                         ? "text-primary"
-                        : "text-white/90 group-hover:text-white"
+                        : "text-foreground/90 group-hover:text-foreground"
                     }`}
                   />
                   <span
                     className={`text-xs font-medium transition-colors text-center ${
                       activeSecondarySection === button.id
                         ? "text-primary"
-                        : "text-white/90 group-hover:text-white"
+                        : "text-foreground/90 group-hover:text-foreground"
                     }`}
                   >
                     {button.label}
