@@ -12,7 +12,7 @@ const styles = [
       "Linear Gradients",
       "Radial Gradients",
       "Solid Colors",
-      "Pattern Overlays",
+      "Textures",
     ],
   },
   {
@@ -34,7 +34,7 @@ const styles = [
     features: [
       "Noise Efect",
       "Blur Effect",
-      "Color Control",
+      "Lense Blur (Comming Soon)",
       "Intensity Adjustment",
     ],
   },
@@ -47,7 +47,7 @@ const styles = [
       "Zoom Control",
       "Position Adjustment",
       "Layout Presets",
-      "Multiple Mockups (Coming Soon)",
+      "Multiple Mockups",
     ],
   },
 ];

@@ -75,8 +75,8 @@ export function Footer({
               <span className="text-xl font-bold text-white">Mokkio</span>
             </div>
             <p className="text-gray-400 mb-4">
-              Create stunning mockups in seconds. Free, no sign-up, and no
-              watermark.
+              Create stunning mockups in seconds. Free, no sign-up, add your own
+              branding.
             </p>
             {showStartButton && onStartClick && (
               <button

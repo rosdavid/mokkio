@@ -24,7 +24,7 @@ export function HeroSection() {
       <div className="relative max-w-4xl mx-auto z-10 pt-10">
         <div className="mb-8 mt-8 animate-in fade-in duration-1000 delay-100">
           <span className="inline-block bg-purple-500/60 text-purple-100 border border-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-4 animate-in fade-in duration-1000 delay-200">
-            ✨ Currently in v1.0.0-beta.3 - Free to Use! 🚀
+            ✨ Currently in v1.0.0-beta.4 - Free to Use! 🚀
           </span>
         </div>
 

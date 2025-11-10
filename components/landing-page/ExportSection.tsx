@@ -94,8 +94,8 @@ export function ExportSection() {
               Ready to Export?
             </h3>
             <p className="text-white/70 mb-6">
-              Your mockups are exported instantly with professional quality. No
-              watermarks, no limits.
+              Your mockups are exported instantly with professional quality. Add
+              your branding, no limits.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               <div className="flex items-center space-x-2 text-white/60">
