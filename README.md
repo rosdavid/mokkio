@@ -1,22 +1,16 @@
 # Mokkio
 
-[![Version](https://img.shields.io/badge/version-1.0.0--beta.3-blue.svg)](https://github.com/rosdavid/mokkio/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0--beta.4-blue.svg)](https://github.com/rosdavid/mokkio/releases)
 
-A high-performance, production-ready web application for creating professional device mockups with advan- [ ] Validate performance metrics
+A high-performance application for creating professional device mockups with advanced capabilities. Built with modern web technologies and optimized for both developer experience and end-user performance
 
-## 📄 License
-
-This project is proprietary and confidential. All rights reserved.
-
-## 📚 Documentation & Resources
+## Resources
 
 - **[CHANGELOG.md](CHANGELOG.md)** - Complete change history and version notes
-- **[AUTH_SETUP.md](AUTH_SETUP.md)** - Detailed authentication setup guide
-- **[GitHub Repository](https://github.com/rosdavid/mokkio)** - Source code and issue tracking
 - **[Live Demo](https://mokkio.vercel.app)** - Try Mokkio online
 - **[David Ros Ferrer](https://davidros.vercel.app)** - Portfolio and contact
 
-## 🆘 Support & Contact
+## Support & Contact
 
 - **Issues**: [GitHub Issues](https://github.com/rosdavid/mokkio/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/rosdavid/mokkio/discussions)
@@ -24,29 +18,48 @@ This project is proprietary and confidential. All rights reserved.
 
 For business inquiries or custom development, please reach out through the contact form on my website.
 
-## 🙏 Acknowledgments capabilities. Built with modern web technologies and optimized for both developer experience and end-user performance.
-
-## 🚀 Features
-
 ### Core Functionality
 
-- **Device Mockup Engine**: Pixel-perfect rendering for iPhone 17 Pro/Max (Blue/Silver/Orange Titanium), iPad Pro, MacBook Pro, and browser frames with hardware-accelerated graphics
-- **Interactive Canvas System**: Advanced canvas with drag-and-drop positioning, collision detection, and real-time preview rendering
+- **Device Mockup Engine**: Pixel-perfect rendering for iPhone 17 Pro/Max (Blue/Silver/Orange Titanium), iPad Pro 13, MacBook Pro 16, and browser frames (Chrome/Safari) with hardware-accelerated graphics
+- **Scene Builder**: Multi-device layout system for creating complex mockup scenes with multiple devices, custom positioning, scaling, rotation, and z-index control
+- **Interactive Canvas System**: Advanced canvas with drag-and-drop positioning, collision detection, smart guides, and real-time preview rendering
 - **Text Overlay System**: Complete typography controls with font family, size, weight, color, opacity, alignment, and spacing adjustments
 
 ### Advanced Styling & Effects
 
-- **Material Design System**: Glass and liquid effects for device frames with customizable edge thickness and dynamic lighting
-- **Background Rendering Pipeline**: 7 background types including solid colors (72+ options), linear gradients (24 presets), radial gradients (12 presets), cosmic gradients (10 presets), textures (12 options), custom image uploads and transparent background
-- **Shadow & Lighting Engine**: Advanced shadow presets with blur, spread, and color controls using CSS box-shadow and filter APIs
+- **Material Design System**: Glass, liquid, and retro effects for device frames with customizable edge thickness and dynamic lighting
+- **Background Rendering Pipeline**: Multiple background types including:
+  - Solid colors (72+ options)
+  - Linear gradients (24 presets)
+  - Radial gradients (12 presets)
+  - Cosmic gradients (10 presets)
+  - Magical AI-generated gradients
+  - Textures (12+ options)
+  - Custom image uploads
+  - Transparent background
+- **Shadow & Lighting Engine**: Advanced shadow presets (none, spread, hug, adaptive) with custom blur, spread, offset, and color controls
 - **Color Management**: OKLCH color space implementation with perceptual uniformity and WCAG 2.1 AA compliance
+
+### Layout System
+
+- **Multiple Layout Modes**:
+  - Single mockup display
+  - Double mockup (side-by-side with adjustable spacing)
+  - Scene Builder (build your own mockup)
+- **Layout Presets**: Pre-configured layouts including centered, perspective, tilt 3D, isometric, flat plate, and more
+- **Responsive Layouts**: Automatic adaptation for different screen sizes and orientations
 
 ### User Experience
 
-- **Responsive Design**: Adaptive layouts optimized for mobile, tablet, and desktop with touch gesture recognition and cross-platform compatibility
+- **Responsive Design**: Adaptive layouts optimized for mobile, tablet, and desktop with:
+  - Touch gesture recognition
+  - Mobile-optimized sidebar with collapsible sections
+  - Unified navigation system
+  - Cross-platform compatibility
 - **Theme System**: Complete light/dark/system theme support with automatic system preference detection
 - **Keyboard Shortcuts**: Comprehensive shortcuts for undo/redo/export operations with cross-platform support
 - **Accessibility**: Full WCAG 2.1 AA compliance with ARIA labels, keyboard navigation, and screen reader support
+- **Smart Guides & Snapping**: Visual guides for precise alignment with snap-to-grid and element-to-element snapping
 
 ### Mockup Management
 
@@ -65,136 +78,6 @@ For business inquiries or custom development, please reach out through the conta
 - **Role-Based Access**: Admin and user role system with protected routes and permissions
 - **Real-time Presence**: Live tracking of online users with real-time updates
 
-## 🏗️ Arquitectura Profesional
-
-### Estructura del Proyecto
-
-```
-mokkio/
-├── src/                          # Código fuente principal
-│   ├── app/                      # Next.js App Router
-│   ├── components/               # Componentes React organizados por dominio
-│   │   ├── ui/                   # Componentes base/UI reutilizables (shadcn/ui)
-│   │   ├── auth/                 # Componentes de autenticación
-│   │   ├── mockup/               # Componentes relacionados con mockups
-│   │   ├── admin/                # Componentes de administración
-│   │   ├── layout/               # Componentes de layout
-│   │   └── index.ts              # Barrel exports para componentes
-│   ├── hooks/                    # Custom hooks organizados por dominio
-│   │   ├── auth/                 # Hooks de autenticación
-│   │   ├── ui/                   # Hooks de UI
-│   │   ├── mockup/               # Hooks de mockups
-│   │   └── index.ts              # Barrel exports para hooks
-│   ├── lib/                      # Utilidades y configuraciones
-│   │   ├── auth/                 # Utilidades de autenticación
-│   │   ├── mockup/               # Utilidades de mockups
-│   │   ├── ui/                   # Utilidades de UI
-│   │   ├── config/               # Configuraciones centralizadas
-│   │   └── index.ts              # Barrel exports para utilidades
-│   ├── types/                    # Definiciones TypeScript
-│   │   ├── mockup/               # Tipos relacionados con mockups
-│   │   ├── api/                  # Tipos de API
-│   │   ├── ui/                   # Tipos de UI
-│   │   └── index.ts              # Barrel exports para tipos
-│   ├── utils/                    # Utilidades generales
-│   └── constants/                # Constantes de la aplicación
-├── config/                       # Configuraciones centralizadas
-│   ├── database/                 # Scripts y configuraciones de BD
-│   ├── deployment/               # Configuraciones de deployment
-│   └── development/              # Configuraciones de desarrollo
-├── scripts/                      # Scripts de desarrollo y deployment
-│   ├── build/                    # Scripts de build
-│   ├── deploy/                   # Scripts de deployment
-│   └── dev/                      # Scripts de desarrollo
-├── docs/                         # Documentación estructurada
-│   ├── api/                      # Documentación de APIs
-│   ├── architecture/             # Documentación de arquitectura
-│   └── development/              # Guías de desarrollo
-├── tests/                        # Tests organizados
-│   ├── unit/                     # Tests unitarios
-│   ├── integration/              # Tests de integración
-│   └── e2e/                      # Tests end-to-end
-├── public/                       # Archivos estáticos
-└── package.json                  # Dependencias y scripts
-```
-
-### Principios de Organización
-
-- **Separación por dominio**: Los componentes, hooks, utilidades y tipos están organizados por dominio funcional (auth, mockup, ui, admin).
-- **Barrel exports**: Cada directorio principal tiene un archivo `index.ts` para facilitar las importaciones.
-- **Configuración centralizada**: Las configuraciones están separadas del código fuente.
-- **Documentación estructurada**: La documentación está organizada por tipo y propósito.
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ with npm or yarn
-- Modern web browser with Canvas API support
-
-### Installation & Setup
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/rosdavid/mokkio.git
-   cd mokkio
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment** (see Database Setup section)
-
-4. **Start development server**:
-   ```bash
-   npm run dev
-   ```
-
-### Available Scripts
-
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production with Turbopack
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint for code quality checks
-
-### Database Setup
-
-#### Supabase Configuration
-
-1. **Create a Supabase Project**:
-
-   - Go to [supabase.com](https://supabase.com) and create a new account
-   - Create a new project and wait for initialization
-
-2. **Get Project Credentials**:
-
-   - Navigate to Settings → API in your Supabase dashboard
-   - Copy the Project URL and API keys (anon/public and service_role)
-
-3. **Configure Environment Variables**:
-   Create a `.env.local` file in your project root with:
-
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-   ```
-
-4. **Database Schema Setup**:
-
-   - Go to SQL Editor in your Supabase dashboard
-   - Run the SQL script from `database-setup.sql` to create the `saved_mockups` table
-   - Enable Row Level Security (RLS) for data protection
-
-5. **Authentication Setup** (Optional):
-   - For full authentication features, follow the detailed guide in `AUTH_SETUP.md`
-   - Create additional tables for user profiles and admin functionality
-   - Configure authentication policies and admin user roles
-
 ### Usage
 
 1. **Device Selection**: Choose from iPhone 17 Pro/Max (Blue/Silver/Orange Titanium), iPad Pro, MacBook Pro, or browser frames (Chrome/Safari)
@@ -203,32 +86,61 @@ mokkio/
 4. **Responsive Preview**: Test across mobile/tablet/desktop breakpoints with unified interface controls
 5. **Export**: Generate high-resolution images with multiple format options and quality settings
 
-## 📊 Performance Metrics
+## Performance Metrics
 
-- **Bundle Size**: ~167KB gzipped with optimized code splitting
+- **Bundle Size**: ~181KB First Load JS with optimized code splitting
 - **First Paint**: <1.2s on modern devices with progressive loading
 - **Canvas Rendering**: 60fps with hardware acceleration and debounced updates
 - **Memory Usage**: <50MB for typical workflows with efficient caching
 - **Lighthouse Score**: 95+ across all categories (mobile, tablet, desktop)
 - **Responsive Performance**: Consistent 60fps across mobile/tablet breakpoints
+- **Build Time**: ~4.7s with Turbopack optimization
 
-## � API Reference
+## 🔐 Security Features
 
-Mokkio provides RESTful APIs for mockup management and administrative functions.
+Mokkio implements enterprise-grade security measures:
+
+- **Authentication Middleware**: Supabase SSR with secure cookie handling
+- **Role-Based Access Control (RBAC)**: Protected admin routes and APIs
+- **Rate Limiting**: Token bucket algorithm to prevent API abuse
+  - Public APIs: 10 requests/minute per IP
+  - Admin APIs: 20 requests/minute per IP
+  - Export API: 3 requests/minute per IP (resource-intensive)
+- **IP Detection**: Smart IP extraction (proxy, Cloudflare compatible)
+- **Security Headers**: X-RateLimit-\* headers for transparency
+- **HTTP 429 Responses**: Proper rate limit error handling with `retryAfter`
+
+## API Reference
+
+Mokkio provides RESTful APIs for mockup management and administrative functions. All APIs are protected with rate limiting.
 
 ### Mockup Management APIs
 
-- **GET** `/api/export` - Export mockup as image
-- **GET** `/api/mockups` - Retrieve all saved mockups
-- **POST** `/api/mockups` - Save a new mockup
-- **PUT** `/api/mockups/[id]` - Update an existing mockup
-- **DELETE** `/api/mockups/[id]` - Delete a mockup
+- **GET** `/api/export` - Export mockup as image (⚠️ Rate Limited: 3/min)
+- **GET** `/api/mockups` - Retrieve all saved mockups (⚠️ Rate Limited: 10/min)
+- **POST** `/api/mockups` - Save a new mockup (⚠️ Rate Limited: 10/min)
+- **PUT** `/api/mockups/[id]` - Update an existing mockup (⚠️ Rate Limited: 10/min)
+- **DELETE** `/api/mockups/[id]` - Delete a mockup (⚠️ Rate Limited: 10/min)
 
-### Admin APIs
+### Admin APIs (🔒 Protected)
 
-- **GET** `/api/admin/users` - List all users (admin only)
-- **PATCH** `/api/admin/users/[userId]` - Update user status (admin only)
-- **GET** `/api/admin/analytics` - Get user analytics (admin only)
+All admin endpoints require authentication + admin role:
+
+- **GET** `/api/admin/users` - List all users (⚠️ Rate Limited: 20/min)
+- **GET** `/api/admin/analytics` - Get analytics data (⚠️ Rate Limited: 20/min)
+- **GET** `/api/admin/online-users` - Get active users (⚠️ Rate Limited: 20/min)
+- **PATCH** `/api/admin/users/[userId]` - Update user (⚠️ Rate Limited: 20/min)
+
+### Rate Limit Response Headers
+
+All API responses include rate limit information:
+
+```
+X-RateLimit-Limit: 10           // Maximum requests per window
+X-RateLimit-Remaining: 7        // Requests remaining
+X-RateLimit-Reset: 2025-11-08T... // When the limit resets
+Retry-After: 45                 // Seconds to wait (429 only)
+```
 
 ### Authentication APIs
 
@@ -237,46 +149,7 @@ All authentication is handled through Supabase Auth, with additional endpoints f
 - **POST** `/api/auth/callback` - Handle auth callbacks
 - **GET** `/api/auth/session` - Get current session info
 
-## �🔧 Development
-
-### Project Structure
-
-```
-├── app/                          # Next.js App Router pages and API routes
-│   ├── api/                      # API endpoints (export, admin, auth)
-│   ├── [pages]/                  # Static pages (cookie-policy, privacy-policy, etc.)
-│   ├── layout.tsx                # Root layout component
-│   ├── page.tsx                  # Home page
-│   └── globals.css               # Global styles
-├── src/                          # Source code organized by domain
-│   ├── components/               # React components by domain
-│   │   ├── ui/                   # Reusable UI components (shadcn/ui)
-│   │   ├── auth/                 # Authentication components
-│   │   ├── mockup/               # Mockup-related components
-│   │   ├── admin/                # Admin components
-│   │   └── layout/               # Layout components
-│   ├── hooks/                    # Custom React hooks by domain
-│   ├── lib/                      # Utilities and configurations by domain
-│   ├── types/                    # TypeScript definitions by domain
-│   ├── utils/                    # General utilities
-│   └── constants/                # Application constants
-├── config/                       # Centralized configurations
-│   ├── database/                 # Database scripts and configs
-│   ├── deployment/               # Deployment configurations
-│   └── development/              # Development configurations
-├── scripts/                      # Development and deployment scripts
-├── docs/                         # Structured documentation
-├── tests/                        # Organized test suites
-├── public/                       # Static assets (images, icons, manifest)
-├── AUTH_SETUP.md                 # Authentication setup guide
-├── CHANGELOG.md                  # Project changelog
-├── database-setup.sql            # Database schema (moved to config/database/)
-├── middleware.ts                 # Next.js middleware
-├── next.config.ts                # Next.js configuration
-├── package.json                  # Dependencies and scripts
-├── tailwind.config.ts            # Tailwind CSS configuration
-└── tsconfig.json                 # TypeScript configuration
-```
+## Development
 
 ### Key Components
 
@@ -293,7 +166,7 @@ All authentication is handled through Supabase Auth, with additional endpoints f
 - **History System**: Undo/redo with command pattern implementation
 - **Theme Provider**: SSR-safe theme management with next-themes
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow our development guidelines:
 
@@ -304,56 +177,11 @@ We welcome contributions! Please follow our development guidelines:
 5. **Push** to your branch: `git push origin feature/amazing-feature`
 6. **Open** a Pull Request with detailed description
 
-### Development Guidelines
-
-- **TypeScript**: Strict mode with no `any` types
-- **Testing**: Manual testing for critical user flows and integration points
-- **Performance**: Profile and optimize rendering bottlenecks
-- **Accessibility**: WCAG 2.1 AA compliance for all new features
-- **Code Quality**: ESLint, Prettier, and comprehensive linting rules
-
-## � Deployment
-
-### Vercel (Recommended)
-
-1. **Connect Repository**:
-
-   - Import your GitHub repository to Vercel
-   - Configure build settings (automatically detected for Next.js)
-
-2. **Environment Variables**:
-
-   - Add all Supabase environment variables in Vercel dashboard
-   - Configure production database URL if different from development
-
-3. **Deploy**:
-   - Push to main branch to trigger automatic deployment
-   - Vercel Analytics and Speed Insights are pre-configured
-
-### Other Platforms
-
-Mokkio can be deployed to any platform supporting Next.js:
-
-- **Netlify**: Configure build command as `npm run build` and publish directory as `.next`
-- **Railway**: Connect GitHub repo and set environment variables
-- **Render**: Use the Node.js runtime with build command `npm run build`
-- **Self-hosted**: Use `npm run start` after building
-
-### Production Checklist
-
-- [ ] Configure production Supabase project
-- [ ] Set up proper Row Level Security policies
-- [ ] Configure admin user roles
-- [ ] Test all authentication flows
-- [ ] Verify export functionality
-- [ ] Check responsive design across devices
-- [ ] Validate performance metrics
-
-## �📄 License
+## License
 
 This project is proprietary and confidential. All rights reserved.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Next.js**: React framework with App Router and Server Components
 - **shadcn/ui**: High-quality UI components built on Radix UI
