@@ -1,8 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { adminApiLimiter, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await adminApiLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "20",
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(rateLimitResult.reset).toISOString(),
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
+        }
+      );
+    }
+
     // Get user registration stats for the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -12,7 +36,7 @@ export async function GET() {
       await supabaseAdmin.auth.admin.listUsers();
 
     if (usersError) {
-      console.error("Error fetching users:", usersError);
+      logger.error("Error fetching users:", usersError);
       return NextResponse.json(
         { error: "Failed to fetch analytics" },
         { status: 500 }
@@ -50,7 +74,7 @@ export async function GET() {
       dailySignups,
     });
   } catch (error) {
-    console.error("Unexpected error:", error);
+    logger.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

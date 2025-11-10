@@ -1,8 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { adminApiLimiter, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await adminApiLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "20",
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(rateLimitResult.reset).toISOString(),
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
+        }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
 
     // Get users who have signed in recently (last 24 hours)
@@ -14,7 +38,7 @@ export async function GET() {
     const { data: recentUsers, error } = await supabase.auth.admin.listUsers();
 
     if (error) {
-      console.error("Error fetching users:", error);
+      logger.error("Error fetching users:", error);
       return NextResponse.json(
         { error: "Failed to fetch users" },
         { status: 500 }
@@ -38,7 +62,7 @@ export async function GET() {
 
     return NextResponse.json({ onlineUsers });
   } catch (error) {
-    console.error("Error in online-users API:", error);
+    logger.error("Error in online-users API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

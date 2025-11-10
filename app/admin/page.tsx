@@ -16,6 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
 
 interface User {
   id: string;
@@ -80,7 +81,7 @@ export default function AdminPage() {
       const data = await response.json();
       setUsers(data.users || []);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      logger.error("Error fetching users:", error);
     } finally {
       setLoadingUsers(false);
     }
@@ -92,7 +93,7 @@ export default function AdminPage() {
       const data = await response.json();
       setAnalytics(data);
     } catch (error) {
-      console.error("Error fetching analytics:", error);
+      logger.error("Error fetching analytics:", error);
     } finally {
       setLoadingAnalytics(false);
     }
@@ -110,7 +111,7 @@ export default function AdminPage() {
         fetchUsers(); // Refresh the list
       }
     } catch (error) {
-      console.error("Error updating user:", error);
+      logger.error("Error updating user:", error);
     }
   };
 
@@ -120,7 +121,7 @@ export default function AdminPage() {
       const data = await response.json();
       setOnlineUsersFromAPI(data.onlineUsers || []);
     } catch (error) {
-      console.error("Error fetching online users:", error);
+      logger.error("Error fetching online users:", error);
     }
   };
 
@@ -154,7 +155,7 @@ export default function AdminPage() {
       // Also fetch from API as fallback
       await fetchOnlineUsers();
     } catch (error) {
-      console.error("Error refreshing online users:", error);
+      logger.error("Error refreshing online users:", error);
     } finally {
       setTimeout(() => setRefreshingOnline(false), 1000);
     }
