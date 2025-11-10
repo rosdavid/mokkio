@@ -3,6 +3,12 @@ import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.20.10.4"],
+  // Increase body size limit for image uploads (AI gradient generation)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
 // Only apply PWA wrapper when not using Turbopack

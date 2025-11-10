@@ -6,6 +6,18 @@ interface AIGradientResponse {
   gradient: string;
 }
 
+// Increase body size limit for this route (images can be large)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
+// Set max duration for this serverless function (Vercel)
+export const maxDuration = 60; // 60 seconds max
+
 export async function POST(request: NextRequest) {
   try {
     logger.log("API Route called: generate-gradients");
@@ -13,12 +25,9 @@ export async function POST(request: NextRequest) {
     const { imageSrc } = await request.json();
     logger.log("Image source received:", imageSrc ? "present" : "missing");
 
-    if (!imageSrc) {
-      return NextResponse.json(
-        { error: "Image source is required" },
-        { status: 400 }
-      );
-    }
+    // Note: We don't actually need the full image data since we're not using vision models
+    // We just need to know that the user has an image to generate appropriate gradients
+    const hasImage = !!imageSrc;
 
     // Check if API key is available
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -31,46 +40,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert image to base64 for potential future vision model support
-    // Note: Current free models don't reliably support vision, so we use text-based generation
-    logger.log("Preparing for gradient generation...");
-    let imageBase64: string | null = null;
-    const imageMetadata = {
-      hasImage: !!imageSrc,
-      type: "unknown" as string,
-    };
-
-    if (imageSrc) {
-      try {
-        // Extract image type and metadata for context
-        if (imageSrc.startsWith("data:image/")) {
-          const match = imageSrc.match(/data:image\/(\w+);/);
-          imageMetadata.type = match ? match[1] : "unknown";
-          imageBase64 = imageSrc.split(",")[1];
-          logger.log(
-            `Data URL detected, type: ${imageMetadata.type}, size: ${imageBase64?.length || 0} bytes`
-          );
-        } else {
-          // It's a URL - extract hints from filename/path
-          const url = new URL(imageSrc);
-          const pathLower = url.pathname.toLowerCase();
-          if (pathLower.includes(".png")) imageMetadata.type = "png";
-          else if (pathLower.includes(".jpg") || pathLower.includes(".jpeg"))
-            imageMetadata.type = "jpeg";
-          else if (pathLower.includes(".webp")) imageMetadata.type = "webp";
-
-          logger.log(`Image URL provided: ${imageSrc.substring(0, 100)}...`);
-        }
-      } catch (error) {
-        logger.warn("Could not process image metadata:", error);
-      }
-    }
+    // We don't process the image to reduce payload size and avoid 413 errors
+    // Vision models in free tier are unreliable anyway
+    logger.log("Generating professional gradients (text-based AI)...");
 
     const prompt = `You are an expert CSS gradient designer creating backgrounds for mockup presentations.
 
 **YOUR TASK:**
 Create 12 stunning, professional-grade CSS gradients perfect for modern mockup backgrounds.
-The user has uploaded an image${imageMetadata.hasImage ? ` (${imageMetadata.type} format)` : ""} for their mockup.
+The user is creating a mockup presentation and needs beautiful gradient backgrounds.
 
 **GRADIENT REQUIREMENTS:**
 - Generate EXACTLY 12 unique, visually striking gradients

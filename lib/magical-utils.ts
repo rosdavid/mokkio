@@ -176,13 +176,62 @@ export const generateMagicalGradientsWithAI = async (
   imageSrc: string
 ): Promise<MagicalGradient[]> => {
   try {
+    // Optimize image size before sending to API to avoid 413 errors
+    let optimizedImageSrc = imageSrc;
+
+    // If it's a data URL, try to compress it
+    if (imageSrc.startsWith("data:image/")) {
+      try {
+        // Create an image element to resize
+        const img = new Image();
+        img.src = imageSrc;
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        // Resize to max 800px width/height to reduce payload size
+        const maxSize = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+
+          // Create canvas and resize
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Convert to JPEG with 0.8 quality for smaller size
+            optimizedImageSrc = canvas.toDataURL("image/jpeg", 0.8);
+            logger.log(
+              `Image optimized: ${imageSrc.length} -> ${optimizedImageSrc.length} bytes`
+            );
+          }
+        }
+      } catch (error) {
+        logger.warn("Could not optimize image, using original:", error);
+        // Continue with original image
+      }
+    }
+
     // Call the API route instead of making direct OpenRouter calls
     const response = await fetch("/api/generate-gradients", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ imageSrc }),
+      body: JSON.stringify({ imageSrc: optimizedImageSrc }),
     });
 
     if (!response.ok) {
