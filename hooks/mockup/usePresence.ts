@@ -48,11 +48,11 @@ export function usePresence() {
           }) as OnlineUser[];
         setOnlineUsers(users);
       })
-      .on("presence", { event: "join" }, ({ key, newPresences }) => {
-        console.log("User joined:", key, newPresences);
+      .on("presence", { event: "join" }, () => {
+        // User joined - presence state updated
       })
-      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-        console.log("User left:", key, leftPresences);
+      .on("presence", { event: "leave" }, () => {
+        // User left - presence state updated
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
