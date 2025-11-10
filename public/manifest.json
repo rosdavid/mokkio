@@ -4,8 +4,8 @@
   "description": "Transform your designs into professional device mockups with Mokkio. Perfect for presentations, portfolios, and marketing materials.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#101015",
+  "theme_color": "#101015",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
