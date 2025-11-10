@@ -2,6 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.4] - 2025-11-07
+
+### �🚀 Features
+
+- **Scene FX System**: Complete scene effects system for adding overlay/underlay shadows and visual effects to mockups with layer control, opacity management, and 20 shadow presets
+- **Scene Builder System**: Complete multi-device layout system for creating complex mockup compositions with multiple devices, custom positioning, scaling, rotation, and z-index control
+- **Mobile Scene Builder**: Full-featured Scene Builder implementation for mobile devices with touch-optimized interactions and unified sidebar integration
+- **Layout Mode System**: Expanded layout options with Single, Double, Triple, and Scene Builder modes for flexible mockup composition
+- **Smart Device Frame Filtering**: Type-specific device frame filtering system that shows only relevant frame options based on device type (browsers: display/light/dark; mobile: display/color variants; tablets: display/gray/silver)
+- **Scene Builder Overlays**: Visual indicators for disabled features in Scene Builder mode with informative messaging and consistent design patterns
+
+### ✨ Added
+
+- **Scene Builder Mobile Interface**:
+  - Full-screen modal pattern for Scene Builder (matching device selector UX)
+  - Collapsible device sections with expand/collapse functionality using state management
+  - Device-specific configuration panels with frame selection, positioning, scaling, and rotation controls
+  - Add Devices menu with 3-column grid layout and device thumbnails for easy selection
+  - Touch-optimized interactions for mobile and tablet devices with gesture recognition
+  - Device deletion with confirmation and state cleanup
+
+- **Scene FX Implementation**:
+  - Mode toggle between Default (no effects) and Shadows for clean UX
+  - 20 shadow overlay
+  - Opacity slider (0-100%) for precise effect control
+  - Layer positioning: Overlay (above all content) or Underlay (behind mockups)
+  - Default button automatically clears active effects for quick reset
+  - Full desktop and mobile implementation with unified UX patterns
+  - Export compatibility: shadows included in exported images
+
+- **Background System Enhancements**:
+  - Maintained aspect-ratio for natural appearance
+  - All backgrounds preserve original dimensions without stretching
+
+- **Device Frame System Enhancements**:
+  - Browser frames: display, light, dark variants only
+  - iPhone frames: display, blue, silver, orange (titanium color variants)
+  - iPad/MacBook frames: display, gray, silver variants
+  - Automatic filtering based on selected device type for cleaner UX
+
+- **Layout System**:
+  - Scene Builder mode with unlimited device placement and custom layouts
+  - Layout presets overlay in right sidebar when Scene Builder is active
+  - Visual feedback with EyeOff icon and explanatory text for disabled features
+  - Seamless mode switching with state preservation and history management
+
+- **Navigation Improvements**:
+  - Secondary navigation bar with Scene Builder section for mobile/tablet
+  - Unified mobile sidebar integration with collapsible sections
+  - Consistent modal patterns across device selection and Scene Builder interfaces
+
+### 🔄 Changed
+
+- **Mobile UX Refinements**:
+  - Improved Add Devices menu design with simple grid-based layout and better visual hierarchy
+  - Enhanced touch targets for better mobile interaction and accessibility
+
+- **Right Sidebar Layout**:
+  - Improved visual hierarchy with positioned overlay
+  - Changed overlay icon for better semantic meaning
+  - Adjusted overlay positioning from center to top for better visibility
+
+### 🐛 Fixed
+
+- **Device Frame Display Issues**:
+  - Fixed browsers showing incorrect frame options (mobile color variants)
+  - Fixed mobile devices showing tablet/desktop-specific frame options
+  - Ensured consistent frame filtering logic across all device types
+
+### 🛠️ Technical Improvements
+
+- **Mobile Performance**:
+  - Optimized touch interactions with proper event handling and debouncing
+  - Improved rendering performance with conditional rendering and memoization
+  - Enhanced scroll behavior with optimized modal height calculations
+  - Better memory management with proper cleanup in useEffect hooks
+
 ## [1.0.0-beta.3] - 2025-11-05
 
 ### 🚀 Features
@@ -21,7 +98,6 @@ All notable changes to this project will be documented in this file.
 - **Device Styles**: Added device styles for iPhone 17 Pro Max with hardware-accelerated glass effects and liquid surface rendering
 
 - **Text Overlay Functionality**:
-
   - Full CRUD operations for text overlays with optimistic updates and conflict resolution
   - Drag-and-drop positioning with collision detection and snap-to-grid functionality
   - Advanced typography controls including font family, size, weight, color, and opacity with real-time preview
@@ -30,11 +106,9 @@ All notable changes to this project will be documented in this file.
   - Real-time text preview with debounced updates and canvas-based rendering optimization
 
 - **Background Types Added**:
-
   - `textures`: Multiple texture combinations with procedural generation and caching strategies
 
 - **Device Style System**:
-
   - `default`: Standard device appearance
   - `glass-light`: Light glass effect with transparency blending and blur filters
   - `glass-dark`: Dark glass effect with depth perception and shadow mapping
@@ -42,7 +116,6 @@ All notable changes to this project will be documented in this file.
   - **Style Edge Control**: Adjustable edge thickness (0-50px) with smooth interpolation and performance-optimized rendering
 
 - **Enhanced UI Components**:
-
   - Improved sidebar layouts with flexbox-based responsive design and CSS Grid fallbacks
   - Better component spacing with consistent design system metrics and visual hierarchy
   - Refined color schemes with WCAG 2.1 AA compliance and improved contrast ratios
@@ -58,7 +131,6 @@ All notable changes to this project will be documented in this file.
 - **Smart Mockup State Detection**: Automatic detection of editing vs new mockup states with localStorage persistence and visual indicators
 
 - **Authentication System**:
-
   - User registration and login with email/password authentication
   - Secure password reset functionality with email verification
   - User profile management with username customization
@@ -67,7 +139,6 @@ All notable changes to this project will be documented in this file.
   - Social login integration capabilities (prepared for future OAuth providers)
 
 - **Mockup Persistence System**:
-
   - Complete CRUD operations for mockup storage in Supabase database
   - Automatic saving with optimistic updates and conflict resolution
   - Mockup versioning and history tracking with undo/redo capabilities
@@ -75,7 +146,6 @@ All notable changes to this project will be documented in this file.
   - Public/private mockup visibility controls and sharing features
 
 - **API Infrastructure**:
-
   - RESTful API endpoints for mockup management
   - User profile API with secure data handling
   - Export functionality API for high-quality image generation
@@ -85,19 +155,13 @@ All notable changes to this project will be documented in this file.
 - **My Mockups Interface**: Dedicated page for viewing, editing, and managing saved mockups with grid layout and search functionality
 
 - **Application Pages**:
-
   - `/my-mockups`: User dashboard for managing saved mockups with CRUD operations
-  - `/admin`: Administrative dashboard with user analytics, system monitoring, and content management
   - `/cookie-policy`, `/privacy-policy`, `/terms-of-service`: Legal compliance pages with responsive design
   - Landing pages with mobile/desktop variants for optimal user experience
-  - Admin user management interface with online user tracking and analytics
 
 ### 🔄 Changed
 
 - **Color Architecture**: Complete migration from hardcoded colors to semantic design tokens with CSS custom properties and theme-aware resolution
-  - `text-white` → `text-foreground` (semantic color mapping)
-  - `border-white/10` → `border-border` (themed border colors)
-  - `bg-neutral-900/80` → `bg-muted` (context-aware background colors)
 - **Component Styling**: All components migrated to theme-aware classes with CSS-in-JS patterns and design system integration
 - **Background System**: Enhanced with 12 background types and improved preset management with lazy loading and memory optimization
 - **Device Rendering**: Updated iPhone 17 Pro/Max frames with new style options and hardware-accelerated rendering pipelines
@@ -114,7 +178,6 @@ All notable changes to this project will be documented in this file.
 - **SSR Hydration**: Resolved potential hydration mismatches with theme initialization and server/client state synchronization
 - **Component Responsiveness**: Improved mobile sidebar behavior with touch gesture handling and responsive breakpoints
 - **Color Accuracy**: Improved color representation with OKLCH color space and better gamma correction
-
 - **Scroll Behavior**: Resolved automatic scroll-to-top issues on mobile devices caused by dynamic viewport height changes
 - **PWA Detection**: Fixed MobileBlocker to properly detect PWA mode and not show landing page when app is already installed
 - **Manifest Validation**: Corrected manifest.json orientation value to prevent browser warnings
