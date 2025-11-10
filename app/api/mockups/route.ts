@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
+import { publicApiLimiter, getClientIp } from "@/lib/rate-limit";
 
 interface TextOverlay {
   id: string;
@@ -45,6 +47,7 @@ interface MockupData {
   panX: number;
   panY: number;
   layoutMode: string;
+  mockupGap: number;
   siteUrl: string;
   hideMockup: boolean;
   canvasWidth: number;
@@ -56,10 +59,33 @@ interface MockupData {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await publicApiLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      logger.warn(`Rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "10",
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(rateLimitResult.reset).toISOString(),
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
+        }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
     const mockupData: MockupData = await request.json();
 
-    console.log("Received mockup data:", {
+    logger.log("Received mockup data:", {
       name: mockupData.name,
       selectedDevice: mockupData.selectedDevice,
       dataSize: JSON.stringify(mockupData).length,
@@ -77,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (existingMockup && !checkError) {
       // Update existing mockup
-      console.log("Updating existing mockup:", existingMockup.id);
+      logger.log("Updating existing mockup:", existingMockup.id);
       const { data, error } = await supabase
         .from("saved_mockups")
         .update({
@@ -89,7 +115,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        console.error("Supabase error updating mockup:", error);
+        logger.error("Supabase error updating mockup:", error);
         return NextResponse.json(
           {
             error: `Failed to update mockup: ${error.message}`,
@@ -103,7 +129,7 @@ export async function POST(request: NextRequest) {
       isUpdate = true;
     } else {
       // Create new mockup
-      console.log("Creating new mockup");
+      logger.log("Creating new mockup");
       const { data, error } = await supabase
         .from("saved_mockups")
         .insert({
@@ -115,7 +141,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        console.error("Supabase error saving mockup:", error);
+        logger.error("Supabase error saving mockup:", error);
         return NextResponse.json(
           { error: `Failed to save mockup: ${error.message}`, details: error },
           { status: 500 }
@@ -125,7 +151,7 @@ export async function POST(request: NextRequest) {
       result = data;
     }
 
-    console.log(
+    logger.log(
       `${isUpdate ? "Mockup updated" : "Mockup saved"} successfully:`,
       result.id
     );
@@ -138,7 +164,7 @@ export async function POST(request: NextRequest) {
         : "Mockup saved successfully",
     });
   } catch (error) {
-    console.error("Error in mockups API:", error);
+    logger.error("Error in mockups API:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
@@ -149,8 +175,31 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await publicApiLimiter.check(clientIp);
+
+    if (!rateLimitResult.success) {
+      logger.warn(`Rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(
+        {
+          error: "Too many requests",
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "10",
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": new Date(rateLimitResult.reset).toISOString(),
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
+        }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
 
     const { data: mockups, error } = await supabase
@@ -159,7 +208,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching mockups:", error);
+      logger.error("Error fetching mockups:", error);
       return NextResponse.json(
         { error: "Failed to fetch mockups" },
         { status: 500 }
@@ -168,7 +217,7 @@ export async function GET() {
 
     return NextResponse.json({ mockups: mockups || [] });
   } catch (error) {
-    console.error("Error in mockups GET API:", error);
+    logger.error("Error in mockups GET API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
