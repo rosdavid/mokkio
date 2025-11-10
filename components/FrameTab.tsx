@@ -2,18 +2,21 @@
 
 import React from "react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import ColorThief from "colorthief";
 import {
   ChevronDown,
   Upload,
   RefreshCw,
   Trash2,
-  Plus,
   ImageIcon,
+  WandSparkles,
+  Plus,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
+import { Button } from "./ui/button";
 import {
   Select,
   SelectContent,
@@ -22,6 +25,9 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
+
+import { generateMagicalGradientsWithAI } from "../lib/magical-utils";
+import { logger } from "@/lib/logger";
 
 interface FrameTabProps {
   selectedResolution: string;
@@ -107,7 +113,8 @@ interface FrameTabProps {
     | "texture"
     | "textures"
     | "transparent"
-    | "image";
+    | "image"
+    | "magical";
   setBackgroundType: (
     type:
       | "solid"
@@ -122,6 +129,7 @@ interface FrameTabProps {
       | "textures"
       | "transparent"
       | "image"
+      | "magical"
   ) => void;
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
@@ -129,6 +137,75 @@ interface FrameTabProps {
   setBackgroundImage: (img: string | undefined) => void;
   selectedPreset: string;
   setSelectedPreset: (preset: string) => void;
+
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
+
+  /** NEW: uploaded images for magical gradient generation */
+  uploadedImages: (string | null)[];
+  /** NEW: callback to generate magical gradients */
+  onGenerateMagicalGradients?: () => void;
+  /** NEW: magical gradients (optional, will be generated locally) */
+  magicalGradients?: string[];
+  /** NEW: setter for magical gradients */
+  setMagicalGradients: (gradients: string[]) => void;
+
+  /** NEW: branding/logo */
+  branding?: {
+    id: string;
+    url?: string;
+    text?: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    opacity: number;
+    rotation: number;
+    layout: "vertical" | "horizontal";
+    background: "default" | "shadow" | "glass" | "badge";
+    badgeMode?: "light" | "dark";
+    badgeRadius?: number;
+    glassMode?: "light" | "dark";
+    glassRadius?: number;
+  };
+  setBranding: (
+    branding:
+      | {
+          id: string;
+          url?: string;
+          text?: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          opacity: number;
+          rotation: number;
+          layout: "vertical" | "horizontal";
+          background: "default" | "shadow" | "glass" | "badge";
+          badgeMode?: "light" | "dark";
+          badgeRadius?: number;
+          glassMode?: "light" | "dark";
+          glassRadius?: number;
+        }
+      | undefined
+  ) => void;
+
+  /** NEW: text editing from canvas double click */
+  editingTextIdFromCanvas?: string | null;
+  setEditingTextIdFromCanvas?: (id: string | null) => void;
+
+  /** NEW: branding editing from canvas double click */
+  editingBrandingFromCanvas?: boolean;
+  setEditingBrandingFromCanvas?: (value: boolean) => void;
+
+  /** NEW: Scene FX */
+  sceneFxMode?: "default" | "shadows";
+  setSceneFxMode?: (mode: "default" | "shadows") => void;
+  sceneFxShadow?: string | null;
+  setSceneFxShadow?: (shadow: string | null) => void;
+  sceneFxOpacity?: number;
+  setSceneFxOpacity?: (opacity: number) => void;
+  sceneFxLayer?: "overlay" | "underlay";
+  setSceneFxLayer?: (layer: "overlay" | "underlay") => void;
 }
 
 const gradientPresets = [
@@ -406,6 +483,35 @@ const colorGroups = [
   { name: "Purples", colors: purpleColors },
 ];
 
+// Función para generar gradientes mágicos desde colores
+const generateMagicalGradients = (colors: string[]): string[] => {
+  const gradients: string[] = [];
+
+  for (let i = 0; i < 12; i++) {
+    const color1 = colors[i % colors.length];
+    const color2 = colors[(i + 1) % colors.length];
+    const color3 = colors[(i + 2) % colors.length];
+
+    // Crear diferentes tipos de gradientes
+    if (i < 4) {
+      // Gradientes lineales
+      gradients.push(`linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`);
+    } else if (i < 8) {
+      // Gradientes radiales
+      gradients.push(
+        `radial-gradient(circle at 50% 50%, ${color1} 0%, ${color2} 100%)`
+      );
+    } else {
+      // Gradientes con 3 colores
+      gradients.push(
+        `linear-gradient(45deg, ${color1} 0%, ${color2} 50%, ${color3} 100%)`
+      );
+    }
+  }
+
+  return gradients;
+};
+
 const FrameTab: React.FC<FrameTabProps> = (props) => {
   const [backgroundTab, setBackgroundTab] = useState("color");
   const [backgroundExpandedSections, setBackgroundExpandedSections] = useState<
@@ -423,11 +529,132 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
   >({
     effects: true,
     text: true,
+    branding: true,
+    sceneFx: true,
     background: true,
   });
 
+  // Estado para Scene FX
+  const [sceneFxExpandedShadows, setSceneFxExpandedShadows] = useState(false);
+
+  // Estado para controlar qué popover de texto está abierto
+  const [openTextPopoverId, setOpenTextPopoverId] = useState<string | null>(
+    null
+  );
+
+  // Estado para controlar si el popover de branding está abierto
+  const [openBrandingPopover, setOpenBrandingPopover] = useState(false);
+
+  // Estado local para gradientes mágicos generados
+  const [localMagicalGradients, setLocalMagicalGradients] = useState<string[]>(
+    []
+  );
+  // Estado para controlar el loading del botón de generar
+  const [isGeneratingMagical, setIsGeneratingMagical] = useState(false);
+
+  // Abrir popover automáticamente cuando se hace doble click en el canvas
+  useEffect(() => {
+    if (props.editingTextIdFromCanvas) {
+      setOpenTextPopoverId(props.editingTextIdFromCanvas);
+      // Expandir la sección de texto si está colapsada
+      setExpandedSections((prev) => ({ ...prev, text: true }));
+      // Limpiar el flag después de procesarlo
+      if (props.setEditingTextIdFromCanvas) {
+        props.setEditingTextIdFromCanvas(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editingTextIdFromCanvas]);
+
+  // Abrir popover de branding automáticamente cuando se hace doble click
+  useEffect(() => {
+    if (props.editingBrandingFromCanvas) {
+      setOpenBrandingPopover(true);
+      // Expandir la sección de branding si está colapsada
+      setExpandedSections((prev) => ({ ...prev, branding: true }));
+      // Limpiar el flag después de procesarlo
+      if (props.setEditingBrandingFromCanvas) {
+        props.setEditingBrandingFromCanvas(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editingBrandingFromCanvas]);
+
+  // Desestructurar props para el useEffect
+  const { uploadedImages, setMagicalGradients } = props;
+
+  // Reiniciar gradientes mágicos cuando cambia la imagen subida
+  useEffect(() => {
+    if (uploadedImages && uploadedImages[0]) {
+      // Si hay una nueva imagen, reiniciar los gradientes
+      setLocalMagicalGradients([]);
+      setMagicalGradients([]);
+    }
+  }, [uploadedImages, setMagicalGradients]);
+
   const toggleSection = (s: string) =>
     setExpandedSections((prev) => ({ ...prev, [s]: !prev[s] }));
+
+  // Función para generar gradientes mágicos desde la imagen subida
+  const handleGenerateMagicalGradients = async () => {
+    if (!props.uploadedImages[0]) return;
+
+    setIsGeneratingMagical(true);
+    try {
+      // Usar la nueva función de AI para generar gradientes
+      const aiGradients = await generateMagicalGradientsWithAI(
+        props.uploadedImages[0]
+      );
+      const gradients = aiGradients.map((g) => g.gradient);
+
+      setLocalMagicalGradients(gradients);
+
+      // Actualizar el estado global también
+      props.setMagicalGradients(gradients);
+
+      // Llamar al callback si existe
+      if (props.onGenerateMagicalGradients) {
+        props.onGenerateMagicalGradients();
+      }
+    } catch (error) {
+      logger.error("Error generating magical gradients:", error);
+      // Fallback a la función original si la AI falla
+      try {
+        const img = document.createElement("img") as HTMLImageElement;
+        img.crossOrigin = "anonymous";
+        img.src = props.uploadedImages[0];
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        const colorThief = new ColorThief();
+        const colors = colorThief.getPalette(img, 8); // Obtener 8 colores dominantes
+
+        // Convertir colores RGB a hex
+        const hexColors = colors.map(
+          (color) =>
+            `#${color.map((c) => c.toString(16).padStart(2, "0")).join("")}`
+        );
+
+        const gradients = generateMagicalGradients(hexColors);
+        setLocalMagicalGradients(gradients);
+
+        // Actualizar el estado global también
+        props.setMagicalGradients(gradients);
+
+        // Llamar al callback si existe
+        if (props.onGenerateMagicalGradients) {
+          props.onGenerateMagicalGradients();
+        }
+      } catch (fallbackError) {
+        logger.error("Fallback generation also failed:", fallbackError);
+      }
+    } finally {
+      setIsGeneratingMagical(false);
+    }
+  };
 
   return (
     <div className="space-y-4 p-4">
@@ -668,7 +895,7 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
         >
           <div className="space-y-4">
             {/* Add Text Button */}
-            <button
+            <Button
               onClick={() =>
                 props.addText({
                   content: "New Text",
@@ -688,11 +915,12 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                   textShadowColor: "#000000",
                 })
               }
-              className="w-full h-10 rounded-lg border border-border bg-muted hover:bg-muted/80 text-xs text-foreground cursor-pointer flex items-center justify-center gap-2"
+              className="w-full h-8 rounded-lg bg-muted border border-border hover:bg-accent hover:border-primary/50 transition-all duration-200 text-xs cursor-pointer"
+              size="sm"
             >
-              <Plus className="h-4 w-4" />
-              Add Text
-            </button>
+              <Plus className="h-3.5 w-3.5 mr-2 text-foreground/80" />
+              <span className="text-foreground/80">Add Text</span>
+            </Button>
 
             {/* Text List */}
             {props.texts.length > 0 && (
@@ -711,7 +939,12 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                         {text.fontWeight}
                       </div>
                     </div>
-                    <Popover>
+                    <Popover
+                      open={openTextPopoverId === text.id}
+                      onOpenChange={(open) => {
+                        setOpenTextPopoverId(open ? text.id : null);
+                      }}
+                    >
                       <PopoverTrigger asChild>
                         <button
                           className="h-6 w-6 rounded border border-border bg-muted hover:bg-primary/20 hover:border-primary/50 text-muted-foreground hover:text-primary cursor-pointer flex items-center justify-center"
@@ -1156,6 +1389,628 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
         </div>
       </div>
 
+      {/* Branding/Logo Section */}
+      <div className="bg-card p-2.5 rounded-lg">
+        <div className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          BRANDING
+        </div>
+
+        <Popover
+          open={openBrandingPopover}
+          onOpenChange={setOpenBrandingPopover}
+        >
+          <PopoverTrigger asChild>
+            <button className="w-full h-10 rounded-lg border border-border bg-muted hover:bg-muted/80 hover:border-primary/50 text-xs text-foreground cursor-pointer flex items-center justify-center gap-2 transition-colors">
+              <ImageIcon className="h-4 w-4" />
+              {props.branding ? "Edit Branding" : "Add Branding"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="right"
+            sideOffset={10}
+            className="w-80 max-h-[600px] overflow-y-auto bg-popover border-border text-popover-foreground"
+          >
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-3">
+                  Branding Settings
+                </h4>
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">
+                  Logo Image
+                </Label>
+                {props.branding?.url ? (
+                  <div className="relative group">
+                    <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+                      <Image
+                        src={props.branding.url}
+                        alt="Branding"
+                        width={300}
+                        height={169}
+                        className="w-full h-full object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (props.branding) {
+                          props.setBranding({
+                            ...props.branding,
+                            url: undefined,
+                          });
+                        }
+                      }}
+                      className="absolute top-2 right-2 h-7 w-7 rounded-md bg-destructive hover:bg-destructive/90 text-destructive-foreground cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label
+                      htmlFor="branding-upload"
+                      className="w-full h-24 rounded-lg border-2 border-dashed border-border bg-muted hover:bg-muted/80 hover:border-primary/50 text-xs text-foreground cursor-pointer flex flex-col items-center justify-center gap-2 transition-colors"
+                    >
+                      <Upload className="h-5 w-5" />
+                      <span>Upload Image</span>
+                    </label>
+                    <input
+                      id="branding-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const img = new window.Image();
+                            img.onload = () => {
+                              if (props.branding) {
+                                props.setBranding({
+                                  ...props.branding,
+                                  url: event.target?.result as string,
+                                });
+                              } else {
+                                props.setBranding({
+                                  id: `branding-${Date.now()}`,
+                                  url: event.target?.result as string,
+                                  x: 50,
+                                  y: 50,
+                                  width: Math.min(img.width, 200),
+                                  height: Math.min(img.height, 200),
+                                  opacity: 0.8,
+                                  rotation: 0,
+                                  layout: "vertical",
+                                  background: "default",
+                                  badgeMode: "dark",
+                                  badgeRadius: 12,
+                                  glassMode: "light",
+                                  glassRadius: 12,
+                                });
+                              }
+                            };
+                            img.src = event.target?.result as string;
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Text Input */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">
+                  Text (optional)
+                </Label>
+                <input
+                  type="text"
+                  value={props.branding?.text || ""}
+                  onChange={(e) => {
+                    if (props.branding) {
+                      props.setBranding({
+                        ...props.branding,
+                        text: e.target.value,
+                      });
+                    } else {
+                      props.setBranding({
+                        id: `branding-${Date.now()}`,
+                        text: e.target.value,
+                        x: 50,
+                        y: 50,
+                        width: 200,
+                        height: 60,
+                        opacity: 1,
+                        rotation: 0,
+                        layout: "vertical",
+                        background: "default",
+                        badgeMode: "dark",
+                        badgeRadius: 12,
+                        glassMode: "light",
+                        glassRadius: 12,
+                      });
+                    }
+                  }}
+                  placeholder="Enter text..."
+                  className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              {/* Layout */}
+              {props.branding && (
+                <>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Layout
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() =>
+                          props.setBranding({
+                            ...props.branding!,
+                            layout: "vertical",
+                          })
+                        }
+                        className={`h-16 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors ${
+                          props.branding.layout === "vertical"
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-muted hover:bg-muted/80"
+                        }`}
+                      >
+                        <div className="text-xs font-medium">Vertical</div>
+                        <div className="text-xs text-muted-foreground">
+                          Image on top
+                        </div>
+                      </button>
+                      <button
+                        onClick={() =>
+                          props.setBranding({
+                            ...props.branding!,
+                            layout: "horizontal",
+                          })
+                        }
+                        className={`h-16 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors ${
+                          props.branding.layout === "horizontal"
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-muted hover:bg-muted/80"
+                        }`}
+                      >
+                        <div className="text-xs font-medium">Horizontal</div>
+                        <div className="text-xs text-muted-foreground">
+                          Image on left
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Background Style */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Background
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {
+                          id: "default",
+                          name: "Default",
+                          desc: "No background",
+                        },
+                        { id: "shadow", name: "Shadow", desc: "Subtle shadow" },
+                        { id: "glass", name: "Glass", desc: "Glassmorphism" },
+                        { id: "badge", name: "Badge", desc: "Solid badge" },
+                      ].map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() =>
+                            props.setBranding({
+                              ...props.branding!,
+                              background: bg.id as
+                                | "default"
+                                | "shadow"
+                                | "glass"
+                                | "badge",
+                            })
+                          }
+                          className={`h-14 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center transition-colors ${
+                            props.branding &&
+                            props.branding.background === bg.id
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-muted hover:bg-muted/80"
+                          }`}
+                        >
+                          <div className="text-xs font-medium">{bg.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {bg.desc}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Badge Configuration (only visible when badge is selected) */}
+                  {props.branding.background === "badge" && (
+                    <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                      <Label className="text-xs text-muted-foreground">
+                        Badge Configuration
+                      </Label>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block">
+                          Mode
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() =>
+                              props.setBranding({
+                                ...props.branding!,
+                                badgeMode: "light",
+                              })
+                            }
+                            className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                              props.branding.badgeMode === "light"
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div className="text-xs font-medium">Light</div>
+                          </button>
+                          <button
+                            onClick={() =>
+                              props.setBranding({
+                                ...props.branding!,
+                                badgeMode: "dark",
+                              })
+                            }
+                            className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                              !props.branding.badgeMode ||
+                              props.branding.badgeMode === "dark"
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div className="text-xs font-medium">Dark</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block">
+                          Border Radius
+                        </Label>
+                        <Slider
+                          value={[props.branding.badgeRadius ?? 12]}
+                          onValueChange={([v]) =>
+                            props.setBranding({
+                              ...props.branding!,
+                              badgeRadius: v,
+                            })
+                          }
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {props.branding.badgeRadius ?? 12}px
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Glass Configuration (only visible when glass is selected) */}
+                  {props.branding.background === "glass" && (
+                    <div className="space-y-3 p-3 rounded-lg bg-muted/50 border border-border">
+                      <Label className="text-xs text-muted-foreground">
+                        Glass Configuration
+                      </Label>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block">
+                          Mode
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() =>
+                              props.setBranding({
+                                ...props.branding!,
+                                glassMode: "light",
+                              })
+                            }
+                            className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                              !props.branding.glassMode ||
+                              props.branding.glassMode === "light"
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div className="text-xs font-medium">Light</div>
+                          </button>
+                          <button
+                            onClick={() =>
+                              props.setBranding({
+                                ...props.branding!,
+                                glassMode: "dark",
+                              })
+                            }
+                            className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-colors ${
+                              props.branding.glassMode === "dark"
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div className="text-xs font-medium">Dark</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block">
+                          Border Radius
+                        </Label>
+                        <Slider
+                          value={[props.branding.glassRadius ?? 12]}
+                          onValueChange={([v]) =>
+                            props.setBranding({
+                              ...props.branding!,
+                              glassRadius: v,
+                            })
+                          }
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {props.branding.glassRadius ?? 12}px
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Opacity */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Opacity
+                    </Label>
+                    <Slider
+                      value={[props.branding.opacity * 100]}
+                      onValueChange={([v]) =>
+                        props.setBranding({
+                          ...props.branding!,
+                          opacity: v / 100,
+                        })
+                      }
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {Math.round(props.branding.opacity * 100)}%
+                    </div>
+                  </div>
+
+                  {/* Rotation */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">
+                      Rotation
+                    </Label>
+                    <Slider
+                      value={[props.branding.rotation]}
+                      onValueChange={([v]) =>
+                        props.setBranding({
+                          ...props.branding!,
+                          rotation: v,
+                        })
+                      }
+                      min={-180}
+                      max={180}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {props.branding.rotation}°
+                    </div>
+                  </div>
+
+                  {/* Remove Button */}
+                  <button
+                    onClick={() => props.setBranding(undefined)}
+                    className="w-full h-9 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-medium cursor-pointer flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove Branding
+                  </button>
+                </>
+              )}
+
+              <div className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                {props.branding
+                  ? "Drag and resize the branding on the canvas"
+                  : "Add an image or text to get started"}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* SCENE FX Section */}
+      <div className="bg-card p-2.5 rounded-lg">
+        <button
+          onClick={() => toggleSection("sceneFx")}
+          className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider"
+        >
+          SCENE FX
+          <ChevronDown
+            className={`h-3 w-3 transition-transform duration-200 ${
+              expandedSections.sceneFx ? "" : "-rotate-90"
+            }`}
+          />
+        </button>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            expandedSections.sceneFx
+              ? "max-h-[800px] opacity-100 mt-2"
+              : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="space-y-4">
+            {/* Mode Selection */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  props.setSceneFxMode?.("default");
+                  props.setSceneFxShadow?.(null);
+                }}
+                className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-all text-xs font-medium ${
+                  !props.sceneFxMode || props.sceneFxMode === "default"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted hover:bg-muted/80 text-foreground"
+                }`}
+              >
+                Default
+              </button>
+              <button
+                onClick={() => props.setSceneFxMode?.("shadows")}
+                className={`h-10 rounded-lg border-2 cursor-pointer flex items-center justify-center transition-all text-xs font-medium ${
+                  props.sceneFxMode === "shadows"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted hover:bg-muted/80 text-foreground"
+                }`}
+              >
+                Shadows
+              </button>
+            </div>
+
+            {/* Shadows Grid (visible when shadows mode is active) */}
+            {props.sceneFxMode === "shadows" && (
+              <div className="space-y-3">
+                {/* Shadow Thumbnails Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {/* First 3 shadows */}
+                  {[1, 2, 3].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() =>
+                        props.setSceneFxShadow?.(`/shadows/shadow-${num}.png`)
+                      }
+                      className={`h-8 rounded border cursor-pointer overflow-hidden transition-all ${
+                        props.sceneFxShadow === `/shadows/shadow-${num}.png`
+                          ? "border-primary ring-2 ring-primary/50"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Image
+                        src={`/thumbnails/shadows/shadow-thumbnail-${num}.webp`}
+                        alt={`Shadow ${num}`}
+                        width={120}
+                        height={64}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                      />
+                    </button>
+                  ))}
+
+                  {/* Expand Button */}
+                  <button
+                    onClick={() =>
+                      setSceneFxExpandedShadows(!sceneFxExpandedShadows)
+                    }
+                    className="h-8 rounded border border-border bg-muted hover:bg-muted/80 cursor-pointer flex items-center justify-center transition-all"
+                  >
+                    <ChevronDown
+                      className={`h-5 w-5 text-muted-foreground transition-transform ${
+                        sceneFxExpandedShadows ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+                {/* Expanded Shadows (4-20) */}
+                {sceneFxExpandedShadows && (
+                  <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                    {Array.from({ length: 17 }, (_, i) => i + 4).map((num) => (
+                      <button
+                        key={num}
+                        onClick={() =>
+                          props.setSceneFxShadow?.(`/shadows/shadow-${num}.png`)
+                        }
+                        className={`h-8 rounded border cursor-pointer overflow-hidden transition-all ${
+                          props.sceneFxShadow === `/shadows/shadow-${num}.png`
+                            ? "border-primary ring-2 ring-primary/50"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <Image
+                          src={`/thumbnails/shadows/shadow-thumbnail-${num}.webp`}
+                          alt={`Shadow ${num}`}
+                          width={120}
+                          height={64}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}{" "}
+                {/* Opacity Slider (always visible when shadows mode is active) */}
+                <div>
+                  <div className="mb-2 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>Opacity</span>
+                    <span className="text-foreground">
+                      {Math.round(props.sceneFxOpacity ?? 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[props.sceneFxOpacity ?? 100]}
+                    onValueChange={([v]) => props.setSceneFxOpacity?.(v)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                {/* Layer Mode Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => props.setSceneFxLayer?.("underlay")}
+                    className={`h-10 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center transition-all ${
+                      !props.sceneFxLayer || props.sceneFxLayer === "underlay"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted hover:bg-muted/80 text-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-medium">Underlay</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Behind mockup
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => props.setSceneFxLayer?.("overlay")}
+                    className={`h-10 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center transition-all ${
+                      props.sceneFxLayer === "overlay"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted hover:bg-muted/80 text-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-medium">Overlay</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Above everything
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-card p-2.5 rounded-lg">
         <button
           onClick={() => toggleSection("background")}
@@ -1175,6 +2030,82 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
               : "max-h-0 opacity-0"
           }`}
         >
+          {/* Magical Backgrounds Section - always visible */}
+          <div className="mb-4 p-3 bg-linear-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+            <div className="flex flex-col items-center gap-3">
+              <div className="text-center">
+                <h3 className="text-sm font-medium text-foreground mb-1 gap-2 flex items-center justify-center">
+                  <WandSparkles className="inline-block w-4 h-4 mr-1 text-purple-500" />
+                  Magic Backgrounds AI
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Generate the perfect backgrounds for your mockups
+                </p>
+              </div>
+              <button
+                onClick={handleGenerateMagicalGradients}
+                disabled={
+                  isGeneratingMagical ||
+                  !props.uploadedImages ||
+                  !props.uploadedImages[0]
+                }
+                className="w-full h-10 rounded-lg bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200"
+              >
+                {isGeneratingMagical ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>Generate</>
+                )}
+              </button>
+              {!props.uploadedImages || !props.uploadedImages[0] ? (
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Upload a mockup image to generate magical backgrounds
+                  </p>
+                </div>
+              ) : (props.magicalGradients &&
+                  props.magicalGradients.length > 0) ||
+                (localMagicalGradients && localMagicalGradients.length > 0) ? (
+                <div className="w-full">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    Generated Backgrounds
+                  </h4>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(props.magicalGradients &&
+                    props.magicalGradients.length > 0
+                      ? props.magicalGradients
+                      : localMagicalGradients
+                    ).map((gradient, i) => (
+                      <button
+                        key={`magical-${i}`}
+                        onClick={() => {
+                          props.setBackgroundType("magical");
+                          props.setSelectedPreset(`magical-${i}`);
+                          const gradientsToUse =
+                            props.magicalGradients &&
+                            props.magicalGradients.length > 0
+                              ? props.magicalGradients
+                              : localMagicalGradients;
+                          props.setMagicalGradients(gradientsToUse);
+                        }}
+                        className={`h-8 rounded border cursor-pointer ${
+                          props.selectedPreset === `magical-${i}` &&
+                          props.backgroundType === "magical"
+                            ? "border-purple-500 ring-2 ring-purple-500/50"
+                            : "border-white/10"
+                        }`}
+                        style={{ background: gradient }}
+                        title={`Gradiente Mágico ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>{" "}
           {/* Tabs para fondo */}
           <div className="mb-4">
             <Tabs
@@ -1355,7 +2286,7 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.solid ? "rotate-180" : ""
                       }`}
                     />
@@ -1422,7 +2353,7 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.linear ? "rotate-180" : ""
                       }`}
                     />
@@ -1486,7 +2417,7 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                     }`}
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.radial ? "rotate-180" : ""
                       }`}
                     />
@@ -1535,10 +2466,10 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                       }`}
                     >
                       <Image
-                        src={`/cosmic-gradient-${num}.png`}
+                        src={`/thumbnails/cosmic/cosmic-gradient-thumbnail-${num}.webp`}
                         alt={`Cosmic Gradient ${num}`}
-                        width={32}
-                        height={32}
+                        width={120}
+                        height={64}
                         className="w-full h-full object-cover"
                         unoptimized
                       />
@@ -1551,21 +2482,17 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                         cosmic: !prev.cosmic,
                       }))
                     }
-                    className={`h-8 rounded border border-border cursor-pointer flex items-center justify-center transition-all duration-200 ${
-                      backgroundExpandedSections.cosmic
-                        ? "bg-primary hover:bg-primary/80"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className="h-8 rounded border border-border cursor-pointer flex items-center justify-center transition-all duration-200 bg-muted hover:bg-muted/80"
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.cosmic ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                 </div>
                 {backgroundExpandedSections.cosmic && (
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-4 gap-1.5 animate-in slide-in-from-top-2 fade-in duration-200">
                     {Array.from({ length: 7 }, (_, i) => i + 4).map((num) => (
                       <button
                         key={`cosmic-${num}`}
@@ -1581,10 +2508,10 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                         }`}
                       >
                         <Image
-                          src={`/cosmic-gradient-${num}.png`}
+                          src={`/thumbnails/cosmic/cosmic-gradient-thumbnail-${num}.webp`}
                           alt={`Cosmic Gradient ${num}`}
-                          width={32}
-                          height={32}
+                          width={120}
+                          height={64}
                           className="w-full h-full object-cover"
                           unoptimized
                         />
@@ -1615,10 +2542,10 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                       }`}
                     >
                       <Image
-                        src={`/textures-${num}.jpg`}
+                        src={`/thumbnails/textures/textures-thumbnail-${num}.webp`}
                         alt={`Texture ${num}`}
-                        width={32}
-                        height={32}
+                        width={120}
+                        height={64}
                         className="w-full h-full object-cover"
                         unoptimized
                       />
@@ -1631,21 +2558,17 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                         textures: !prev.textures,
                       }))
                     }
-                    className={`h-8 rounded border border-border cursor-pointer flex items-center justify-center transition-all duration-200 ${
-                      backgroundExpandedSections.textures
-                        ? "bg-primary hover:bg-primary/80"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className="h-8 rounded border border-border cursor-pointer flex items-center justify-center transition-all duration-200 bg-muted hover:bg-muted/80"
                   >
                     <ChevronDown
-                      className={`h-4 w-4 text-white/60 transition-transform duration-200 ${
+                      className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
                         backgroundExpandedSections.textures ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                 </div>
                 {backgroundExpandedSections.textures && (
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-4 gap-1.5 animate-in slide-in-from-top-2 fade-in duration-200">
                     {Array.from({ length: 9 }, (_, i) => i + 4).map((num) => (
                       <button
                         key={`texture-${num}`}
@@ -1661,10 +2584,10 @@ const FrameTab: React.FC<FrameTabProps> = (props) => {
                         }`}
                       >
                         <Image
-                          src={`/textures-${num}.jpg`}
+                          src={`/thumbnails/textures/textures-thumbnail-${num}.webp`}
                           alt={`Texture ${num}`}
-                          width={32}
-                          height={32}
+                          width={120}
+                          height={64}
                           className="w-full h-full object-cover"
                           unoptimized
                         />

@@ -8,13 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
 import { Checkbox } from "./ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectTrigger, SelectValue } from "./ui/select";
 
 interface MockupTabProps {
   uploadedImages: (string | null)[];
@@ -39,7 +33,8 @@ interface MockupTabProps {
     | "texture"
     | "textures"
     | "transparent"
-    | "image";
+    | "image"
+    | "magical";
   setBackgroundType: (
     type:
       | "solid"
@@ -54,6 +49,7 @@ interface MockupTabProps {
       | "textures"
       | "transparent"
       | "image"
+      | "magical"
   ) => void;
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
@@ -62,7 +58,7 @@ interface MockupTabProps {
   selectedPreset: string;
   setSelectedPreset: (preset: string) => void;
 
-  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid";
+  deviceStyle: "default" | "glass-light" | "glass-dark" | "liquid" | "retro";
   setDeviceStyle: (style: MockupTabProps["deviceStyle"]) => void;
   /** grosor exacto del borde en px */
   styleEdge: number;
@@ -100,11 +96,18 @@ interface MockupTabProps {
   sceneType: "none" | "shadow" | "shapes";
   setSceneType: (type: "none" | "shadow" | "shapes") => void;
 
-  layoutMode: "single" | "double" | "triple";
+  layoutMode: "single" | "double" | "triple" | "scene-builder";
+  setLayoutMode: (
+    mode: "single" | "double" | "triple" | "scene-builder"
+  ) => void;
   siteUrl?: string;
   setSiteUrl?: (url: string) => void;
   hideMockup?: boolean;
   onToggleHideMockup?: () => void;
+
+  /** NEW: mockup gap */
+  mockupGap: number;
+  setMockupGap: (gap: number) => void;
 
   /** NEW: frame resolution preset */
   selectedResolution: string;
@@ -125,6 +128,10 @@ interface MockupTabProps {
 
   /** NEW: open side menu */
   onOpenSideMenu?: () => void;
+
+  /** NEW: hover state for media slots */
+  hoveredSlot?: number | null;
+  setHoveredSlot?: (slot: number | null) => void;
 }
 
 const MockupTab: React.FC<MockupTabProps> = (props) => {
@@ -137,6 +144,20 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
   useEffect(() => {
     if (deviceSelectOpen) {
       setDeviceSelectOpen(false);
+    }
+    // Set default browser mode for iPad Pro to "display"
+    if (
+      props.selectedDevice === "ipad-pro" &&
+      props.browserMode !== "display"
+    ) {
+      props.setBrowserMode("display");
+    }
+    // Set default browser mode for MacBook Pro to "display"
+    if (
+      props.selectedDevice === "macbook-pro" &&
+      props.browserMode !== "display"
+    ) {
+      props.setBrowserMode("display");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.selectedDevice]);
@@ -165,12 +186,16 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
     effects: true,
     browserStyle: true,
     text: true,
+    borderStyle: true,
+    spacing: true,
   });
 
   const toggleSection = (s: string) =>
     setExpandedSections((prev) => ({ ...prev, [s]: !prev[s] }));
 
-  const getImageSlotCount = () => 1;
+  const getImageSlotCount = () => {
+    return props.layoutMode === "double" ? 2 : 1;
+  };
   const getRecommendedResolution = () => {
     switch (props.selectedDevice) {
       case "browser":
@@ -712,9 +737,6 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
             </div>
           </SelectContent>
         </Select>
-        {props.selectedDevice === "screenshot" && (
-          <p className="text-xs text-muted-foreground mt-1">Adapts to media</p>
-        )}
       </div>
 
       {/* Media */}
@@ -749,7 +771,16 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
                   </p>
                 </div>
                 <div className="relative group">
-                  <label className="flex flex-col items-center justify-center cursor-pointer relative aspect-video bg-muted border border-border border-dashed rounded-lg hover:bg-muted/80 transition-colors">
+                  <label
+                    className="flex flex-col items-center justify-center cursor-pointer relative aspect-video bg-muted border border-border border-dashed rounded-lg hover:bg-muted/80 transition-colors"
+                    onMouseEnter={() => {
+                      const slotIndex = index;
+                      props.setHoveredSlot?.(slotIndex);
+                    }}
+                    onMouseLeave={() => {
+                      props.setHoveredSlot?.(null);
+                    }}
+                  >
                     {props.uploadedImages[index] ? (
                       <div className="relative w-full h-full">
                         <Image
@@ -832,6 +863,57 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
         </div>
       </div>
 
+      {/* SPACING */}
+      <div className="bg-card p-2.5 rounded-lg">
+        <button
+          onClick={() => toggleSection("spacing")}
+          className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider"
+        >
+          MOCKUP SPACING
+          <ChevronDown
+            className={`h-3 w-3 transition-transform duration-200 ${
+              expandedSections.spacing ? "" : "-rotate-90"
+            }`}
+          />
+        </button>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            expandedSections.spacing
+              ? "max-h-64 opacity-100 mt-2"
+              : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="space-y-3 pt-1">
+            {/* Mockup Gap */}
+            {props.layoutMode !== "single" && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Spacing
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {props.mockupGap}px
+                  </span>
+                </div>
+                <Slider
+                  value={[props.mockupGap]}
+                  onValueChange={([v]) => props.setMockupGap(v)}
+                  min={-500}
+                  max={500}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+            )}
+            {props.layoutMode === "single" && (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                Select more than one mockup to adjust mockup spacing
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Site URL */}
       {["safari", "browser", "chrome"].includes(props.selectedDevice) && (
         <div className="bg-card p-2.5 rounded-lg">
@@ -865,324 +947,12 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
       )}
 
       {/* STYLE */}
-      {(["safari", "browser", "chrome"].includes(props.selectedDevice) ||
-        ["iphone-17-pro", "iphone-17-pro-max"].includes(
-          props.selectedDevice
-        )) && (
-        <div className="bg-card p-2.5 rounded-lg">
-          <button
-            onClick={() => toggleSection("browserStyle")}
-            className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider"
-          >
-            STYLE
-            <ChevronDown
-              className={`h-3 w-3 transition-transform duration-200 ${
-                expandedSections.browserStyle ? "" : "-rotate-90"
-              }`}
-            />
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ${
-              expandedSections.browserStyle
-                ? "max-h-64 opacity-100 mt-2"
-                : "max-h-0 opacity-0"
-            }`}
-          >
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {/* Browser devices: Light/Dark mode */}
-              {["safari", "browser", "chrome"].includes(
-                props.selectedDevice
-              ) && (
-                <>
-                  <button
-                    onClick={() => props.setBrowserMode("light")}
-                    className={`h-10 rounded-lg border text-xs text-foreground cursor-pointer ${
-                      props.browserMode === "light"
-                        ? "border-primary bg-primary/20"
-                        : "border-border bg-muted hover:bg-muted/80"
-                    }`}
-                  >
-                    Light Mode
-                  </button>
-                  <button
-                    onClick={() => props.setBrowserMode("dark")}
-                    className={`h-10 rounded-lg border text-xs text-foreground cursor-pointer ${
-                      props.browserMode === "dark"
-                        ? "border-primary bg-primary/20"
-                        : "border-border bg-muted hover:bg-muted/80"
-                    }`}
-                  >
-                    Dark Mode
-                  </button>
-                </>
-              )}
-
-              {/* Mobile devices: Display/Device Frame */}
-              {["iphone-17-pro", "iphone-17-pro-max"].includes(
-                props.selectedDevice
-              ) && (
-                <>
-                  {props.selectedDevice === "iphone-17-pro" ? (
-                    <>
-                      <button
-                        onClick={() => props.setBrowserMode("display")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "display"
-                            ? "border-primary bg-primary/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-display-thumbnail.png"
-                            alt="Display"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "bottom",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Display
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("blue")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "blue"
-                            ? "border-primary bg-primary/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-thumbnail.png"
-                            alt="Blue"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Blue
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("silver")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "silver"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-silver-thumbnail.png"
-                            alt="Silver"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Silver
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("orange")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "orange"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-orange-thumbnail.png"
-                            alt="Orange"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Orange
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => props.setBrowserMode("display")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "display"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-display-thumbnail.png"
-                            alt="Display"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "bottom",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Display
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("blue")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "blue"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-thumbnail.png"
-                            alt="Blue"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Blue
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("silver")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "silver"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-silver-thumbnail.png"
-                            alt="Silver"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Silver
-                      </button>
-                      <button
-                        onClick={() => props.setBrowserMode("orange")}
-                        className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
-                          props.browserMode === "orange"
-                            ? "border-purple-500 bg-purple-500/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <div
-                          style={{
-                            width: 96,
-                            height: 48,
-                            overflow: "hidden",
-                          }}
-                          className="mb-1 rounded"
-                        >
-                          <Image
-                            src="/iphone-17-pro-orange-thumbnail.png"
-                            alt="Orange"
-                            width={96}
-                            height={96}
-                            style={{
-                              objectFit: "cover",
-                              objectPosition: "top",
-                            }}
-                            unoptimized
-                          />
-                        </div>
-                        Orange
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* STYLE */}
       <div className="bg-card p-2.5 rounded-lg">
         <button
           onClick={() => toggleSection("style")}
           className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider"
         >
-          BORDER STYLE
+          STYLE
           <ChevronDown
             className={`h-3 w-3 transition-transform duration-200 ${
               expandedSections.style ? "" : "-rotate-90"
@@ -1192,26 +962,535 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
         <div
           className={`overflow-hidden transition-all duration-300 ${
             expandedSections.style
+              ? "max-h-[400px] opacity-100 mt-2"
+              : "max-h-0 opacity-0"
+          }`}
+        >
+          {/* Mobile devices: Display/Device Frame */}
+          {[
+            "safari",
+            "browser",
+            "chrome",
+            "iphone-17-pro",
+            "iphone-17-pro-max",
+            "ipad-pro",
+            "macbook-pro",
+          ].includes(props.selectedDevice) ? (
+            <div className="mb-4">
+              <div className="grid grid-cols-2 gap-2">
+                {/* Browser devices: Light/Dark mode */}
+                {["safari", "browser", "chrome"].includes(
+                  props.selectedDevice
+                ) && (
+                  <>
+                    <button
+                      onClick={() => props.setBrowserMode("light")}
+                      className={`h-10 rounded-lg border text-xs text-foreground cursor-pointer ${
+                        props.browserMode === "light"
+                          ? "border-primary bg-primary/20"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      Light Mode
+                    </button>
+                    <button
+                      onClick={() => props.setBrowserMode("dark")}
+                      className={`h-10 rounded-lg border text-xs text-foreground cursor-pointer ${
+                        props.browserMode === "dark"
+                          ? "border-primary bg-primary/20"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      Dark Mode
+                    </button>
+                  </>
+                )}
+
+                {/* Mobile devices: Display/Device Frame */}
+                {[
+                  "iphone-17-pro",
+                  "iphone-17-pro-max",
+                  "ipad-pro",
+                  "macbook-pro",
+                ].includes(props.selectedDevice) && (
+                  <div className="col-span-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      {props.selectedDevice === "iphone-17-pro" ? (
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("display")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "display"
+                                ? "border-primary bg-primary/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-display-thumbnail.png"
+                                alt="Display"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "bottom",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("blue")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "blue"
+                                ? "border-primary bg-primary/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-thumbnail.png"
+                                alt="Blue"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Blue
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("silver")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "silver"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-silver-thumbnail.png"
+                                alt="Silver"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Silver
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("orange")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "orange"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-orange-thumbnail.png"
+                                alt="Orange"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Orange
+                          </button>
+                        </>
+                      ) : props.selectedDevice === "iphone-17-pro-max" ? (
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("display")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "display"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-display-thumbnail.png"
+                                alt="Display"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "bottom",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("blue")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "blue"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-thumbnail.png"
+                                alt="Blue"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Blue
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("silver")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "silver"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-silver-thumbnail.png"
+                                alt="Silver"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Silver
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("orange")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "orange"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/iphone-17-pro-orange-thumbnail.png"
+                                alt="Orange"
+                                width={96}
+                                height={96}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Orange
+                          </button>
+                        </>
+                      ) : props.selectedDevice === "ipad-pro" ? (
+                        /* iPad Pro */
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("display")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "display"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "center",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/ipad-pro-13-display-thumbnail.png"
+                                alt="Display"
+                                width={80}
+                                height={80}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("gray")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "gray"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "center",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/ipad-pro-13-thumbnail.png"
+                                alt="Gray"
+                                width={80}
+                                height={80}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Gray
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("silver")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "silver"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "center",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/ipad-pro-13-thumbnail.png"
+                                alt="Silver"
+                                width={80}
+                                height={80}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Silver
+                          </button>
+                        </>
+                      ) : (
+                        /* MacBook Pro */
+                        <>
+                          <button
+                            onClick={() => props.setBrowserMode("display")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "display"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/macbook-pro-16-display-thumbnail.png"
+                                alt="Display"
+                                width={60}
+                                height={60}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Display
+                          </button>
+                          <button
+                            onClick={() => props.setBrowserMode("silver")}
+                            className={`h-20 flex flex-col items-center justify-center rounded-lg border text-xs text-foreground cursor-pointer ${
+                              props.browserMode === "silver"
+                                ? "border-purple-500 bg-purple-500/20"
+                                : "border-border bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            <div
+                              style={{
+                                width: 96,
+                                height: 48,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              className="mb-1 rounded"
+                            >
+                              <Image
+                                src="/macbook-pro-16-thumbnail.png"
+                                alt="Silver"
+                                width={60}
+                                height={60}
+                                style={{
+                                  objectFit: "cover",
+                                  objectPosition: "top",
+                                }}
+                                unoptimized
+                              />
+                            </div>
+                            Silver
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground text-center py-4">
+              Select a mobile device, tablet, laptop, or browser to use this
+              section.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* BORDER STYLE */}
+      <div className="bg-card p-2.5 rounded-lg">
+        <button
+          onClick={() => toggleSection("borderStyle")}
+          className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider"
+        >
+          BORDER STYLE
+          <ChevronDown
+            className={`h-3 w-3 transition-transform duration-200 ${
+              expandedSections.borderStyle ? "" : "-rotate-90"
+            }`}
+          />
+        </button>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            expandedSections.borderStyle
               ? "max-h-64 opacity-100 mt-2"
               : "max-h-0 opacity-0"
           }`}
         >
           <div className="grid grid-cols-3 gap-2 pt-1">
-            {(["default", "glass-light", "glass-dark", "liquid"] as const).map(
-              (style) => (
-                <button
-                  key={style}
-                  onClick={() => props.setDeviceStyle(style)}
-                  className={`h-12 rounded-lg border text-xs capitalize text-foreground cursor-pointer ${
-                    props.deviceStyle === style
-                      ? "border-primary bg-primary/20"
-                      : "border-border bg-muted hover:bg-muted/80"
-                  }`}
-                >
-                  {style.replace("-", " ")}
-                </button>
-              )
-            )}
+            {(
+              [
+                "default",
+                "glass-light",
+                "glass-dark",
+                "liquid",
+                "retro",
+              ] as const
+            ).map((style) => (
+              <button
+                key={style}
+                onClick={() => props.setDeviceStyle(style)}
+                className={`h-12 rounded-lg border text-xs capitalize text-foreground cursor-pointer ${
+                  props.deviceStyle === style
+                    ? "border-primary bg-primary/20"
+                    : "border-border bg-muted hover:bg-muted/80"
+                }`}
+              >
+                {style.replace("-", " ")}
+              </button>
+            ))}
           </div>
 
           {/* Grosor (1:1 px) */}
@@ -1230,13 +1509,20 @@ const MockupTab: React.FC<MockupTabProps> = (props) => {
               max={64}
               step={1}
               className="w-full"
+              aria-label="Device edge thickness"
+              aria-valuemin={0}
+              aria-valuemax={64}
+              aria-valuenow={props.styleEdge}
+              aria-valuetext={`${props.styleEdge} pixels`}
             />
           </div>
         </div>
       </div>
 
       {/* BORDER RADIUS */}
-      {props.selectedDevice.includes("iphone") ? null : (
+      {props.selectedDevice.includes("iphone") ||
+      props.selectedDevice === "ipad-pro" ||
+      props.selectedDevice === "macbook-pro" ? null : (
         <div className="bg-card p-2.5 rounded-lg">
           <button
             onClick={() => toggleSection("border")}
