@@ -6,6 +6,7 @@ import { X, Settings, Check } from "lucide-react";
 
 interface CookiePreferences {
   necessary: boolean;
+  functional: boolean;
   analytics: boolean;
   marketing: boolean;
 }
@@ -19,6 +20,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
     necessary: true, // Always true, can't be disabled
+    functional: false,
     analytics: false,
     marketing: false,
   });
@@ -26,6 +28,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
   const handleAcceptAll = () => {
     const allPreferences = {
       necessary: true,
+      functional: true,
       analytics: true,
       marketing: true,
     };
@@ -129,6 +132,34 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                 <div className="text-white/40 text-sm">Always Active</div>
               </div>
 
+              {/* Functional Cookies */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+                <button
+                  onClick={() => togglePreference("functional")}
+                  className={`mt-1 w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer ${
+                    preferences.functional
+                      ? "bg-green-600 border-green-600"
+                      : "border-white/40"
+                  }`}
+                >
+                  {preferences.functional && (
+                    <Check className="h-3 w-3 text-white" />
+                  )}
+                </button>
+                <div className="flex-1">
+                  <h4 className="text-white font-medium">Functional Cookies</h4>
+                  <p className="text-white/60 text-sm mt-1">
+                    Enable enhanced functionality and personalization, such as
+                    user authentication and preferences.
+                  </p>
+                  <div className="text-xs text-white/40 mt-2">
+                    <strong>Cookies:</strong> sb-*-auth-token
+                    <br />
+                    <strong>Provider:</strong> Supabase Inc.
+                  </div>
+                </div>
+              </div>
+
               {/* Analytics Cookies */}
               <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
                 <button
@@ -164,7 +195,7 @@ export function CookieBanner({ onAccept, onReject }: CookieBannerProps) {
                   onClick={() => togglePreference("marketing")}
                   className={`mt-1 w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer ${
                     preferences.marketing
-                      ? "bg-purple-600 border-purple-600"
+                      ? "bg-orange-600 border-orange-600"
                       : "border-white/40"
                   }`}
                 >
