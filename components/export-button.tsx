@@ -21,6 +21,7 @@ import { Download, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useExport } from "@/lib/export-context";
 import * as htmlToImage from "html-to-image";
+import { logger } from "@/lib/logger";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
@@ -354,8 +355,8 @@ export const ExportButton = forwardRef<
         format === "png"
           ? "image/png"
           : format === "jpg"
-          ? "image/jpeg"
-          : "image/webp";
+            ? "image/jpeg"
+            : "image/webp";
 
       return await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(
@@ -365,7 +366,7 @@ export const ExportButton = forwardRef<
         );
       });
     } catch (error) {
-      console.error("Error in toBlobByFormat:", error);
+      logger.error("Error in toBlobByFormat:", error);
       return null;
     }
   };
@@ -373,7 +374,18 @@ export const ExportButton = forwardRef<
   const handleExport = async (format: ExportFormat, scale = 4) => {
     const canvas = document.getElementById("mockup-canvas");
     if (!canvas) {
-      toast.error("Canvas not found. Please try again.");
+      logger.error('Canvas element with id "mockup-canvas" not found in DOM');
+      toast.error("Canvas not ready. Waiting for initialization...");
+
+      // Attempt automatic recovery
+      setTimeout(() => {
+        const retryCanvas = document.getElementById("mockup-canvas");
+        if (retryCanvas) {
+          toast.success("Canvas ready! Please try exporting again.");
+        } else {
+          toast.error("Canvas initialization failed. Please refresh the page.");
+        }
+      }, 1500);
       return;
     }
 
@@ -456,8 +468,8 @@ export const ExportButton = forwardRef<
             format === "png"
               ? "image/png"
               : format === "jpg"
-              ? "image/jpeg"
-              : "image/webp";
+                ? "image/jpeg"
+                : "image/webp";
           const quality = format === "png" ? undefined : 0.92;
 
           const msBlob: Blob | null = await (
@@ -471,12 +483,12 @@ export const ExportButton = forwardRef<
               originalBackground.includes("linear-gradient")
                 ? undefined
                 : format === "png" || format === "webp"
-                ? "transparent"
-                : "#000000",
+                  ? "transparent"
+                  : "#000000",
           });
           blob = msBlob;
         } catch (e) {
-          console.warn(
+          logger.warn(
             "modern-screenshot not available; falling back to html-to-image on iOS.",
             e
           );
@@ -487,8 +499,8 @@ export const ExportButton = forwardRef<
             originalBackground && originalBackground.includes("linear-gradient")
               ? undefined
               : format === "png" || format === "webp"
-              ? "transparent"
-              : "#000000"
+                ? "transparent"
+                : "#000000"
           );
         }
       } else {
@@ -500,8 +512,8 @@ export const ExportButton = forwardRef<
           originalBackground && originalBackground.includes("linear-gradient")
             ? undefined
             : format === "png" || format === "webp"
-            ? "transparent"
-            : "#000000"
+              ? "transparent"
+              : "#000000"
         );
       }
 
@@ -530,7 +542,7 @@ export const ExportButton = forwardRef<
         }`
       );
     } catch (error) {
-      console.error("Export failed:", error);
+      logger.error("Export failed:", error);
       toast.error("An error occurred while exporting. Please try again.");
     } finally {
       setIsExporting(false);
