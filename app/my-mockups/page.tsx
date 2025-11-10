@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Mockup } from "@/types";
+import { logger } from "@/lib/logger";
 
 const getDeviceIcon = (device: string) => {
   switch (device.toLowerCase()) {
@@ -70,7 +71,7 @@ export default function MyMockupsPage() {
       const data = await response.json();
       setMockups(data.mockups || []);
     } catch (error) {
-      console.error("Error fetching mockups:", error);
+      logger.error("Error fetching mockups:", error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ export default function MyMockupsPage() {
         setMockups(mockups.filter((m) => m.id !== id));
       }
     } catch (error) {
-      console.error("Error deleting mockup:", error);
+      logger.error("Error deleting mockup:", error);
     }
   };
 
@@ -143,7 +144,7 @@ export default function MyMockupsPage() {
               </Link>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                  My Mockups
+                  Mockups
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                   Manage and organize your saved designs
