@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 interface CookiePreferences {
   necessary: boolean;
+  functional: boolean;
   analytics: boolean;
   marketing: boolean;
 }
@@ -15,6 +16,7 @@ export function useCookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
     necessary: true,
+    functional: false,
     analytics: false,
     marketing: false,
   });
@@ -30,42 +32,12 @@ export function useCookieConsent() {
       setHasConsented(true);
 
       // Apply cookie settings
-      if (!parsedPreferences.marketing) {
-        disableAdSense();
-      } else {
-        enableAdSense();
-      }
+      // Marketing cookies not used at the moment
     } else {
       // Show banner if no consent given yet
       setShowBanner(true);
     }
   }, []);
-
-  const disableAdSense = () => {
-    // Remove AdSense script if it exists
-    const adsenseScript = document.querySelector(
-      'script[src*="googlesyndication"]'
-    );
-    if (adsenseScript) {
-      adsenseScript.remove();
-    }
-
-    // Also remove any AdSense elements that might be on the page
-    const adsenseElements = document.querySelectorAll("[data-ad-client]");
-    adsenseElements.forEach((el) => el.remove());
-  };
-
-  const enableAdSense = () => {
-    // Re-add AdSense script if marketing cookies are accepted
-    if (!document.querySelector('script[src*="googlesyndication"]')) {
-      const script = document.createElement("script");
-      script.async = true;
-      script.src =
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2850341183298193";
-      script.crossOrigin = "anonymous";
-      document.head.appendChild(script);
-    }
-  };
 
   const acceptCookies = (prefs: CookiePreferences) => {
     setPreferences(prefs);
@@ -77,16 +49,13 @@ export function useCookieConsent() {
     localStorage.setItem(COOKIE_PREFERENCES_KEY, JSON.stringify(prefs));
 
     // Apply settings
-    if (!prefs.marketing) {
-      disableAdSense();
-    } else {
-      enableAdSense();
-    }
+    // Marketing cookies not used at the moment
   };
 
   const rejectCookies = () => {
     const minimalPrefs = {
       necessary: true,
+      functional: false,
       analytics: false,
       marketing: false,
     };
@@ -100,7 +69,7 @@ export function useCookieConsent() {
     localStorage.setItem(COOKIE_PREFERENCES_KEY, JSON.stringify(minimalPrefs));
 
     // Apply settings (disable everything non-essential)
-    disableAdSense();
+    // Marketing cookies not used at the moment
   };
 
   const resetConsent = () => {
@@ -110,6 +79,7 @@ export function useCookieConsent() {
     setShowBanner(true);
     setPreferences({
       necessary: true,
+      functional: false,
       analytics: false,
       marketing: false,
     });

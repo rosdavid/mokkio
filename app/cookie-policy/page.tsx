@@ -107,6 +107,26 @@ export default function CookiePolicyPage() {
               </div>
 
               <div className="bg-white/5 p-6 rounded-lg">
+                <h3 className="text-xl font-medium mb-2 text-green-400">
+                  Functional Cookies
+                </h3>
+                <p className="mb-3">
+                  These cookies enable the website to provide enhanced functionality and personalization.
+                </p>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-green-500 pl-3">
+                    <strong className="text-white">sb-[project-ref]-auth-token</strong>
+                    <p className="text-sm text-white/60">
+                      Supabase authentication token for user sessions
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Duration: Session | Provider: Supabase Inc.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 p-6 rounded-lg">
                 <h3 className="text-xl font-medium mb-2 text-orange-400">
                   Marketing Cookies
                 </h3>
@@ -153,7 +173,13 @@ export default function CookiePolicyPage() {
                 <strong>Vercel:</strong> Hosting and analytics platform
               </li>
               <li>
-                <strong>Buy Me a Coffee :</strong> Donation platform (external
+                <strong>Supabase:</strong> Database and authentication services
+              </li>
+              <li>
+                <strong>OpenRouter:</strong> AI services for content generation (server-side only, no client cookies)
+              </li>
+              <li>
+                <strong>Buy Me a Coffee:</strong> Donation platform (external
                 link)
               </li>
             </ul>
@@ -161,7 +187,7 @@ export default function CookiePolicyPage() {
 
           <section className="border-t border-white/20 pt-8">
             <p className="text-sm text-white/60">
-              Last updated: October 31, 2025
+              Last updated: November 6, 2025
             </p>
           </section>
         </div>
