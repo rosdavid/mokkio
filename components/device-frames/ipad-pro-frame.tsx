@@ -1,32 +1,76 @@
 import type React from "react";
+import Image from "next/image";
+
 interface DeviceFrameProps {
   children: React.ReactNode;
   borderRadius: number;
+  mode: string;
 }
 
-export function IPadProFrame({ children, borderRadius }: DeviceFrameProps) {
-  return (
-    <div className="relative">
-      {/* Device Frame */}
-      <div
-        className="relative overflow-hidden bg-[#1d1d1f] p-3"
-        style={{
-          borderRadius: `${borderRadius + 6}px`,
-          boxShadow: "0 0 0 2px #1d1d1f, 0 0 0 3px #3a3a3c",
-        }}
-      >
-        {/* Camera */}
-        <div className="absolute right-6 top-6 z-10 h-3 w-3 rounded-full bg-black ring-2 ring-[#2d2d2d]" />
+export function IPadProFrame({ children, mode }: DeviceFrameProps) {
+  const showFrame = mode !== "display";
 
-        {/* Screen */}
+  let frameSrc = "/ipad-pro-13-gray.png";
+  switch (mode) {
+    case "gray":
+      frameSrc = "/ipad-pro-13-gray.png";
+      break;
+    case "silver":
+      frameSrc = "/ipad-pro-13-silver.png";
+      break;
+  }
+
+  if (showFrame) {
+    return (
+      <div className="relative" style={{ width: "1024px", height: "768px" }}>
+        {/* Screen Content */}
         <div
-          className="relative overflow-hidden bg-white"
+          className="absolute overflow-hidden"
           style={{
-            borderRadius: `${borderRadius}px`,
+            top: "76px",
+            left: "281px",
+            width: "462px",
+            height: "616px",
+            borderRadius: `10px`,
+            zIndex: 10,
           }}
         >
           {children}
         </div>
+        {/* Device Frame Image */}
+        <div className="relative" style={{ zIndex: 20, pointerEvents: "none" }}>
+          <Image
+            src={frameSrc}
+            alt="iPad Pro 13 Frame"
+            width={402}
+            height={874}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              position: "fixed",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" style={{ width: "1024px", height: "768px" }}>
+      {/* Screen */}
+      <div
+        className="relative overflow-hidden bg-white"
+        style={{
+          top: "76px",
+          left: "281px",
+          width: "462px",
+          height: "616px",
+          borderRadius: `10px`,
+          zIndex: 10,
+        }}
+      >
+        {children}
       </div>
     </div>
   );

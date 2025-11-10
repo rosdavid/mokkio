@@ -5,7 +5,6 @@ interface SafariFrameProps {
   children: React.ReactNode;
   width: number;
   height: number;
-  borderRadius: number;
   siteUrl?: string;
   referenceWidth?: number;
   headerScale?: number;
@@ -17,7 +16,6 @@ export function SafariFrame({
   children,
   width,
   height,
-  borderRadius,
   siteUrl,
   referenceWidth,
   headerScale,
@@ -75,7 +73,7 @@ export function SafariFrame({
         height: fitToContainer
           ? "100%"
           : `min(${height + headerHeight}px, 80vh)`,
-        borderRadius: `${borderRadius}px`,
+        borderRadius: `15px`,
         display: "flex",
         flexDirection: "column",
         fontFamily:

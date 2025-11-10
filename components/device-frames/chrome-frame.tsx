@@ -5,7 +5,6 @@ interface ChromeFrameProps {
   children: React.ReactNode;
   width: number;
   height: number;
-  borderRadius: number;
   siteUrl?: string;
   referenceWidth?: number;
   headerScale?: number;
@@ -17,7 +16,6 @@ export function ChromeFrame({
   children,
   width,
   height,
-  borderRadius,
   siteUrl,
   referenceWidth,
   headerScale,
@@ -71,7 +69,7 @@ export function ChromeFrame({
         boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
         width: fitToContainer ? "100%" : `${width}px`,
         height: fitToContainer ? "100%" : `${height + headerH}px`,
-        borderRadius: `${borderRadius}px`,
+        borderRadius: `15px`,
         display: "flex",
         flexDirection: "column",
         fontFamily:
